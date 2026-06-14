@@ -1,5 +1,5 @@
 import type {
-  Author, OverrideEntry, OverrideSet, Recipe, RecipeContent, RecipeVersion, VersionId, VersionStatus, Yield,
+  Author, OverrideEntry, OverrideSet, Recipe, RecipeContent, RecipeId, RecipeVersion, VersionId, VersionStatus, Yield,
 } from "./types.js";
 import type { Repository } from "./repository.js";
 import type { Deps } from "./deps.js";
@@ -160,5 +160,17 @@ export class RecipeService {
       cursor = v.prevVersionId;
     }
     return out;
+  }
+
+  async listRecipes(): Promise<Recipe[]> {
+    return this.repo.listRecipes();
+  }
+  async listVersions(): Promise<RecipeVersion[]> {
+    return this.repo.listVersions();
+  }
+  async getRecipe(id: RecipeId): Promise<Recipe> {
+    const r = await this.repo.getRecipe(id);
+    if (!r) throw new Error(`recipe not found: ${id}`);
+    return r;
   }
 }

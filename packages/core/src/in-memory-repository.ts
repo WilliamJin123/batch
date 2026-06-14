@@ -24,4 +24,10 @@ export class InMemoryRepository implements Repository {
     if (!r) throw new Error(`recipe not found: ${recipeId}`);
     r.headVersionId = versionId;
   }
+  async listRecipes(): Promise<Recipe[]> {
+    return [...this.recipes.values()].map((r) => structuredClone(r));
+  }
+  async listVersions(): Promise<RecipeVersion[]> {
+    return [...this.versions.values()].map((v) => structuredClone(v));
+  }
 }

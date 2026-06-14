@@ -6,4 +6,6 @@ export interface Repository {
   saveVersion(version: RecipeVersion): Promise<void>;
   getVersion(id: VersionId): Promise<RecipeVersion | undefined>;
   setHead(recipeId: RecipeId, versionId: VersionId): Promise<void>;
+  listRecipes(): Promise<Recipe[]>;
+  listVersions(): Promise<RecipeVersion[]>;
 }

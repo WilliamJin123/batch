@@ -130,3 +130,18 @@ describe("editMetadata + getHistory", () => {
     expect(history.map((v) => v.name)).toEqual(["C", "B", "A"]);
   });
 });
+
+describe("enumeration", () => {
+  it("lists recipes and versions, and getRecipe returns the recipe", async () => {
+    const svc = makeService();
+    const { recipe: r1, version: v1 } = await svc.createRecipe({
+      name: "Base", yield: { amount: 12, unit: "slices" }, content: content(),
+    });
+    await svc.deriveVariant({ baseVersionId: v1.id, name: "Variant" });
+    const recipes = await svc.listRecipes();
+    const versions = await svc.listVersions();
+    expect(recipes).toHaveLength(2);
+    expect(versions).toHaveLength(2);
+    expect((await svc.getRecipe(r1.id)).id).toBe(r1.id);
+  });
+});
