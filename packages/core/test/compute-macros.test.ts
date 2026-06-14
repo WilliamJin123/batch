@@ -1,0 +1,64 @@
+import { describe, it, expect } from "vitest";
+import { computeMacros } from "../src/compute-macros.js";
+import type { LibraryIngredient, RecipeContent } from "../src/types.js";
+
+const sugar: LibraryIngredient = {
+  id: "ing-sugar", name: "sugar",
+  macrosPer100g: { calories: 387, protein: 0, carbs: 100, fat: 0, fiber: 0 },
+};
+const butter: LibraryIngredient = {
+  id: "ing-butter", name: "butter",
+  macrosPer100g: { calories: 717, protein: 0.85, carbs: 0.06, fat: 81, fiber: 0 },
+};
+
+function content(): RecipeContent {
+  return {
+    steps: [{ componentKey: "s1", order: 1, instructionText: "mix" }],
+    slots: [
+      { componentKey: "sugar", name: "sugar", resolution: { kind: "raw", libraryIngredientId: "ing-sugar" } },
+      { componentKey: "butter", name: "butter", resolution: { kind: "raw", libraryIngredientId: "ing-butter" } },
+    ],
+    usages: [
+      { componentKey: "u1", stepKey: "s1", slotKey: "sugar", quantityValue: 200, quantityUnit: "g" },
+      { componentKey: "u2", stepKey: "s1", slotKey: "butter", quantityValue: 100, quantityUnit: "g" },
+    ],
+  };
+}
+
+const lib = (...xs: LibraryIngredient[]) => new Map(xs.map((x) => [x.id, x]));
+
+describe("computeMacros", () => {
+  it("sums macros over usages and divides by yield for per-serving", () => {
+    const snap = computeMacros(content(), { amount: 4, unit: "servings" }, lib(sugar, butter));
+    expect(snap.basis).toBe("complete");
+    expect(snap.unresolved).toEqual([]);
+    // sugar 200 g → 774 kcal / 200 carb; butter 100 g → 717 kcal / 0.85 protein / 81 fat
+    expect(snap.total.calories).toBe(1491);
+    expect(snap.total.carbs).toBeCloseTo(200.06, 2);
+    expect(snap.total.fat).toBe(81);
+    expect(snap.perServing.calories).toBeCloseTo(372.75, 2);
+  });
+
+  it("returns a partial result that lists the unresolved usage and sums the rest", () => {
+    const snap = computeMacros(content(), { amount: 4, unit: "servings" }, lib(sugar)); // butter not in library
+    expect(snap.basis).toBe("partial");
+    expect(snap.unresolved).toHaveLength(1);
+    expect(snap.total.calories).toBe(774); // only sugar counted
+    expect(snap.lines.find((l) => l.slotKey === "butter")?.status).toBe("unresolved");
+    expect(snap.lines.find((l) => l.slotKey === "sugar")?.status).toBe("ok");
+  });
+
+  it("flags a sub-recipe slot as unresolved (deferred to M3)", () => {
+    const c = content();
+    c.slots[0]!.resolution = { kind: "sub_recipe", subRecipeVersionId: "v-x" };
+    const snap = computeMacros(c, { amount: 4, unit: "servings" }, lib(sugar, butter));
+    expect(snap.basis).toBe("partial");
+    expect(snap.lines.find((l) => l.slotKey === "sugar")?.status).toBe("unresolved");
+  });
+
+  it("does not divide by a non-positive yield", () => {
+    const snap = computeMacros(content(), { amount: 0, unit: "servings" }, lib(sugar, butter));
+    expect(snap.perServing.calories).toBe(0);
+    expect(snap.basis).toBe("partial"); // yield note recorded
+  });
+});

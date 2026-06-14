@@ -63,6 +63,60 @@ export interface OverrideSet {
   tags?: string[];
 }
 
+export interface Macros {
+  calories: number; // kcal
+  protein: number; // grams
+  carbs: number; // grams
+  fat: number; // grams
+  fiber: number; // grams
+}
+
+/**
+ * A personal library ingredient: what a slot's `libraryIngredientId` resolves to
+ * for macro computation. Mutable and unversioned (D9) — immutability is protected
+ * by each version's frozen MacroSnapshot, not by versioning the ingredient.
+ * Macros are canonical **per 100 g** (D8).
+ */
+export interface LibraryIngredient {
+  id: string;
+  name: string;
+  aliases?: string[];
+  brand?: string;
+  macrosPer100g: Macros;
+  /** Volume→mass bridge: grams per millilitre. Converts any volume unit (D8). */
+  densityGPerMl?: number;
+  /** Explicit "1 <unit> = N grams" (count units like `each`, or a packed solid's `cup`). Wins over the universal tables. */
+  unitEquivalences?: Record<string, number>;
+  notes?: string;
+  source?: "user" | "usda";
+  usdaFdcId?: string;
+}
+
+/** One usage's contribution to a version's macros — or why it couldn't be counted. */
+export interface MacroLine {
+  slotKey: ComponentKey;
+  ingredientId?: string;
+  ingredientName?: string;
+  grams?: number;
+  macros?: Macros; // this usage's contribution
+  status: "ok" | "unresolved";
+  reason?: string; // present iff unresolved
+}
+
+/**
+ * Computed nutrition frozen onto a version at commit (UC19). `basis` is
+ * `"partial"` when any usage is unresolved (unknown ingredient / unconvertible
+ * unit / sub-recipe); the resolvable usages still sum (UC18 — never throws).
+ */
+export interface MacroSnapshot {
+  total: Macros;
+  perServing: Macros;
+  yield: Yield;
+  basis: "complete" | "partial";
+  unresolved: string[];
+  lines: MacroLine[];
+}
+
 export interface RecipeVersion {
   id: VersionId;
   recipeId: RecipeId;
@@ -77,6 +131,7 @@ export interface RecipeVersion {
   commitMessage: string;
   overrideSet?: OverrideSet; // present iff variant
   content: RecipeContent; // materialized snapshot, always present
+  macros?: MacroSnapshot; // computed nutrition snapshot (UC19); set at commit
   createdAt: string; // ISO-8601
 }
 
