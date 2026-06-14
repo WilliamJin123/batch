@@ -102,3 +102,31 @@ describe("applyOverride", () => {
     ).rejects.toThrow(/not a variant/);
   });
 });
+
+describe("editMetadata + getHistory", () => {
+  it("creates a new version with updated metadata, content unchanged", async () => {
+    const svc = makeService();
+    const { version: v1 } = await svc.createRecipe({
+      name: "Brownies", yield: { amount: 16, unit: "squares" }, content: content(),
+    });
+    const { version: v2 } = await svc.editMetadata({
+      versionId: v1.id, patch: { name: "Fudgy Brownies", status: "approved", tags: ["dessert", "brownie"] },
+    });
+    expect(v2.prevVersionId).toBe(v1.id);
+    expect(v2.name).toBe("Fudgy Brownies");
+    expect(v2.status).toBe("approved");
+    expect(v2.tags).toEqual(["dessert", "brownie"]);
+    expect(v2.content).toEqual(v1.content);
+  });
+
+  it("walks the history chain newest-first", async () => {
+    const svc = makeService();
+    const { version: v1 } = await svc.createRecipe({
+      name: "A", yield: { amount: 1, unit: "x" }, content: content(),
+    });
+    const { version: v2 } = await svc.editMetadata({ versionId: v1.id, patch: { name: "B" } });
+    const { version: v3 } = await svc.editMetadata({ versionId: v2.id, patch: { name: "C" } });
+    const history = await svc.getHistory(v3.id);
+    expect(history.map((v) => v.name)).toEqual(["C", "B", "A"]);
+  });
+});

@@ -1,5 +1,5 @@
 import type {
-  Author, OverrideEntry, OverrideSet, Recipe, RecipeContent, RecipeVersion, VersionId, Yield,
+  Author, OverrideEntry, OverrideSet, Recipe, RecipeContent, RecipeVersion, VersionId, VersionStatus, Yield,
 } from "./types.js";
 import type { Repository } from "./repository.js";
 import type { Deps } from "./deps.js";
@@ -114,5 +114,51 @@ export class RecipeService {
     await this.repo.saveVersion(version);
     await this.repo.setHead(version.recipeId, version.id);
     return { version };
+  }
+
+  async editMetadata(input: {
+    versionId: VersionId;
+    patch: { name?: string; description?: string; tags?: string[]; yield?: Yield; status?: VersionStatus };
+    author?: Author;
+    commitMessage?: string;
+  }): Promise<{ version: RecipeVersion }> {
+    const current = await this.getVersion(input.versionId);
+    const p = input.patch;
+    const overrideSet = current.overrideSet
+      ? {
+          ...current.overrideSet,
+          ...(p.name !== undefined ? { name: p.name } : {}),
+          ...(p.yield !== undefined ? { yield: p.yield } : {}),
+          ...(p.tags !== undefined ? { tags: p.tags } : {}),
+        }
+      : current.overrideSet;
+    const version: RecipeVersion = {
+      ...current,
+      id: this.deps.newId(),
+      prevVersionId: current.id,
+      name: p.name ?? current.name,
+      description: p.description ?? current.description,
+      tags: p.tags ?? current.tags,
+      yield: p.yield ?? current.yield,
+      status: p.status ?? current.status,
+      overrideSet,
+      author: input.author ?? current.author,
+      commitMessage: input.commitMessage ?? "edit metadata",
+      createdAt: this.deps.now(),
+    };
+    await this.repo.saveVersion(version);
+    await this.repo.setHead(version.recipeId, version.id);
+    return { version };
+  }
+
+  async getHistory(versionId: VersionId): Promise<RecipeVersion[]> {
+    const out: RecipeVersion[] = [];
+    let cursor: VersionId | undefined = versionId;
+    while (cursor) {
+      const v: RecipeVersion = await this.getVersion(cursor);
+      out.push(v);
+      cursor = v.prevVersionId;
+    }
+    return out;
   }
 }
