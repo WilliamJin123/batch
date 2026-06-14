@@ -76,8 +76,8 @@ export function ingredientList(svc: RecipeService): Promise<LibraryIngredient[]>
 export async function macros(svc: RecipeService, versionId: string): Promise<MacroSnapshot | undefined> {
   return (await svc.getVersion(versionId)).macros;
 }
-export async function recompute(svc: RecipeService, versionId: string): Promise<RecipeVersion> {
-  return (await svc.recomputeMacros({ versionId })).version;
+export function recompute(svc: RecipeService, versionId: string): Promise<{ version: RecipeVersion }> {
+  return svc.recomputeMacros({ versionId }); // {version} — consistent with override/edit
 }
 
 export interface ListRow {

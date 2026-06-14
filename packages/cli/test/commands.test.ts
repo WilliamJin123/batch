@@ -86,7 +86,7 @@ describe("commands", () => {
     await cmd.ingredientAdd(s, {
       id: "ing-sugar", name: "sugar", macrosPer100g: { calories: 387, protein: 0, carbs: 100, fat: 0, fiber: 0 },
     });
-    const recomputed = await cmd.recompute(s, version.id);
+    const { version: recomputed } = await cmd.recompute(s, version.id);
     expect(recomputed.macros?.basis).toBe("complete");
     expect(recomputed.macros?.total.calories).toBe(774);
   });
