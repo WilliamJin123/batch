@@ -23,11 +23,11 @@ A recipe's `content` has three arrays joined by `componentKey` (stable, human-re
 
 - `./batch create` — reads recipe JSON `{ name, yield, content, description?, tags? }` from **stdin**. Prints `{ recipe, version }`.
 - `./batch derive <baseVersionId> --name "<name>"` — fork a variant. Prints `{ recipe, version }`.
-- `./batch override <versionId> -m "<msg>"` — reads ONE override entry from **stdin**; applies it to a variant (creates a new version). Entry shapes:
+- `./batch override <versionId> -m "<msg>"` — reads ONE override entry from **stdin**; applies it to a **base OR a variant**, creating a new immutable version. On a base the change is baked straight into its content (this is how you tune a base in place — cut its sugar, drop its bake temp). On a variant it's recorded as a component-level delta over the base, inheriting everything else. Entry shapes:
   - replace: `{ "op": "replace", "kind": "usage", "target": "u_sugar", "payload": { ...full StepUsage... } }` (kind ∈ step|slot|usage)
   - add: `{ "op": "add", "kind": "slot", "payload": { ...full IngredientSlot... } }`
   - remove: `{ "op": "remove", "kind": "step", "target": "s2" }`
-  Overrides only apply to **variants** (versions created by `derive`). To change a base/root recipe, use `edit` (metadata) or create a new version another way.
+  (`edit` is for metadata only — name/description/status/tags/yield; `override` is for content.)
 - `./batch edit <versionId> [--name --description --status --tags a,b --yield-amount N --yield-unit U -m msg]` — new version with changed metadata; content unchanged. `--status` ∈ draft|approved|rejected.
 - `./batch show <versionId>` — the version + resolved content.
 - `./batch resolve <versionId>` — just the resolved content.
@@ -42,7 +42,7 @@ A recipe's `content` has three arrays joined by `componentKey` (stable, human-re
 1. The user shares an Instagram reel caption, a blog URL, or a screenshot of a recipe.
 2. **You** parse it into the `create` JSON: split the method into `steps`, each ingredient into a `slot`, each "Xg of Y in step Z" into a `usage`. Choose clean `componentKey`s. If ingredients aren't tied to specific steps, attach them all to the first/relevant step.
 3. Run `./batch create` (pipe the JSON via stdin). Report the new `version.id`.
-4. Tune conversationally: cut sugar, swap an ingredient, change bake temp → `./batch override` (on a variant) or for the base, capture the change as a new create/derive as appropriate.
+4. Tune conversationally: cut sugar, swap an ingredient, change bake temp → `./batch override <versionId>` (works on the base itself or any variant). Each tweak is a new immutable version, so the history is preserved.
 5. To spin a new flavor off a dialed-in base: `./batch derive <baseVersionId> --name "Biscoff Cheesecake"`, then `override` the differences.
 6. Browse with `./batch list` / `./batch tree`; scale a batch with `./batch scale`.
 

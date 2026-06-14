@@ -89,17 +89,22 @@ describe("applyOverride", () => {
     expect(resolved.steps[0]?.instructionText).toBe("Mix and bake"); // inherited
   });
 
-  it("throws when applying an override to a non-variant (root) version", async () => {
+  it("applies an override directly to a root (base) version as a new root version", async () => {
     const svc = makeService();
     const { version: root } = await svc.createRecipe({
       name: "Root", yield: { amount: 1, unit: "loaf" }, content: content(),
     });
-    await expect(
-      svc.applyOverride({
-        versionId: root.id,
-        entry: { op: "remove", kind: "step", target: "s1" },
-      }),
-    ).rejects.toThrow(/not a variant/);
+    const { version: v2 } = await svc.applyOverride({
+      versionId: root.id,
+      entry: { op: "replace", kind: "usage", target: "u1",
+        payload: { componentKey: "u1", stepKey: "s1", slotKey: "sugar", quantityValue: 180, quantityUnit: "g" } },
+      commitMessage: "tune base sugar 200 -> 180",
+    });
+    expect(v2.prevVersionId).toBe(root.id); // history edge
+    expect(v2.derivesFromVersionId).toBeUndefined(); // still a root, not a variant
+    expect(v2.overrideSet).toBeUndefined(); // a root stores full content, not a delta
+    expect((await svc.resolve(v2.id)).usages[0]?.quantityValue).toBe(180); // change baked in
+    expect((await svc.resolve(root.id)).usages[0]?.quantityValue).toBe(200); // original version immutable
   });
 });
 

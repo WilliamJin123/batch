@@ -92,20 +92,28 @@ export class RecipeService {
     commitMessage?: string;
   }): Promise<{ version: RecipeVersion }> {
     const current = await this.getVersion(input.versionId);
-    if (!current.overrideSet || !current.derivesFromVersionId) {
-      throw new Error(`version ${current.id} is not a variant`);
+    let overrideSet: OverrideSet | undefined;
+    let content: RecipeContent;
+    if (current.overrideSet && current.derivesFromVersionId) {
+      // Variant: extend its delta against the base version, then re-materialize.
+      const base = await this.getVersion(current.derivesFromVersionId);
+      overrideSet = {
+        ...current.overrideSet,
+        entries: [...current.overrideSet.entries, input.entry],
+      };
+      content = materialize(base.content, overrideSet);
+    } else {
+      // Root (base): apply the change straight into its content. It stays a root
+      // (full content, no delta) — this is how you tune a base version in place.
+      overrideSet = current.overrideSet; // undefined for a root
+      content = materialize(current.content, { entries: [input.entry] });
     }
-    const base = await this.getVersion(current.derivesFromVersionId);
-    const overrideSet: OverrideSet = {
-      ...current.overrideSet,
-      entries: [...current.overrideSet.entries, input.entry],
-    };
     const version: RecipeVersion = {
       ...current,
       id: this.deps.newId(),
       prevVersionId: current.id,
       overrideSet,
-      content: materialize(base.content, overrideSet),
+      content,
       author: input.author ?? current.author,
       commitMessage: input.commitMessage ?? "apply override",
       status: "draft",

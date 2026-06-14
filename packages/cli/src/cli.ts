@@ -51,7 +51,7 @@ export async function run(argv: string[]): Promise<void> {
       out(await cmd.derive(makeService(), { baseVersionId, name: opts.name, commitMessage: opts.message })));
 
   program.command("override <versionId>")
-    .description("apply one override entry (JSON on stdin or --file) to a variant")
+    .description("apply one override entry (JSON on stdin or --file) to a base or variant")
     .option("-f, --file <path>", "read the override entry JSON from a file")
     .option("-m, --message <msg>", "commit message")
     .action(async (versionId, opts) => {
