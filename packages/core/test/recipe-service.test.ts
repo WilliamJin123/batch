@@ -16,6 +16,15 @@ describe("InMemoryRepository", () => {
     const got = await repo.getRecipe("r1");
     expect(got?.headVersionId).toBe("v2");
   });
+
+  it("stores and lists library ingredients", async () => {
+    const repo = new InMemoryRepository();
+    await repo.saveIngredient({
+      id: "ing-x", name: "x", macrosPer100g: { calories: 1, protein: 0, carbs: 0, fat: 0, fiber: 0 },
+    });
+    expect((await repo.getIngredient("ing-x"))?.name).toBe("x");
+    expect(await repo.listIngredients()).toHaveLength(1);
+  });
 });
 
 import { RecipeService } from "../src/recipe-service.js";
@@ -148,5 +157,41 @@ describe("enumeration", () => {
     expect(recipes).toHaveLength(2);
     expect(versions).toHaveLength(2);
     expect((await svc.getRecipe(r1.id)).id).toBe(r1.id);
+  });
+});
+
+describe("macros", () => {
+  const sugar = {
+    id: "ing-sugar", name: "sugar",
+    macrosPer100g: { calories: 387, protein: 0, carbs: 100, fat: 0, fiber: 0 },
+  };
+
+  it("snapshots partial macros on create, then completes them via recompute once the ingredient is added", async () => {
+    const svc = makeService();
+    const { version: v1 } = await svc.createRecipe({
+      name: "Base", yield: { amount: 2, unit: "servings" }, content: content(),
+    });
+    // ing-sugar isn't in the library yet → partial, nothing summed
+    expect(v1.macros?.basis).toBe("partial");
+    expect(v1.macros?.total.calories).toBe(0);
+
+    await svc.addIngredient(sugar);
+    const { version: v2 } = await svc.recomputeMacros({ versionId: v1.id });
+    expect(v2.prevVersionId).toBe(v1.id);
+    expect(v2.author).toBe("system");
+    expect(v2.macros?.basis).toBe("complete");
+    expect(v2.macros?.total.calories).toBe(774); // 200 g sugar
+    expect(v2.macros?.perServing.calories).toBe(387); // ÷ 2 servings
+  });
+
+  it("recompute is idempotent when nothing changed (returns the same version)", async () => {
+    const svc = makeService();
+    await svc.addIngredient(sugar);
+    const { version: v1 } = await svc.createRecipe({
+      name: "Base", yield: { amount: 2, unit: "servings" }, content: content(),
+    });
+    expect(v1.macros?.basis).toBe("complete");
+    const { version: same } = await svc.recomputeMacros({ versionId: v1.id });
+    expect(same.id).toBe(v1.id);
   });
 });

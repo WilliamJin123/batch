@@ -1,12 +1,28 @@
 import type {
-  Author, OverrideEntry, OverrideSet, Recipe, RecipeContent, RecipeId, RecipeVersion, VersionId, VersionStatus, Yield,
+  Author, LibraryIngredient, MacroSnapshot, OverrideEntry, OverrideSet,
+  Recipe, RecipeContent, RecipeId, RecipeVersion, VersionId, VersionStatus, Yield,
 } from "./types.js";
 import type { Repository } from "./repository.js";
 import type { Deps } from "./deps.js";
 import { materialize } from "./materialize.js";
+import { computeMacros } from "./compute-macros.js";
 
 export class RecipeService {
   constructor(private repo: Repository, private deps: Deps) {}
+
+  /** Load the library ingredients referenced by `content` and compute its macro snapshot. */
+  private async macrosFor(content: RecipeContent, yieldSpec: Yield): Promise<MacroSnapshot> {
+    const ids = new Set<string>();
+    for (const slot of content.slots) {
+      if (slot.resolution.kind === "raw") ids.add(slot.resolution.libraryIngredientId);
+    }
+    const ingredients = new Map<string, LibraryIngredient>();
+    for (const id of ids) {
+      const ing = await this.repo.getIngredient(id);
+      if (ing) ingredients.set(id, ing);
+    }
+    return computeMacros(content, yieldSpec, ingredients);
+  }
 
   async getVersion(id: VersionId): Promise<RecipeVersion> {
     const v = await this.repo.getVersion(id);
@@ -32,6 +48,8 @@ export class RecipeService {
     const now = this.deps.now();
     const author = input.author ?? "user";
 
+    const content = structuredClone(input.content);
+    const macros = await this.macrosFor(content, input.yield);
     const version: RecipeVersion = {
       id: versionId,
       recipeId,
@@ -42,7 +60,8 @@ export class RecipeService {
       status: "draft",
       author,
       commitMessage: input.commitMessage ?? "create recipe",
-      content: structuredClone(input.content),
+      content,
+      macros,
       createdAt: now,
     };
     const recipe: Recipe = { id: recipeId, createdBy: author, createdAt: now, headVersionId: versionId };
@@ -65,6 +84,8 @@ export class RecipeService {
     const author = input.author ?? "user";
 
     const overrideSet: OverrideSet = { entries: [], name: input.name };
+    const content = materialize(base.content, overrideSet);
+    const macros = await this.macrosFor(content, base.yield);
     const version: RecipeVersion = {
       id: versionId,
       recipeId,
@@ -76,7 +97,8 @@ export class RecipeService {
       author,
       commitMessage: input.commitMessage ?? `derive variant from ${base.name}`,
       overrideSet,
-      content: materialize(base.content, overrideSet),
+      content,
+      macros,
       createdAt: now,
     };
     const recipe: Recipe = { id: recipeId, createdBy: author, createdAt: now, headVersionId: versionId };
@@ -108,12 +130,14 @@ export class RecipeService {
       overrideSet = current.overrideSet; // undefined for a root
       content = materialize(current.content, { entries: [input.entry] });
     }
+    const macros = await this.macrosFor(content, current.yield);
     const version: RecipeVersion = {
       ...current,
       id: this.deps.newId(),
       prevVersionId: current.id,
       overrideSet,
       content,
+      macros,
       author: input.author ?? current.author,
       commitMessage: input.commitMessage ?? "apply override",
       status: "draft",
@@ -140,6 +164,8 @@ export class RecipeService {
           ...(p.tags !== undefined ? { tags: p.tags } : {}),
         }
       : current.overrideSet;
+    const newYield = p.yield ?? current.yield;
+    const macros = await this.macrosFor(current.content, newYield);
     const version: RecipeVersion = {
       ...current,
       id: this.deps.newId(),
@@ -147,9 +173,10 @@ export class RecipeService {
       name: p.name ?? current.name,
       description: p.description ?? current.description,
       tags: p.tags ?? current.tags,
-      yield: p.yield ?? current.yield,
+      yield: newYield,
       status: p.status ?? current.status,
       overrideSet,
+      macros,
       author: input.author ?? current.author,
       commitMessage: input.commitMessage ?? "edit metadata",
       createdAt: this.deps.now(),
@@ -180,5 +207,46 @@ export class RecipeService {
     const r = await this.repo.getRecipe(id);
     if (!r) throw new Error(`recipe not found: ${id}`);
     return r;
+  }
+
+  async addIngredient(ingredient: LibraryIngredient): Promise<LibraryIngredient> {
+    await this.repo.saveIngredient(ingredient);
+    return ingredient;
+  }
+  async getIngredient(id: string): Promise<LibraryIngredient | undefined> {
+    return this.repo.getIngredient(id);
+  }
+  async listIngredients(): Promise<LibraryIngredient[]> {
+    return this.repo.listIngredients();
+  }
+
+  /**
+   * Recompute macros against the *current* library and snapshot them onto a new
+   * version (D9 — author defaults to "system"; the immutable chain is preserved).
+   * Idempotent: if the recomputed macros match, the current version is returned
+   * unchanged (no version churn).
+   */
+  async recomputeMacros(input: {
+    versionId: VersionId;
+    author?: Author;
+    commitMessage?: string;
+  }): Promise<{ version: RecipeVersion }> {
+    const current = await this.getVersion(input.versionId);
+    const macros = await this.macrosFor(current.content, current.yield);
+    if (JSON.stringify(macros) === JSON.stringify(current.macros)) {
+      return { version: current };
+    }
+    const version: RecipeVersion = {
+      ...current,
+      id: this.deps.newId(),
+      prevVersionId: current.id,
+      macros,
+      author: input.author ?? "system",
+      commitMessage: input.commitMessage ?? "recompute macros",
+      createdAt: this.deps.now(),
+    };
+    await this.repo.saveVersion(version);
+    await this.repo.setHead(version.recipeId, version.id);
+    return { version };
   }
 }
