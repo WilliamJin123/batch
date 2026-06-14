@@ -1,5 +1,5 @@
 import type {
-  Author, OverrideSet, Recipe, RecipeContent, RecipeVersion, VersionId, Yield,
+  Author, OverrideEntry, OverrideSet, Recipe, RecipeContent, RecipeVersion, VersionId, Yield,
 } from "./types.js";
 import type { Repository } from "./repository.js";
 import type { Deps } from "./deps.js";
@@ -83,5 +83,36 @@ export class RecipeService {
     await this.repo.saveRecipe(recipe);
     await this.repo.saveVersion(version);
     return { recipe, version };
+  }
+
+  async applyOverride(input: {
+    versionId: VersionId;
+    entry: OverrideEntry;
+    author?: Author;
+    commitMessage?: string;
+  }): Promise<{ version: RecipeVersion }> {
+    const current = await this.getVersion(input.versionId);
+    if (!current.overrideSet || !current.derivesFromVersionId) {
+      throw new Error(`version ${current.id} is not a variant`);
+    }
+    const base = await this.getVersion(current.derivesFromVersionId);
+    const overrideSet: OverrideSet = {
+      ...current.overrideSet,
+      entries: [...current.overrideSet.entries, input.entry],
+    };
+    const version: RecipeVersion = {
+      ...current,
+      id: this.deps.newId(),
+      prevVersionId: current.id,
+      overrideSet,
+      content: materialize(base.content, overrideSet),
+      author: input.author ?? current.author,
+      commitMessage: input.commitMessage ?? "apply override",
+      status: "draft",
+      createdAt: this.deps.now(),
+    };
+    await this.repo.saveVersion(version);
+    await this.repo.setHead(version.recipeId, version.id);
+    return { version };
   }
 }

@@ -66,3 +66,39 @@ describe("deriveVariant", () => {
     expect(await svc.resolve(variant.id)).toEqual(content());
   });
 });
+
+describe("applyOverride", () => {
+  it("pins the overridden component but inherits the rest, as a new version", async () => {
+    const svc = makeService();
+    const { version: base } = await svc.createRecipe({
+      name: "Base", yield: { amount: 16, unit: "squares" }, content: content(),
+    });
+    const { version: variant } = await svc.deriveVariant({ baseVersionId: base.id, name: "Low-sugar" });
+
+    const { version: v2 } = await svc.applyOverride({
+      versionId: variant.id,
+      entry: { op: "replace", kind: "usage", target: "u1",
+        payload: { componentKey: "u1", stepKey: "s1", slotKey: "sugar", quantityValue: 120, quantityUnit: "g" } },
+      commitMessage: "cut sugar 200g -> 120g",
+    });
+
+    expect(v2.prevVersionId).toBe(variant.id); // history edge
+    expect(v2.derivesFromVersionId).toBe(base.id); // still derives from base
+    const resolved = await svc.resolve(v2.id);
+    expect(resolved.usages[0]?.quantityValue).toBe(120); // overridden
+    expect(resolved.steps[0]?.instructionText).toBe("Mix and bake"); // inherited
+  });
+
+  it("throws when applying an override to a non-variant (root) version", async () => {
+    const svc = makeService();
+    const { version: root } = await svc.createRecipe({
+      name: "Root", yield: { amount: 1, unit: "loaf" }, content: content(),
+    });
+    await expect(
+      svc.applyOverride({
+        versionId: root.id,
+        entry: { op: "remove", kind: "step", target: "s1" },
+      }),
+    ).rejects.toThrow(/not a variant/);
+  });
+});
