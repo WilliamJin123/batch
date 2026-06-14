@@ -47,3 +47,22 @@ describe("createRecipe", () => {
     expect(await svc.resolve(version.id)).toEqual(content());
   });
 });
+
+describe("deriveVariant", () => {
+  it("creates a new recipe whose first version derives from the base and resolves identically", async () => {
+    const svc = makeService();
+    const { version: base } = await svc.createRecipe({
+      name: "Cheesecake Base", yield: { amount: 12, unit: "slices" }, content: content(),
+    });
+    const { recipe: variantRecipe, version: variant } = await svc.deriveVariant({
+      baseVersionId: base.id, name: "Banana Cheesecake",
+    });
+    expect(variant.derivesFromVersionId).toBe(base.id);
+    expect(variant.recipeId).toBe(variantRecipe.id);
+    expect(variant.recipeId).not.toBe(base.recipeId);
+    expect(variant.name).toBe("Banana Cheesecake");
+    expect(variant.overrideSet).toEqual({ entries: [], name: "Banana Cheesecake" });
+    // empty overrides => content identical to base
+    expect(await svc.resolve(variant.id)).toEqual(content());
+  });
+});

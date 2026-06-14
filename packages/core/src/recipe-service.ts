@@ -1,8 +1,9 @@
 import type {
-  Author, Recipe, RecipeContent, RecipeVersion, VersionId, Yield,
+  Author, OverrideSet, Recipe, RecipeContent, RecipeVersion, VersionId, Yield,
 } from "./types.js";
 import type { Repository } from "./repository.js";
 import type { Deps } from "./deps.js";
+import { materialize } from "./materialize.js";
 
 export class RecipeService {
   constructor(private repo: Repository, private deps: Deps) {}
@@ -46,6 +47,39 @@ export class RecipeService {
     };
     const recipe: Recipe = { id: recipeId, createdBy: author, createdAt: now, headVersionId: versionId };
 
+    await this.repo.saveRecipe(recipe);
+    await this.repo.saveVersion(version);
+    return { recipe, version };
+  }
+
+  async deriveVariant(input: {
+    baseVersionId: VersionId;
+    name: string;
+    author?: Author;
+    commitMessage?: string;
+  }): Promise<{ recipe: Recipe; version: RecipeVersion }> {
+    const base = await this.getVersion(input.baseVersionId);
+    const recipeId = this.deps.newId();
+    const versionId = this.deps.newId();
+    const now = this.deps.now();
+    const author = input.author ?? "user";
+
+    const overrideSet: OverrideSet = { entries: [], name: input.name };
+    const version: RecipeVersion = {
+      id: versionId,
+      recipeId,
+      derivesFromVersionId: base.id,
+      name: input.name,
+      tags: [],
+      yield: base.yield,
+      status: "draft",
+      author,
+      commitMessage: input.commitMessage ?? `derive variant from ${base.name}`,
+      overrideSet,
+      content: materialize(base.content, overrideSet),
+      createdAt: now,
+    };
+    const recipe: Recipe = { id: recipeId, createdBy: author, createdAt: now, headVersionId: versionId };
     await this.repo.saveRecipe(recipe);
     await this.repo.saveVersion(version);
     return { recipe, version };
