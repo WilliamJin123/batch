@@ -69,4 +69,25 @@ describe("commands", () => {
     const variantNode = nodes.find((n) => n.versionId === variant.id);
     expect(variantNode?.derivesFromVersionId).toBe(base.id);
   });
+
+  it("ingredient add slugifies the name and lists it", async () => {
+    const s = svc();
+    const ing = await cmd.ingredientAdd(s, {
+      name: "White Sugar", macrosPer100g: { calories: 387, protein: 0, carbs: 100, fat: 0, fiber: 0 },
+    });
+    expect(ing.id).toBe("ing-white-sugar");
+    expect(await cmd.ingredientList(s)).toHaveLength(1);
+  });
+
+  it("macros are partial before the ingredient exists, complete after add + recompute", async () => {
+    const s = svc();
+    const { version } = await cmd.create(s, { name: "Base", yield: { amount: 2, unit: "servings" }, content: content() });
+    expect((await cmd.macros(s, version.id))?.basis).toBe("partial");
+    await cmd.ingredientAdd(s, {
+      id: "ing-sugar", name: "sugar", macrosPer100g: { calories: 387, protein: 0, carbs: 100, fat: 0, fiber: 0 },
+    });
+    const recomputed = await cmd.recompute(s, version.id);
+    expect(recomputed.macros?.basis).toBe("complete");
+    expect(recomputed.macros?.total.calories).toBe(774);
+  });
 });

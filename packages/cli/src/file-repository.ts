@@ -1,12 +1,13 @@
 import { promises as fs } from "node:fs";
 import { dirname } from "node:path";
 import type {
-  Recipe, RecipeId, RecipeVersion, VersionId, Repository,
+  LibraryIngredient, Recipe, RecipeId, RecipeVersion, VersionId, Repository,
 } from "@batch/core";
 
 interface Db {
   recipes: Record<string, Recipe>;
   versions: Record<string, RecipeVersion>;
+  ingredients: Record<string, LibraryIngredient>;
 }
 
 export class FileRepository implements Repository {
@@ -18,10 +19,16 @@ export class FileRepository implements Repository {
     if (this.data) return this.data;
     try {
       const raw = await fs.readFile(this.path, "utf8");
-      this.data = JSON.parse(raw) as Db;
+      const parsed = JSON.parse(raw) as Partial<Db>;
+      // Normalize so stores written before a key existed still load (e.g. pre-M2 had no `ingredients`).
+      this.data = {
+        recipes: parsed.recipes ?? {},
+        versions: parsed.versions ?? {},
+        ingredients: parsed.ingredients ?? {},
+      };
     } catch (err) {
       if ((err as NodeJS.ErrnoException).code === "ENOENT") {
-        this.data = { recipes: {}, versions: {} };
+        this.data = { recipes: {}, versions: {}, ingredients: {} };
       } else {
         throw err;
       }
@@ -67,5 +74,17 @@ export class FileRepository implements Repository {
   }
   async listVersions(): Promise<RecipeVersion[]> {
     return Object.values((await this.load()).versions).map((v) => structuredClone(v));
+  }
+  async saveIngredient(ingredient: LibraryIngredient): Promise<void> {
+    const d = await this.load();
+    d.ingredients[ingredient.id] = structuredClone(ingredient);
+    await this.flush();
+  }
+  async getIngredient(id: string): Promise<LibraryIngredient | undefined> {
+    const i = (await this.load()).ingredients[id];
+    return i ? structuredClone(i) : undefined;
+  }
+  async listIngredients(): Promise<LibraryIngredient[]> {
+    return Object.values((await this.load()).ingredients).map((i) => structuredClone(i));
   }
 }

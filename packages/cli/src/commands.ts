@@ -1,6 +1,7 @@
 import { scale as scaleContent } from "@batch/core";
 import type {
-  Author, OverrideEntry, Recipe, RecipeContent, RecipeService, RecipeVersion, VersionStatus, Yield,
+  Author, LibraryIngredient, Macros, MacroSnapshot, OverrideEntry, Recipe, RecipeContent,
+  RecipeService, RecipeVersion, VersionStatus, Yield,
 } from "@batch/core";
 
 export interface CreateInput {
@@ -49,9 +50,40 @@ export function history(svc: RecipeService, versionId: string): Promise<RecipeVe
   return svc.getHistory(versionId);
 }
 
+// --- macros & the ingredient library (M2) ---
+
+export interface IngredientInput {
+  id?: string;
+  name: string;
+  aliases?: string[];
+  brand?: string;
+  macrosPer100g: Macros;
+  densityGPerMl?: number;
+  unitEquivalences?: Record<string, number>;
+  notes?: string;
+  source?: "user" | "usda";
+  usdaFdcId?: string;
+}
+function slugify(name: string): string {
+  return "ing-" + name.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+}
+export function ingredientAdd(svc: RecipeService, input: IngredientInput): Promise<LibraryIngredient> {
+  return svc.addIngredient({ ...input, id: input.id ?? slugify(input.name) });
+}
+export function ingredientList(svc: RecipeService): Promise<LibraryIngredient[]> {
+  return svc.listIngredients();
+}
+export async function macros(svc: RecipeService, versionId: string): Promise<MacroSnapshot | undefined> {
+  return (await svc.getVersion(versionId)).macros;
+}
+export async function recompute(svc: RecipeService, versionId: string): Promise<RecipeVersion> {
+  return (await svc.recomputeMacros({ versionId })).version;
+}
+
 export interface ListRow {
   recipeId: string; headVersionId: string; name: string;
   status: VersionStatus; tags: string[]; isVariant: boolean;
+  kcalPerServing?: number; macroBasis?: "complete" | "partial";
 }
 export async function list(svc: RecipeService): Promise<ListRow[]> {
   const recipes = await svc.listRecipes();
@@ -60,6 +92,7 @@ export async function list(svc: RecipeService): Promise<ListRow[]> {
     return {
       recipeId: r.id, headVersionId: v.id, name: v.name,
       status: v.status, tags: v.tags, isVariant: v.derivesFromVersionId !== undefined,
+      kcalPerServing: v.macros?.perServing.calories, macroBasis: v.macros?.basis,
     };
   }));
   return rows.sort((a, b) => a.name.localeCompare(b.name));

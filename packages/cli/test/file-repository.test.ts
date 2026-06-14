@@ -55,4 +55,20 @@ describe("FileRepository", () => {
     got!.headVersionId = "MUTATED";
     expect((await repo.getRecipe("r1"))?.headVersionId).toBe("v1");
   });
+
+  it("persists library ingredients across instances", async () => {
+    const a = new FileRepository(DB);
+    await a.saveIngredient({ id: "ing-x", name: "x", macrosPer100g: { calories: 5, protein: 0, carbs: 0, fat: 0, fiber: 0 } });
+    const b = new FileRepository(DB);
+    expect((await b.getIngredient("ing-x"))?.name).toBe("x");
+    expect(await b.listIngredients()).toHaveLength(1);
+  });
+
+  it("loads a legacy store written before the ingredients key existed", async () => {
+    await fs.mkdir(DIR, { recursive: true });
+    await fs.writeFile(DB, JSON.stringify({ recipes: {}, versions: {} }), "utf8");
+    const repo = new FileRepository(DB);
+    expect(await repo.listIngredients()).toEqual([]);
+    expect(await repo.getIngredient("anything")).toBeUndefined();
+  });
 });

@@ -105,5 +105,22 @@ export async function run(argv: string[]): Promise<void> {
     .description("list all versions with their derivation/history edges")
     .action(async () => out(await cmd.tree(makeService())));
 
+  const ingredient = program.command("ingredient").description("manage library ingredients (macros + densities)");
+  ingredient.command("add")
+    .description("add/update a library ingredient from JSON ({name,macrosPer100g,densityGPerMl?,unitEquivalences?,...}) on stdin or --file")
+    .option("-f, --file <path>", "read input JSON from a file instead of stdin")
+    .action(async (opts) => out(await cmd.ingredientAdd(makeService(), await readJson(opts.file))));
+  ingredient.command("list")
+    .description("list all library ingredients")
+    .action(async () => out(await cmd.ingredientList(makeService())));
+
+  program.command("macros <versionId>")
+    .description("show the computed macro snapshot for a version (total + per-serving + unresolved)")
+    .action(async (versionId) => out(await cmd.macros(makeService(), versionId)));
+
+  program.command("recompute <versionId>")
+    .description("recompute macros against the current library → new version (author=system)")
+    .action(async (versionId) => out(await cmd.recompute(makeService(), versionId)));
+
   await program.parseAsync(argv, { from: "user" });
 }
