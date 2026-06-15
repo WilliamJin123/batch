@@ -159,3 +159,24 @@ export interface Recipe {
   createdAt: string;
   headVersionId: VersionId;
 }
+
+// --- Feedback (tasting log) — append-only, orthogonal to the version chain ---
+
+/** Ordinal, worst→best. `excellent` is the "favorite"/starred tier. */
+export type Rating = "bad" | "okay" | "good" | "excellent";
+export type FeedbackKind = "to-make" | "made";
+
+export interface FeedbackBase {
+  id: string;
+  recipeId: RecipeId;            // lineage — for rollup
+  versionId: VersionId;          // the exact version tasted/queued (provenance)
+  componentKey?: ComponentKey;   // optional target within that version (e.g. sl-glaze)
+  notes?: string;
+  date: string;                  // when baked/queued (ISO-8601)
+  author: Author;
+  createdAt: string;             // when the record was written (ISO-8601)
+}
+
+export type FeedbackEntry =
+  | ({ kind: "to-make" } & FeedbackBase)                 // intent — no rating
+  | ({ kind: "made"; rating?: Rating } & FeedbackBase);  // outcome — rating optional but encouraged
