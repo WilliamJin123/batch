@@ -61,6 +61,8 @@ export class RecipeService {
     content: RecipeContent;
     author?: Author;
     commitMessage?: string;
+    parents?: VersionId[];   // CM-7
+    rationale?: string;      // CM-7
   }): Promise<{ recipe: Recipe; version: RecipeVersion }> {
     const recipeId = this.deps.newId();
     const versionId = this.deps.newId();
@@ -69,6 +71,7 @@ export class RecipeService {
 
     const content = structuredClone(input.content);
     const macros = await this.macrosFor(content, input.yield);
+    if (input.parents) for (const pid of input.parents) await this.getVersion(pid); // validate existence (throws)
     const version: RecipeVersion = {
       id: versionId,
       recipeId,
@@ -81,6 +84,8 @@ export class RecipeService {
       commitMessage: input.commitMessage ?? "create recipe",
       content,
       macros,
+      ...(input.parents && input.parents.length ? { parentVersionIds: input.parents } : {}),
+      ...(input.rationale ? { provenanceNote: input.rationale } : {}),
       createdAt: now,
     };
     const recipe: Recipe = { id: recipeId, createdBy: author, createdAt: now, headVersionId: versionId };

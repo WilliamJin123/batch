@@ -353,3 +353,29 @@ describe("feedbackSummary rollup", () => {
     expect((await svc.feedbackSummary())[recipe.id]?.tried).toBe(true);
   });
 });
+
+describe("createRecipe provenance (CM-7)", () => {
+  it("records parentVersionIds + provenanceNote when given", async () => {
+    const s = makeService();
+    const a = await s.createRecipe({ name: "A", yield: { amount: 1, unit: "x" }, content: content() });
+    const b = await s.createRecipe({ name: "B", yield: { amount: 1, unit: "x" }, content: content() });
+    const champ = await s.createRecipe({
+      name: "Champion", yield: { amount: 1, unit: "x" }, content: content(),
+      parents: [a.version.id, b.version.id], rationale: "cornstarch from A, zest from B",
+    });
+    expect(champ.version.parentVersionIds).toEqual([a.version.id, b.version.id]);
+    expect(champ.version.provenanceNote).toBe("cornstarch from A, zest from B");
+  });
+  it("omits the fields entirely when not given (old-store shape preserved)", async () => {
+    const s = makeService();
+    const r = await s.createRecipe({ name: "Plain", yield: { amount: 1, unit: "x" }, content: content() });
+    expect("parentVersionIds" in r.version).toBe(false);
+    expect("provenanceNote" in r.version).toBe(false);
+  });
+  it("rejects an unknown parent version", async () => {
+    const s = makeService();
+    await expect(s.createRecipe({
+      name: "X", yield: { amount: 1, unit: "x" }, content: content(), parents: ["nope"],
+    })).rejects.toThrow("version not found: nope");
+  });
+});

@@ -150,6 +150,8 @@ export interface RecipeVersion {
   overrideSet?: OverrideSet; // present iff variant
   content: RecipeContent; // materialized snapshot, always present
   macros?: MacroSnapshot; // computed nutrition snapshot (UC19); set at commit
+  parentVersionIds?: VersionId[]; // amalgam provenance (CM-7) — pure metadata, no materialization
+  provenanceNote?: string; // rationale for a synthesized champion
   createdAt: string; // ISO-8601
 }
 
