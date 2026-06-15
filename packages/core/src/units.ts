@@ -63,3 +63,25 @@ export function toGrams(
 
   return { reason: `unknown unit "${unit}" — add unitEquivalences["${unit}"] in grams` };
 }
+
+/**
+ * Convert within a single dimension only — mass↔mass or volume↔volume (D8). Identical
+ * units pass through (so count/batch units like "batch" → "batch" return the value).
+ * Returns `undefined` across dimensions or for unknown units; volume↔mass never lives here.
+ */
+export function convertWithin(value: number, fromUnit: string, toUnit: string): number | undefined {
+  const f = normalizeUnit(fromUnit);
+  const t = normalizeUnit(toUnit);
+  if (f === t) return value;
+  const fm = MASS_TO_GRAM[f], tm = MASS_TO_GRAM[t];
+  if (fm !== undefined && tm !== undefined) return (value * fm) / tm;
+  const fv = VOLUME_TO_ML[f], tv = VOLUME_TO_ML[t];
+  if (fv !== undefined && tv !== undefined) return (value * fv) / tv;
+  return undefined;
+}
+
+/** Grams iff `unit` is a universal mass unit; otherwise `undefined` (never touches density). */
+export function massToGrams(value: number, unit: string): number | undefined {
+  const m = MASS_TO_GRAM[normalizeUnit(unit)];
+  return m === undefined ? undefined : value * m;
+}

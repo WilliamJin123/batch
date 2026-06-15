@@ -5,5 +5,5 @@ export { InMemoryRepository } from "./in-memory-repository.js";
 export { materialize } from "./materialize.js";
 export { scale } from "./scale.js";
 export { computeMacros } from "./compute-macros.js";
-export { toGrams, normalizeUnit } from "./units.js";
+export { toGrams, normalizeUnit, convertWithin, massToGrams } from "./units.js";
 export { RecipeService } from "./recipe-service.js";
