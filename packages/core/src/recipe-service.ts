@@ -296,7 +296,11 @@ export class RecipeService {
     }
   }
 
-  /** How many versions the pinned recipe's head is ahead of this pin (UC12; 0 = current). */
+  /**
+   * How many versions the pinned recipe's head is ahead of this pin (UC12; 0 = current).
+   * Returns `-1` when the pin is not on the head's linear history (a diverged/abandoned
+   * branch) — counting the head chain would over-report, so we signal "off-branch" instead.
+   */
   async staleness(pinVersionId: VersionId): Promise<number> {
     const pin = await this.repo.getVersion(pinVersionId);
     if (!pin) return 0;
@@ -311,7 +315,7 @@ export class RecipeService {
       cursor = v.prevVersionId;
       n++;
     }
-    return n;
+    return -1; // walked the whole head chain without meeting the pin → not on this history
   }
 
   /** Reject composing `targetSubVersionId` if its sub-recipe closure reaches `thisRecipeId` (UC15). */

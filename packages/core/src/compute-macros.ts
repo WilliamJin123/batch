@@ -57,6 +57,8 @@ export function computeMacros(
       total = zipMacros(total, macros, (x, y) => x + y);
       lines.push({
         slotKey: usage.slotKey, ingredientName: slot.name,
+        // line grams are child-mass basis (fraction × child total weight), not as-used grams —
+        // exact when the child's yield ≈ its raw mass; lossy/cooked-yield reconciliation is deferred (spec §7).
         grams: round2(fr.fraction * sub.totalGrams), macros: mapMacros(macros, round2), status: "ok",
       });
       if (sub.basis === "partial") unresolved.push(`${label}: sub-recipe macros are partial`);

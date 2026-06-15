@@ -269,4 +269,17 @@ describe("composition (M3)", () => {
       entry: { op: "add", kind: "slot", payload: { componentKey: "loop", name: "loop", resolution: { kind: "sub_recipe", subRecipeVersionId: cookie.id } } },
     })).rejects.toThrow(/cycle/);
   });
+
+  it("reports -1 staleness for a pin on a diverged (non-head) branch", async () => {
+    const svc = makeService();
+    const { version: v1 } = await svc.createRecipe({
+      name: "Base", yield: { amount: 1, unit: "batch" },
+      content: { steps: [{ componentKey: "s", order: 1, instructionText: "do" }], slots: [], usages: [] },
+    });
+    // Fork v1 twice → v2 (abandoned) and v3 (new head); v2 is no longer on the head's prev-chain.
+    const { version: v2 } = await svc.editMetadata({ versionId: v1.id, patch: { name: "branch A" } });
+    await svc.editMetadata({ versionId: v1.id, patch: { name: "branch B" } });
+    expect(await svc.staleness(v1.id)).toBe(1);   // still on the head chain (head → v1)
+    expect(await svc.staleness(v2.id)).toBe(-1);  // diverged branch, not on the head's history
+  });
 });
