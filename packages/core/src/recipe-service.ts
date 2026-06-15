@@ -8,6 +8,7 @@ import type { Deps } from "./deps.js";
 import { materialize } from "./materialize.js";
 import { computeMacros } from "./compute-macros.js";
 import { flattenContent, type SubContent } from "./flatten.js";
+import { buildCompareView, type CompareInput, type CompareView } from "./compare.js";
 import { summarizeFeedback, latestFirst, type RecipeFeedbackSummary } from "./feedback.js";
 
 function sumLineGrams(lines: MacroLine[]): number {
@@ -301,6 +302,33 @@ export class RecipeService {
       sources.push({ versionId: id, recipeName: child.name, behind: await this.staleness(id) });
       await this.gatherSubContents(child.content, subContents, sources);
     }
+  }
+
+  /** Align ≥2 versions into the compare view-model (CM-3): ingredient matrix + macros + verdicts. Read-only. */
+  async compare(versionIds: VersionId[]): Promise<CompareView> {
+    if (versionIds.length < 2) throw new Error("compare needs at least two versions");
+    const ingredients = new Map<string, LibraryIngredient>();
+    const inputs: CompareInput[] = [];
+    for (const id of versionIds) {
+      const v = await this.getVersion(id); // throws on unknown id
+      const { content } = await this.flatten(id);
+      for (const slot of content.slots) {
+        if (slot.resolution.kind === "raw" && !ingredients.has(slot.resolution.libraryIngredientId)) {
+          const ing = await this.repo.getIngredient(slot.resolution.libraryIngredientId);
+          if (ing) ingredients.set(ing.id, ing);
+        }
+      }
+      inputs.push({
+        versionId: v.id, recipeId: v.recipeId, name: v.name,
+        isVariant: v.derivesFromVersionId !== undefined,
+        yield: v.yield,
+        perServing: v.macros?.perServing ?? { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 },
+        macroBasis: v.macros?.basis ?? "partial",
+        content,
+        feedback: await this.feedbackForRecipe(v.recipeId),
+      });
+    }
+    return buildCompareView(inputs, ingredients);
   }
 
   /**

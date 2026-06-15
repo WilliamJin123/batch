@@ -379,3 +379,43 @@ describe("createRecipe provenance (CM-7)", () => {
     })).rejects.toThrow("version not found: nope");
   });
 });
+
+describe("service.compare (CM-3)", () => {
+  async function seedIng(s: ReturnType<typeof makeService>) {
+    await s.addIngredient({ id: "ing-sugar", name: "Sugar", macrosPer100g: { calories: 400, protein: 0, carbs: 100, fat: 0, fiber: 0 } });
+    await s.addIngredient({ id: "ing-corn", name: "Cornstarch", macrosPer100g: { calories: 380, protein: 0, carbs: 91, fat: 0, fiber: 0 } });
+  }
+  function cookie(withCorn: boolean): RecipeContent {
+    const slots = [{ componentKey: "sg", name: "sugar", resolution: { kind: "raw" as const, libraryIngredientId: "ing-sugar" } }];
+    const usages = [{ componentKey: "usg", stepKey: "s1", slotKey: "sg", quantityValue: 100, quantityUnit: "g" }];
+    if (withCorn) {
+      slots.push({ componentKey: "cn", name: "cornstarch", resolution: { kind: "raw" as const, libraryIngredientId: "ing-corn" } });
+      usages.push({ componentKey: "ucn", stepKey: "s1", slotKey: "cn", quantityValue: 10, quantityUnit: "g" });
+    }
+    return { steps: [{ componentKey: "s1", order: 1, instructionText: "bake" }], slots, usages };
+  }
+
+  it("aligns separate roots; only the cornstarch user has a value, others null", async () => {
+    const s = makeService();
+    await seedIng(s);
+    const a = await s.createRecipe({ name: "A", yield: { amount: 1, unit: "x" }, content: cookie(true) });
+    const b = await s.createRecipe({ name: "B", yield: { amount: 1, unit: "x" }, content: cookie(false) });
+    const view = await s.compare([a.version.id, b.version.id]);
+    const corn = view.ingredients.find((r) => r.ingredientId === "ing-corn")!;
+    expect(corn.perServingGrams[a.version.id]).toBe(10);
+    expect(corn.perServingGrams[b.version.id]).toBeNull();
+    expect(view.columns.map((c) => c.name).sort()).toEqual(["A", "B"]);
+  });
+
+  it("rejects fewer than two versions", async () => {
+    const s = makeService();
+    const a = await s.createRecipe({ name: "A", yield: { amount: 1, unit: "x" }, content: cookie(false) });
+    await expect(s.compare([a.version.id])).rejects.toThrow("at least two");
+  });
+
+  it("rejects an unknown version id", async () => {
+    const s = makeService();
+    const a = await s.createRecipe({ name: "A", yield: { amount: 1, unit: "x" }, content: cookie(false) });
+    await expect(s.compare([a.version.id, "nope"])).rejects.toThrow("version not found: nope");
+  });
+});
