@@ -25,6 +25,19 @@ describe("InMemoryRepository", () => {
     expect((await repo.getIngredient("ing-x"))?.name).toBe("x");
     expect(await repo.listIngredients()).toHaveLength(1);
   });
+
+  it("stores, lists, and deletes feedback entries", async () => {
+    const repo = new InMemoryRepository();
+    await repo.saveFeedback({
+      kind: "made", id: "f1", recipeId: "r1", versionId: "v1", rating: "good",
+      date: "2026-06-01", author: "user", createdAt: "2026-06-01T00:00:00.000Z",
+    });
+    expect((await repo.getFeedback("f1"))?.kind).toBe("made");
+    expect(await repo.listFeedback()).toHaveLength(1);
+    await repo.deleteFeedback("f1");
+    expect(await repo.getFeedback("f1")).toBeUndefined();
+    expect(await repo.listFeedback()).toEqual([]);
+  });
 });
 
 import { RecipeService } from "../src/recipe-service.js";

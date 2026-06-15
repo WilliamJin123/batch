@@ -1,10 +1,11 @@
-import type { LibraryIngredient, Recipe, RecipeId, RecipeVersion, VersionId } from "./types.js";
+import type { FeedbackEntry, LibraryIngredient, Recipe, RecipeId, RecipeVersion, VersionId } from "./types.js";
 import type { Repository } from "./repository.js";
 
 export class InMemoryRepository implements Repository {
   private recipes = new Map<RecipeId, Recipe>();
   private versions = new Map<VersionId, RecipeVersion>();
   private ingredients = new Map<string, LibraryIngredient>();
+  private feedback = new Map<string, FeedbackEntry>();
 
   async saveRecipe(recipe: Recipe): Promise<void> {
     this.recipes.set(recipe.id, structuredClone(recipe));
@@ -40,5 +41,18 @@ export class InMemoryRepository implements Repository {
   }
   async listIngredients(): Promise<LibraryIngredient[]> {
     return [...this.ingredients.values()].map((i) => structuredClone(i));
+  }
+  async saveFeedback(entry: FeedbackEntry): Promise<void> {
+    this.feedback.set(entry.id, structuredClone(entry));
+  }
+  async getFeedback(id: string): Promise<FeedbackEntry | undefined> {
+    const f = this.feedback.get(id);
+    return f ? structuredClone(f) : undefined;
+  }
+  async listFeedback(): Promise<FeedbackEntry[]> {
+    return [...this.feedback.values()].map((f) => structuredClone(f));
+  }
+  async deleteFeedback(id: string): Promise<void> {
+    this.feedback.delete(id);
   }
 }

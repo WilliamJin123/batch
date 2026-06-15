@@ -1,4 +1,4 @@
-import type { LibraryIngredient, Recipe, RecipeId, RecipeVersion, VersionId } from "./types.js";
+import type { FeedbackEntry, LibraryIngredient, Recipe, RecipeId, RecipeVersion, VersionId } from "./types.js";
 
 export interface Repository {
   saveRecipe(recipe: Recipe): Promise<void>;
@@ -11,4 +11,8 @@ export interface Repository {
   saveIngredient(ingredient: LibraryIngredient): Promise<void>;
   getIngredient(id: string): Promise<LibraryIngredient | undefined>;
   listIngredients(): Promise<LibraryIngredient[]>;
+  saveFeedback(entry: FeedbackEntry): Promise<void>;
+  getFeedback(id: string): Promise<FeedbackEntry | undefined>;
+  listFeedback(): Promise<FeedbackEntry[]>;
+  deleteFeedback(id: string): Promise<void>;
 }
