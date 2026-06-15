@@ -122,4 +122,23 @@ describe("commands", () => {
     expect(struct.pins?.[0]?.slotKey).toBe("frosting"); // pins annotated with staleness for managing/swapping
     expect(struct.pins?.[0]?.behind).toBe(0);
   });
+
+  it("feedback: append made + component-scoped made, then list shows current verdicts", async () => {
+    const s = svc();
+    const { version } = await cmd.create(s, { name: "Cookie", yield: { amount: 3, unit: "cookies" }, content: content() });
+    await cmd.feedback(s, { versionId: version.id, kind: "made", rating: "good", notes: "great" });
+    await cmd.feedback(s, { versionId: version.id, kind: "made", rating: "bad", component: "sugar", notes: "too sweet" });
+    const view = await cmd.feedbackList(s, version.id);
+    expect(view.current.dish?.rating).toBe("good");
+    expect(view.current.components["sugar"]?.rating).toBe("bad");
+    expect(view.history).toHaveLength(2);
+  });
+
+  it("feedback rm deletes an entry", async () => {
+    const s = svc();
+    const { version } = await cmd.create(s, { name: "A", yield: { amount: 1, unit: "x" }, content: content() });
+    const fb = await cmd.feedback(s, { versionId: version.id, kind: "to-make" });
+    await cmd.feedbackRemove(s, fb.id);
+    expect((await cmd.feedbackList(s, version.id)).history).toEqual([]);
+  });
 });

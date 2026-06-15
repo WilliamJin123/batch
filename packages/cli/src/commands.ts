@@ -1,7 +1,8 @@
-import { scale as scaleContent } from "@batch/core";
+import { scale as scaleContent, currentVerdicts } from "@batch/core";
 import type {
-  Author, FlattenSource, LibraryIngredient, Macros, MacroSnapshot, OverrideEntry, Recipe, RecipeContent,
-  RecipeService, RecipeVersion, VersionStatus, Yield,
+  Author, CurrentVerdicts, FeedbackEntry, FeedbackKind, FlattenSource, LibraryIngredient, Macros,
+  MacroSnapshot, OverrideEntry, Rating, Recipe, RecipeContent, RecipeService, RecipeVersion,
+  VersionStatus, Yield,
 } from "@batch/core";
 
 export interface CreateInput {
@@ -129,4 +130,40 @@ export async function tree(svc: RecipeService): Promise<TreeNode[]> {
     versionId: v.id, recipeId: v.recipeId, name: v.name,
     derivesFromVersionId: v.derivesFromVersionId, prevVersionId: v.prevVersionId,
   }));
+}
+
+// --- feedback (tasting log) ---
+
+export interface FeedbackInput {
+  versionId: string;
+  kind: FeedbackKind;
+  rating?: Rating;
+  component?: string;
+  notes?: string;
+  date?: string;
+}
+export function feedback(svc: RecipeService, input: FeedbackInput): Promise<FeedbackEntry> {
+  return svc.addFeedback({
+    versionId: input.versionId,
+    kind: input.kind,
+    rating: input.rating,
+    componentKey: input.component,
+    notes: input.notes,
+    date: input.date,
+  });
+}
+
+export interface FeedbackView {
+  recipeId: string;
+  current: CurrentVerdicts;
+  history: FeedbackEntry[];
+}
+export async function feedbackList(svc: RecipeService, versionId: string): Promise<FeedbackView> {
+  const version = await svc.getVersion(versionId);
+  const history = await svc.feedbackForRecipe(version.recipeId);
+  return { recipeId: version.recipeId, current: currentVerdicts(history), history };
+}
+
+export function feedbackRemove(svc: RecipeService, id: string): Promise<void> {
+  return svc.deleteFeedback(id);
 }
