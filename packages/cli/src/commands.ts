@@ -34,12 +34,23 @@ export function edit(
 }
 
 export interface ViewOpts { structure?: boolean }
+/** A sub_recipe pin surfaced in `--structure` view, annotated with how far behind its child's head it is. */
+export interface StructurePin { slotKey: string; versionId: string; behind: number }
 
 export async function show(
   svc: RecipeService, versionId: string, opts: ViewOpts = {},
-): Promise<RecipeVersion & { sources?: FlattenSource[] }> {
+): Promise<RecipeVersion & { sources?: FlattenSource[]; pins?: StructurePin[] }> {
   const version = await svc.getVersion(versionId);
-  if (opts.structure) return version; // stored composed content, sub_recipe pins intact
+  if (opts.structure) {
+    // Stored composed content (sub_recipe pins intact), each pin annotated with its staleness.
+    const pins: StructurePin[] = [];
+    for (const slot of version.content.slots) {
+      if (slot.resolution.kind !== "sub_recipe") continue;
+      const subId = slot.resolution.subRecipeVersionId;
+      pins.push({ slotKey: slot.componentKey, versionId: subId, behind: await svc.staleness(subId) });
+    }
+    return pins.length ? { ...version, pins } : version;
+  }
   const { content, sources } = await svc.flatten(versionId);
   return { ...version, content, sources };
 }

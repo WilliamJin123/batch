@@ -119,5 +119,7 @@ describe("commands", () => {
     const struct = await cmd.show(s, cookie.id, { structure: true });
     expect(struct.content.slots.some((sl) => sl.resolution.kind === "sub_recipe")).toBe(true);
     expect(struct.sources).toBeUndefined();
+    expect(struct.pins?.[0]?.slotKey).toBe("frosting"); // pins annotated with staleness for managing/swapping
+    expect(struct.pins?.[0]?.behind).toBe(0);
   });
 });
