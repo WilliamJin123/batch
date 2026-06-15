@@ -14,7 +14,7 @@ Operate it through the `batch` CLI (run from the repo root `/Users/williamjin/Do
 A recipe's `content` has three arrays joined by `componentKey` (stable, human-readable keys you choose, e.g. `sugar`, `s1`, `u_sugar`):
 
 - **steps**: `{ componentKey, order, instructionText, section?, timerSeconds?, temperature? }`
-- **slots** (an ingredient "slot" — the swap point): `{ componentKey, name, prepDefault?, resolution: { kind: "raw", libraryIngredientId } }` — for now always `kind: "raw"`. `libraryIngredientId` is a slug like `ing-sugar`; add a matching **library ingredient** (see Macros below) so its nutrition computes, and reuse the same id across recipes so one ingredient serves them all.
+- **slots** (an ingredient "slot" — the swap point): `{ componentKey, name, prepDefault?, resolution: { kind: "raw", libraryIngredientId } }` — usually `kind: "raw"`, or `kind: "sub_recipe"` to resolve to another recipe version (see Composition below). `libraryIngredientId` is a slug like `ing-sugar`; add a matching **library ingredient** (see Macros below) so its nutrition computes, and reuse the same id across recipes so one ingredient serves them all.
 - **usages** (a quantity of a slot used in a step): `{ componentKey, stepKey, slotKey, quantityValue, quantityUnit, prepState? }`
 
 `yield` is `{ amount, unit }` (e.g. `{ amount: 16, unit: "squares" }`).
@@ -48,6 +48,16 @@ Every version carries a **frozen macro snapshot** (`version.macros`), recomputed
 - **Unit conversion** (per usage): mass units (`g/kg/oz/lb…`) convert directly; **volume** units (`cup/tbsp/tsp/ml…`) need the ingredient's `densityGPerMl`; **count/scoop** units (`each`, or a packed `cup`) need an explicit `unitEquivalences` entry — `{"each": 50}` means "1 each = 50 g". `unitEquivalences` wins over the universal tables.
 - **Partial is fine.** An unknown ingredient or an unconvertible unit never throws — that usage is listed in `unresolved[]`, `basis` becomes `"partial"`, and the rest still sum. So enter recipes now and fill in the library later.
 - **Authoring an ingredient:** macros come from a nutrition label (per 100 g) or USDA. Set `densityGPerMl` for liquids (water ≈ 1, oil ≈ 0.92, milk ≈ 1.03); set `unitEquivalences` for things measured by count/scoop (`{"each": 50}` for an egg, `{"scoop": 30}` for protein powder).
+
+## Composition — sub-recipes (M3)
+
+A slot can resolve to **another recipe version** instead of a raw ingredient — a shared frosting, glaze, or crust. Its macros roll up into the parent and it reads inline.
+
+- **Author it** in `content.slots`: `{ "componentKey": "frosting", "name": "frosting", "resolution": { "kind": "sub_recipe", "subRecipeVersionId": "<child version id>" } }`, plus a usage that says how much: `{ ..., "slotKey": "frosting", "quantityValue": 1, "quantityUnit": "batch" }`.
+- **How much** is a fraction of the child's *yield*: `1 batch` of a `yield 1 batch` frosting = the whole thing; `0.5 batch` = half; `18 ladyfingers` of a `yield 24 ladyfingers` recipe = 18/24. Grams always work too (`20 g`), even against a `batch` yield. Units that can't reconcile show up as unresolved — give the child a yield unit you'll measure it in.
+- **Read it**: `./batch show <id>` and `./batch resolve <id>` **flatten** by default — the child's steps and ingredients are spliced in (scaled), sectioned under the child's name, with a `sources[]` list noting each child and how many versions behind it is. Add `--structure` to see the raw pins instead.
+- **Swap it** (test a different frosting): one override — `{ "op": "replace", "kind": "slot", "target": "frosting", "payload": { ...same slot, "resolution": { "kind": "sub_recipe", "subRecipeVersionId": "<other frosting version>" } } }`. Keep a family of interchangeable sub-recipes on the **same yield unit** so the `1 batch` usage still resolves.
+- **Compose-and-verify loop**: build the shared sub-recipe as its own root → `override` the parent to remove its inline copy and add the sub_recipe slot+usage → `./batch macros <parent>` to confirm the total is preserved. A sub_recipe pin can go "N behind" its child's head; re-pointing/rebasing onto a newer child is M4 (not yet built).
 
 ## Typical workflow (the user's real loop)
 
