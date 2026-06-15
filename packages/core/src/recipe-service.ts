@@ -380,6 +380,29 @@ export class RecipeService {
     return { version, conflicts: plan.conflicts };
   }
 
+  /** Rebase every variant of a base recipe onto that base's head (CM-8) — the easy-propagate path. */
+  async rebaseVariants(input: {
+    baseVersionId: VersionId; author?: Author; commitMessage?: string;
+  }): Promise<{ results: Array<{ recipeId: RecipeId; version: RecipeVersion; conflicts: RebaseConflict[] }> }> {
+    const base = await this.getVersion(input.baseVersionId);
+    const baseRecipe = await this.getRecipe(base.recipeId);
+    const ontoId = baseRecipe.headVersionId;
+    const results: Array<{ recipeId: RecipeId; version: RecipeVersion; conflicts: RebaseConflict[] }> = [];
+    for (const r of await this.repo.listRecipes()) {
+      if (r.id === base.recipeId) continue;
+      const head = await this.repo.getVersion(r.headVersionId);
+      if (!head?.derivesFromVersionId) continue;
+      const headBase = await this.repo.getVersion(head.derivesFromVersionId);
+      if (headBase?.recipeId !== base.recipeId) continue;
+      const res = await this.rebase({
+        variantVersionId: head.id, ontoVersionId: ontoId,
+        author: input.author, commitMessage: input.commitMessage,
+      });
+      results.push({ recipeId: r.id, version: res.version, conflicts: res.conflicts });
+    }
+    return { results };
+  }
+
   /**
    * Append one tasting-log entry, pinned to `versionId` (provenance) and rolled up by its
    * `recipeId`. Append-only and orthogonal: never writes a RecipeVersion or moves a head (DF-6).

@@ -494,3 +494,31 @@ describe("service.rebase (CM-5/CM-6)", () => {
     expect(version.derivesFromVersionId).toBe(base2.version.id);
   });
 });
+
+describe("service.rebaseVariants (CM-8)", () => {
+  function oneSlot(sugar: number): RecipeContent {
+    return {
+      steps: [{ componentKey: "s1", order: 1, instructionText: "bake" }],
+      slots: [{ componentKey: "sl-sugar", name: "sugar", resolution: { kind: "raw", libraryIngredientId: "ing-sugar" } }],
+      usages: [{ componentKey: "u-sugar", stepKey: "s1", slotKey: "sl-sugar", quantityValue: sugar, quantityUnit: "g" }],
+    };
+  }
+
+  it("rebases every variant of a base onto the base's head", async () => {
+    const s = makeService();
+    const base = await s.createRecipe({ name: "Base", yield: { amount: 1, unit: "x" }, content: oneSlot(100) });
+    const va = await s.deriveVariant({ baseVersionId: base.version.id, name: "VA" });
+    const vb = await s.deriveVariant({ baseVersionId: base.version.id, name: "VB" });
+    // base cuts sugar 100→70 (advances the base head)
+    const base2 = await s.applyOverride({ versionId: base.version.id, entry: { op: "replace", kind: "usage", target: "u-sugar",
+      payload: { componentKey: "u-sugar", stepKey: "s1", slotKey: "sl-sugar", quantityValue: 70, quantityUnit: "g" } } });
+    const { results } = await s.rebaseVariants({ baseVersionId: base2.version.id });
+    expect(results).toHaveLength(2);
+    for (const r of results) {
+      expect(r.version.derivesFromVersionId).toBe(base2.version.id);
+      expect(r.version.content.usages[0]?.quantityValue).toBe(70); // propagated to each
+      expect(r.conflicts).toEqual([]);
+    }
+    expect(results.map((r) => r.recipeId).sort()).toEqual([va.recipe.id, vb.recipe.id].sort());
+  });
+});
