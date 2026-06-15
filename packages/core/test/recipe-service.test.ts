@@ -572,4 +572,36 @@ describe("service.promote (CM-4)", () => {
     await expect(s.promote({ targetVersionId: base.version.id, sourceVersionId: winner.version.id, componentKeys: ["u-corn"] }))
       .rejects.toThrow("references slot sl-corn missing");
   });
+
+  it("promotes multiple components in one call (a new step + a slot), threading the moving head", async () => {
+    const s = makeService();
+    // source adds a chill step s2 AND a corn slot whose usage lives in that new step
+    const source: RecipeContent = {
+      steps: [
+        { componentKey: "s1", order: 1, instructionText: "bake" },
+        { componentKey: "s2", order: 2, instructionText: "chill" },
+      ],
+      slots: [
+        { componentKey: "sl-sugar", name: "sugar", resolution: { kind: "raw", libraryIngredientId: "ing-sugar" } },
+        { componentKey: "sl-corn", name: "corn", resolution: { kind: "raw", libraryIngredientId: "ing-corn" } },
+      ],
+      usages: [
+        { componentKey: "u-sugar", stepKey: "s1", slotKey: "sl-sugar", quantityValue: 100, quantityUnit: "g" },
+        { componentKey: "u-corn", stepKey: "s2", slotKey: "sl-corn", quantityValue: 12, quantityUnit: "g" },
+      ],
+    };
+    const winner = await s.createRecipe({ name: "Winner", yield: { amount: 1, unit: "x" }, content: source });
+    const base = await s.createRecipe({ name: "Base", yield: { amount: 1, unit: "x" }, content: noCorn() });
+    // promote the new step AND the corn slot together: the slot pulls u-corn, which references s2
+    // (also being promoted) — exercises the look-ahead guard and accumulation across applyOverride calls.
+    const { version } = await s.promote({
+      targetVersionId: base.version.id, sourceVersionId: winner.version.id, componentKeys: ["s2", "sl-corn"],
+    });
+    const stepKeys = version.content.steps.map((x) => x.componentKey);
+    expect(stepKeys).toContain("s1");
+    expect(stepKeys).toContain("s2"); // promoted step accumulated onto the moving head
+    expect(version.content.slots.some((x) => x.componentKey === "sl-corn")).toBe(true);
+    expect(version.content.usages.find((u) => u.componentKey === "u-corn")?.quantityValue).toBe(12); // usage rode along
+    expect(version.derivesFromVersionId).toBeUndefined(); // target was a root → stays a root
+  });
 });

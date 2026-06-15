@@ -85,6 +85,21 @@ describe("buildCompareView", () => {
     expect(view.ingredients[0]?.perServingGrams.v).toBe("present");
   });
 
+  it("aligns 3+ versions; a row joins across all, value present only where used (the motivating case)", () => {
+    // three cookies: only v1 uses cornstarch; v2/v3 share flour — exactly the "3 protein cookies" case.
+    const view = buildCompareView(
+      [input({ versionId: "v1", content: flour("u1", "sl1", "ing-corn", 12) }),
+       input({ versionId: "v2", content: flour("u2", "sl2", "ing-flour", 50) }),
+       input({ versionId: "v3", content: flour("u3", "sl3", "ing-flour", 60) })],
+      new Map([["ing-corn", ing("ing-corn", "Cornstarch")], ["ing-flour", ing("ing-flour", "Flour")]]),
+    );
+    expect(view.columns).toHaveLength(3);
+    const corn = view.ingredients.find((r) => r.ingredientId === "ing-corn")!;
+    expect(corn.perServingGrams).toEqual({ v1: 12, v2: null, v3: null }); // only v1 uses cornstarch
+    const fl = view.ingredients.find((r) => r.ingredientId === "ing-flour")!;
+    expect(fl.perServingGrams).toEqual({ v1: null, v2: 50, v3: 60 });
+  });
+
   it("columns carry dish + component verdicts, steps are per-version", () => {
     const fb = [
       { kind: "made" as const, id: "f1", recipeId: "r-vA", versionId: "vA", rating: "excellent" as const,

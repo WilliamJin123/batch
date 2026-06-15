@@ -1,7 +1,7 @@
 import { scale as scaleContent, currentVerdicts } from "@batch/core";
 import type {
   Author, CompareView, CurrentVerdicts, FeedbackEntry, FeedbackKind, FlattenSource, LibraryIngredient, Macros,
-  MacroSnapshot, OverrideEntry, Rating, RebaseConflict, RebaseResult, Recipe, RecipeContent, RecipeService,
+  MacroSnapshot, OverrideEntry, Rating, RebaseResult, RebaseVariantItem, Recipe, RecipeContent, RecipeService,
   RecipeVersion, VersionStatus, Yield,
 } from "@batch/core";
 
@@ -153,7 +153,7 @@ export function rebase(
 
 export function rebaseAll(
   svc: RecipeService, baseVersionId: string, message?: string,
-): Promise<{ results: Array<{ recipeId: string; version: RecipeVersion; conflicts: RebaseConflict[] }> }> {
+): Promise<{ results: RebaseVariantItem[] }> {
   return svc.rebaseVariants({ baseVersionId, commitMessage: message });
 }
 

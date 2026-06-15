@@ -13,6 +13,6 @@ export { buildCompareView } from "./compare.js";
 export type { CompareView, CompareColumn, CompareIngredientRow, CompareStepList, CompareInput } from "./compare.js";
 export { toGrams, normalizeUnit, convertWithin, massToGrams } from "./units.js";
 export { RecipeService } from "./recipe-service.js";
-export type { RebaseResult } from "./recipe-service.js";
+export type { RebaseResult, RebaseVariantItem } from "./recipe-service.js";
 export { buildRebasePlan } from "./rebase.js";
 export type { RebasePlan, RebaseConflict } from "./rebase.js";
