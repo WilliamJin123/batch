@@ -101,7 +101,8 @@ export async function run(argv: string[]): Promise<void> {
 
   program.command("list")
     .description("list all recipes by head version")
-    .action(async () => out(await cmd.list(makeService())));
+    .option("--to-make", "only recipes queued to make (untried experiments)")
+    .action(async (opts) => out(await cmd.list(makeService(), { toMake: opts.toMake })));
 
   program.command("tree")
     .description("list all versions with their derivation/history edges")
@@ -123,6 +124,35 @@ export async function run(argv: string[]): Promise<void> {
   program.command("recompute <versionId>")
     .description("recompute macros against the current library → new version (author=system)")
     .action(async (versionId) => out(await cmd.recompute(makeService(), versionId)));
+
+  const feedback = program.command("feedback")
+    .description("record and inspect tasting feedback (to-make intent, made outcomes)");
+  feedback.command("add <versionId>")
+    .description("append a feedback entry: --made (with --rating) or --to-make")
+    .option("--made", "record an outcome (you baked it)")
+    .option("--to-make", "queue it as something you want to make")
+    .option("--rating <r>", "bad | okay | good | excellent (only with --made)")
+    .option("--component <key>", "target a component within the version (e.g. sl-glaze)")
+    .option("-m, --message <text>", "notes")
+    .option("--date <YYYY-MM-DD>", "when you baked/queued it (defaults to now)")
+    .action(async (versionId, opts) => {
+      if (Boolean(opts.made) === Boolean(opts.toMake)) {
+        throw new Error("specify exactly one of --made or --to-make");
+      }
+      const kind = opts.made ? "made" : "to-make";
+      if (opts.rating && kind !== "made") throw new Error("--rating only applies to --made");
+      out(await cmd.feedback(makeService(), {
+        versionId, kind,
+        rating: opts.rating, component: opts.component, notes: opts.message,
+        date: opts.date ? new Date(`${opts.date}T12:00:00.000Z`).toISOString() : undefined,
+      }));
+    });
+  feedback.command("list <versionId>")
+    .description("show the tasting log for a version's recipe (current verdicts + history)")
+    .action(async (versionId) => out(await cmd.feedbackList(makeService(), versionId)));
+  feedback.command("rm <id>")
+    .description("hard-delete a feedback entry (for genuine mistakes, not superseding)")
+    .action(async (id) => { await cmd.feedbackRemove(makeService(), id); out({ removed: id }); });
 
   await program.parseAsync(argv, { from: "user" });
 }
