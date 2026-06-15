@@ -438,9 +438,11 @@ export class RecipeService {
         : kind === "slot" ? sc.slots.find((x) => x.componentKey === key)!
         : sc.usages.find((x) => x.componentKey === key)!;
       if (kind === "usage") {
-        const stepKey = (payload as StepUsage).stepKey;
-        const present = target.content.steps.some((x) => x.componentKey === stepKey) || toLift.some((t) => t.kind === "step" && t.key === stepKey);
-        if (!present) throw new Error(`usage ${key} references step ${stepKey} missing in target ${targetId}`);
+        const su = payload as StepUsage;
+        const stepPresent = target.content.steps.some((x) => x.componentKey === su.stepKey) || toLift.some((t) => t.kind === "step" && t.key === su.stepKey);
+        if (!stepPresent) throw new Error(`usage ${key} references step ${su.stepKey} missing in target ${targetId}`);
+        const slotPresent = target.content.slots.some((x) => x.componentKey === su.slotKey) || toLift.some((t) => t.kind === "slot" && t.key === su.slotKey);
+        if (!slotPresent) throw new Error(`usage ${key} references slot ${su.slotKey} missing in target ${targetId}`);
       }
       const arr = kind === "step" ? target.content.steps : kind === "slot" ? target.content.slots : target.content.usages;
       const exists = arr.some((x) => x.componentKey === key);

@@ -563,4 +563,13 @@ describe("service.promote (CM-4)", () => {
     await expect(s.promote({ targetVersionId: base.version.id, sourceVersionId: winner.version.id, componentKeys: ["sl-nope"] }))
       .rejects.toThrow("component not found");
   });
+
+  it("refuses to lift a bare usage whose slot is missing in the target (no dangling usage)", async () => {
+    const s = makeService();
+    const winner = await s.createRecipe({ name: "Winner", yield: { amount: 1, unit: "x" }, content: withCorn() });
+    const base = await s.createRecipe({ name: "Base", yield: { amount: 1, unit: "x" }, content: noCorn() });
+    // promote just the usage, not its sl-corn slot → target has no such slot → reject
+    await expect(s.promote({ targetVersionId: base.version.id, sourceVersionId: winner.version.id, componentKeys: ["u-corn"] }))
+      .rejects.toThrow("references slot sl-corn missing");
+  });
 });

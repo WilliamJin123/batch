@@ -39,6 +39,7 @@ A recipe's `content` has three arrays joined by `componentKey` (stable, human-re
 - `./batch ingredient list` — list the library.
 - `./batch macros <versionId>` — the computed macro snapshot: `total`, `perServing`, `basis` (`complete`|`partial`), `unresolved[]`, and per-usage `lines`.
 - `./batch recompute <versionId>` — recompute macros against the **current** library → new version (author=system). Run after adding/fixing ingredients so an existing recipe picks up the numbers. Idempotent when nothing changed.
+- `./batch promote <targetVersionId> --from <sourceVersionId> --component <csv> [-m msg]` — bake winning component(s) from a source version into a target base, as new version(s) on the target. Promoting a **slot** also lifts its usages (so no ingredient is left dangling); each component becomes one override (`add` if the target lacks the key, else `replace`). Use it to graft a dialed-in ingredient from one experiment into your canonical base.
 - `./batch init` — print the store path (`$BATCH_DB`, else `~/.batch/db.json`).
 
 ## Macros & the ingredient library
