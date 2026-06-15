@@ -296,3 +296,30 @@ describe("composition (M3)", () => {
     expect(await svc.staleness(v2.id)).toBe(-1);  // diverged branch, not on the head's history
   });
 });
+
+describe("addFeedback / deleteFeedback", () => {
+  it("appends an entry pinned to the version, resolves recipeId, and writes NO new version", async () => {
+    const svc = makeService();
+    const { recipe, version } = await svc.createRecipe({
+      name: "Brownies", yield: { amount: 16, unit: "squares" }, content: content(),
+    });
+    const before = (await svc.listVersions()).length;
+    const fb = await svc.addFeedback({ versionId: version.id, kind: "made", rating: "good", notes: "tasty" });
+    expect(fb.recipeId).toBe(recipe.id);
+    expect(fb.versionId).toBe(version.id);
+    expect(fb.kind).toBe("made");
+    expect((await svc.listVersions()).length).toBe(before);                 // no version churn (DF-6)
+    expect((await svc.getRecipe(recipe.id)).headVersionId).toBe(version.id); // head unmoved
+  });
+  it("rejects feedback on an unknown version", async () => {
+    const svc = makeService();
+    await expect(svc.addFeedback({ versionId: "nope", kind: "to-make" })).rejects.toThrow(/version not found/);
+  });
+  it("deleteFeedback removes the one entry", async () => {
+    const svc = makeService();
+    const { version } = await svc.createRecipe({ name: "A", yield: { amount: 1, unit: "x" }, content: content() });
+    const fb = await svc.addFeedback({ versionId: version.id, kind: "to-make" });
+    await svc.deleteFeedback(fb.id);
+    expect(await svc.feedbackForVersion(version.id)).toEqual([]);
+  });
+});

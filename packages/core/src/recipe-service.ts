@@ -1,12 +1,14 @@
 import type {
-  Author, FlattenSource, LibraryIngredient, MacroLine, MacroSnapshot, OverrideEntry, OverrideSet,
-  Recipe, RecipeContent, RecipeId, RecipeVersion, SubRecipeMacro, VersionId, VersionStatus, Yield,
+  Author, ComponentKey, FeedbackBase, FeedbackEntry, FeedbackKind, FlattenSource, LibraryIngredient,
+  MacroLine, MacroSnapshot, OverrideEntry, OverrideSet, Rating, Recipe, RecipeContent, RecipeId,
+  RecipeVersion, SubRecipeMacro, VersionId, VersionStatus, Yield,
 } from "./types.js";
 import type { Repository } from "./repository.js";
 import type { Deps } from "./deps.js";
 import { materialize } from "./materialize.js";
 import { computeMacros } from "./compute-macros.js";
 import { flattenContent, type SubContent } from "./flatten.js";
+import { summarizeFeedback, latestFirst, type RecipeFeedbackSummary } from "./feedback.js";
 
 function sumLineGrams(lines: MacroLine[]): number {
   return lines.reduce((g, l) => g + (l.grams ?? 0), 0);
@@ -294,6 +296,53 @@ export class RecipeService {
       sources.push({ versionId: id, recipeName: child.name, behind: await this.staleness(id) });
       await this.gatherSubContents(child.content, subContents, sources);
     }
+  }
+
+  /**
+   * Append one tasting-log entry, pinned to `versionId` (provenance) and rolled up by its
+   * `recipeId`. Append-only and orthogonal: never writes a RecipeVersion or moves a head (DF-6).
+   */
+  async addFeedback(input: {
+    versionId: VersionId;
+    kind: FeedbackKind;
+    rating?: Rating;
+    componentKey?: ComponentKey;
+    notes?: string;
+    date?: string;
+    author?: Author;
+  }): Promise<FeedbackEntry> {
+    const version = await this.getVersion(input.versionId); // validates existence (throws if unknown)
+    const now = this.deps.now();
+    const base: FeedbackBase = {
+      id: this.deps.newId(),
+      recipeId: version.recipeId,
+      versionId: version.id,
+      componentKey: input.componentKey,
+      notes: input.notes,
+      date: input.date ?? now,
+      author: input.author ?? "user",
+      createdAt: now,
+    };
+    const entry: FeedbackEntry =
+      input.kind === "made"
+        ? { kind: "made", rating: input.rating, ...base }
+        : { kind: "to-make", ...base };
+    await this.repo.saveFeedback(entry);
+    return entry;
+  }
+
+  async deleteFeedback(id: string): Promise<void> {
+    await this.repo.deleteFeedback(id);
+  }
+
+  async feedbackForRecipe(recipeId: RecipeId): Promise<FeedbackEntry[]> {
+    return latestFirst((await this.repo.listFeedback()).filter((e) => e.recipeId === recipeId));
+  }
+  async feedbackForVersion(versionId: VersionId): Promise<FeedbackEntry[]> {
+    return latestFirst((await this.repo.listFeedback()).filter((e) => e.versionId === versionId));
+  }
+  async feedbackSummary(): Promise<Record<RecipeId, RecipeFeedbackSummary>> {
+    return summarizeFeedback(await this.repo.listFeedback());
   }
 
   /**
