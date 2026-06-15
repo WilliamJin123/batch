@@ -1,6 +1,6 @@
 import { scale as scaleContent } from "@batch/core";
 import type {
-  Author, LibraryIngredient, Macros, MacroSnapshot, OverrideEntry, Recipe, RecipeContent,
+  Author, FlattenSource, LibraryIngredient, Macros, MacroSnapshot, OverrideEntry, Recipe, RecipeContent,
   RecipeService, RecipeVersion, VersionStatus, Yield,
 } from "@batch/core";
 
@@ -33,12 +33,22 @@ export function edit(
   return svc.editMetadata({ versionId: input.versionId, patch: input.patch, commitMessage: input.message });
 }
 
-export function show(svc: RecipeService, versionId: string): Promise<RecipeVersion> {
-  return svc.getVersion(versionId);
+export interface ViewOpts { structure?: boolean }
+
+export async function show(
+  svc: RecipeService, versionId: string, opts: ViewOpts = {},
+): Promise<RecipeVersion & { sources?: FlattenSource[] }> {
+  const version = await svc.getVersion(versionId);
+  if (opts.structure) return version; // stored composed content, sub_recipe pins intact
+  const { content, sources } = await svc.flatten(versionId);
+  return { ...version, content, sources };
 }
 
-export function resolve(svc: RecipeService, versionId: string): Promise<RecipeContent> {
-  return svc.resolve(versionId);
+export async function resolve(
+  svc: RecipeService, versionId: string, opts: ViewOpts = {},
+): Promise<RecipeContent> {
+  if (opts.structure) return svc.resolve(versionId);
+  return (await svc.flatten(versionId)).content;
 }
 
 export async function scale(svc: RecipeService, versionId: string, to: number): Promise<RecipeContent> {

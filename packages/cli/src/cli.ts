@@ -81,12 +81,14 @@ export async function run(argv: string[]): Promise<void> {
     });
 
   program.command("show <versionId>")
-    .description("show a version with its resolved content")
-    .action(async (versionId) => out(await cmd.show(makeService(), versionId)));
+    .description("show a version with its recipe content (flattened by default; --structure keeps sub-recipe pins)")
+    .option("--structure", "show the stored composed content (sub-recipe pins + staleness) instead of the flattened card")
+    .action(async (versionId, opts) => out(await cmd.show(makeService(), versionId, { structure: opts.structure })));
 
   program.command("resolve <versionId>")
-    .description("print only the resolved RecipeContent")
-    .action(async (versionId) => out(await cmd.resolve(makeService(), versionId)));
+    .description("print only the resolved RecipeContent (flattened by default; --structure keeps sub-recipe pins)")
+    .option("--structure", "print the stored composed content instead of the flattened card")
+    .action(async (versionId, opts) => out(await cmd.resolve(makeService(), versionId, { structure: opts.structure })));
 
   program.command("scale <versionId>")
     .description("scale quantities to a target yield amount")

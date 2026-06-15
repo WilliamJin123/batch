@@ -90,4 +90,34 @@ describe("commands", () => {
     expect(recomputed.macros?.basis).toBe("complete");
     expect(recomputed.macros?.total.calories).toBe(774);
   });
+
+  it("show flattens a composed recipe by default; --structure keeps the sub_recipe pin", async () => {
+    const s = svc();
+    await cmd.ingredientAdd(s, { id: "ing-cc", name: "cc", macrosPer100g: { calories: 233, protein: 6, carbs: 8, fat: 19, fiber: 0 } });
+    const { version: frost } = await cmd.create(s, {
+      name: "Frosting", yield: { amount: 1, unit: "batch" },
+      content: {
+        steps: [{ componentKey: "beat", order: 1, instructionText: "Beat" }],
+        slots: [{ componentKey: "cc", name: "cc", resolution: { kind: "raw", libraryIngredientId: "ing-cc" } }],
+        usages: [{ componentKey: "ucc", stepKey: "beat", slotKey: "cc", quantityValue: 100, quantityUnit: "g" }],
+      },
+    });
+    const { version: cookie } = await cmd.create(s, {
+      name: "Cookie", yield: { amount: 4, unit: "cookies" },
+      content: {
+        steps: [{ componentKey: "frost", order: 1, instructionText: "Frost" }],
+        slots: [{ componentKey: "frosting", name: "frosting", resolution: { kind: "sub_recipe", subRecipeVersionId: frost.id } }],
+        usages: [{ componentKey: "uf", stepKey: "frost", slotKey: "frosting", quantityValue: 1, quantityUnit: "batch" }],
+      },
+    });
+
+    const flat = await cmd.show(s, cookie.id);
+    expect(flat.content.slots.some((sl) => sl.resolution.kind === "sub_recipe")).toBe(false);
+    expect(flat.content.usages.find((u) => u.slotKey === "frosting/cc")?.quantityValue).toBe(100);
+    expect(flat.sources?.[0]?.recipeName).toBe("Frosting");
+
+    const struct = await cmd.show(s, cookie.id, { structure: true });
+    expect(struct.content.slots.some((sl) => sl.resolution.kind === "sub_recipe")).toBe(true);
+    expect(struct.sources).toBeUndefined();
+  });
 });
