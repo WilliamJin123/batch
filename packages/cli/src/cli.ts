@@ -115,6 +115,10 @@ export async function run(argv: string[]): Promise<void> {
     .description("list all versions with their derivation/history edges")
     .action(async () => out(await cmd.tree(makeService())));
 
+  program.command("compare <versions...>")
+    .description("align ≥2 versions side by side: ingredient matrix (by ingredient id) + macros + verdicts")
+    .action(async (versions) => out(await cmd.compare(makeService(), versions)));
+
   const ingredient = program.command("ingredient").description("manage library ingredients (macros + densities)");
   ingredient.command("add")
     .description("add/update a library ingredient from JSON ({name,macrosPer100g,densityGPerMl?,unitEquivalences?,...}) on stdin or --file")

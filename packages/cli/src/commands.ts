@@ -1,6 +1,6 @@
 import { scale as scaleContent, currentVerdicts } from "@batch/core";
 import type {
-  Author, CurrentVerdicts, FeedbackEntry, FeedbackKind, FlattenSource, LibraryIngredient, Macros,
+  Author, CompareView, CurrentVerdicts, FeedbackEntry, FeedbackKind, FlattenSource, LibraryIngredient, Macros,
   MacroSnapshot, OverrideEntry, Rating, Recipe, RecipeContent, RecipeService, RecipeVersion,
   VersionStatus, Yield,
 } from "@batch/core";
@@ -139,6 +139,10 @@ export async function tree(svc: RecipeService): Promise<TreeNode[]> {
     derivesFromVersionId: v.derivesFromVersionId, prevVersionId: v.prevVersionId,
     ...(v.parentVersionIds ? { parentVersionIds: v.parentVersionIds } : {}),
   }));
+}
+
+export function compare(svc: RecipeService, versionIds: string[]): Promise<CompareView> {
+  return svc.compare(versionIds);
 }
 
 // --- feedback (tasting log) ---

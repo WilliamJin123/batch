@@ -172,4 +172,15 @@ describe("commands", () => {
     const node = (await cmd.tree(s)).find((n) => n.versionId === champ.version.id);
     expect(node?.parentVersionIds).toEqual([a.version.id, b.version.id]);
   });
+
+  it("compare aligns two recipes by ingredient (CM-3)", async () => {
+    const s = svc();
+    await cmd.ingredientAdd(s, { id: "ing-sugar", name: "Sugar", macrosPer100g: { calories: 400, protein: 0, carbs: 100, fat: 0, fiber: 0 } });
+    const a = await cmd.create(s, { name: "A", yield: { amount: 1, unit: "x" }, content: content() });
+    const b = await cmd.create(s, { name: "B", yield: { amount: 1, unit: "x" }, content: content() });
+    const view = await cmd.compare(s, [a.version.id, b.version.id]);
+    expect(view.columns).toHaveLength(2);
+    const sugar = view.ingredients.find((r) => r.ingredientId === "ing-sugar")!;
+    expect(sugar.perServingGrams[a.version.id]).toBe(200); // content() uses 200g sugar, yield amount 1
+  });
 });
