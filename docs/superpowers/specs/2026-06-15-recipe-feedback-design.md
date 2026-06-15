@@ -160,11 +160,13 @@ ingredient methods: `saveFeedback`, `getFeedback`, `listFeedback`, `deleteFeedba
 **Tiebreak rule (pure, deterministic).** "Most recent" sorts by `date` desc, then `createdAt` desc —
 so two entries dated the same day resolve by write order, never ambiguously.
 
-**CLI (`cli.ts`, `commands.ts`).**
-- `batch feedback <versionId> --made [--rating bad|okay|good|excellent] [-m "notes"]
+**CLI (`cli.ts`, `commands.ts`).** *(Shipped as a `feedback` verb group with subcommands — a refinement
+over the flag-on-one-command sketch below; the `add`/`list`/`rm` forms are the implemented surface.)*
+- `batch feedback add <versionId> --made [--rating bad|okay|good|excellent] [-m "notes"]
   [--component <key>] [--date YYYY-MM-DD]` — append a `made` entry.
-- `batch feedback <versionId> --to-make [-m "why"] [--date YYYY-MM-DD]` — append intent.
-- `batch feedback <versionId> --list` — the log for that recipe: the current dish verdict, current
+- `batch feedback add <versionId> --to-make [-m "why"] [--date YYYY-MM-DD]` — append intent.
+  (`add` requires exactly one of `--made` / `--to-make`; `--rating` only applies to `--made`.)
+- `batch feedback list <versionId>` — the log for that recipe: the current dish verdict, current
   per-component verdicts, then full history (superseded entries dimmed).
 - `batch feedback rm <id>` — hard delete (DF-5).
 - `batch list` — a marker per recipe from `feedbackSummary()`: `★` excellent · `good` · `okay` ·

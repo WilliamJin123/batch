@@ -33,7 +33,7 @@ A recipe's `content` has three arrays joined by `componentKey` (stable, human-re
 - `./batch resolve <versionId>` — just the resolved content.
 - `./batch scale <versionId> --to <amount>` — content with quantities scaled to a target yield amount (units preserved; step times intentionally NOT scaled).
 - `./batch history <versionId>` — versions newest-first along the history edge.
-- `./batch list` — all recipes by head version (`name, status, tags, isVariant`, plus `kcalPerServing` / `macroBasis`).
+- `./batch list` — all recipes by head version (`name, status, tags, isVariant`, plus `kcalPerServing` / `macroBasis`, plus `tried` / `queued` / `verdict` from the tasting log). `--to-make` filters to the queued (untried) recipes.
 - `./batch tree` — all versions with `derivesFromVersionId` / `prevVersionId` edges (build the forest of bases → variants).
 - `./batch ingredient add` — reads a **library ingredient** JSON from stdin (`{ name, macrosPer100g, densityGPerMl?, unitEquivalences?, id? }`); `id` defaults to a slug of the name. Adds/updates the (mutable) library.
 - `./batch ingredient list` — list the library.
