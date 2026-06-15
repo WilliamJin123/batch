@@ -323,3 +323,33 @@ describe("addFeedback / deleteFeedback", () => {
     expect(await svc.feedbackForVersion(version.id)).toEqual([]);
   });
 });
+
+describe("feedbackSummary rollup", () => {
+  it("rolls up per recipe; derivation isolates tried (distinct recipeId)", async () => {
+    const svc = makeService();
+    const { recipe: rBase, version: base } = await svc.createRecipe({
+      name: "Base", yield: { amount: 1, unit: "x" }, content: content(),
+    });
+    const { recipe: rVar } = await svc.deriveVariant({ baseVersionId: base.id, name: "Variant" });
+    await svc.addFeedback({ versionId: base.id, kind: "made", rating: "good" });
+    const summary = await svc.feedbackSummary();
+    expect(summary[rBase.id]).toEqual({ tried: true, queued: false, verdict: "good" });
+    expect(summary[rVar.id]).toBeUndefined(); // variant untouched
+  });
+  it("in-place override keeps the recipe tried (same recipeId)", async () => {
+    const svc = makeService();
+    const { recipe, version } = await svc.createRecipe({
+      name: "Base", yield: { amount: 1, unit: "x" }, content: content(),
+    });
+    await svc.addFeedback({ versionId: version.id, kind: "made", rating: "good" });
+    const { version: v2 } = await svc.applyOverride({
+      versionId: version.id,
+      entry: {
+        op: "replace", kind: "usage", target: "u1",
+        payload: { componentKey: "u1", stepKey: "s1", slotKey: "sugar", quantityValue: 100, quantityUnit: "g" },
+      },
+    });
+    expect(v2.recipeId).toBe(recipe.id);
+    expect((await svc.feedbackSummary())[recipe.id]?.tried).toBe(true);
+  });
+});
