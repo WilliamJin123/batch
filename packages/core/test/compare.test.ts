@@ -67,6 +67,24 @@ describe("buildCompareView", () => {
     expect(view.ingredients[0]?.perServingGrams.v).toBe(50); // (100+100)/4
   });
 
+  it("mixed convertible + unconvertible usages of one ingredient is \"present\", not a partial sum", () => {
+    // 100 g converts; "1 pinch" does not (unknown unit, no equivalence) — we must not
+    // silently emit round2(100/yield) and drop the pinch. Conservative: show "present".
+    const content: RecipeContent = {
+      steps: [{ componentKey: "s1", order: 1, instructionText: "x" }],
+      slots: [{ componentKey: "sl", name: "salt", resolution: { kind: "raw", libraryIngredientId: "ing-salt" } }],
+      usages: [
+        { componentKey: "u1", stepKey: "s1", slotKey: "sl", quantityValue: 100, quantityUnit: "g" },
+        { componentKey: "u2", stepKey: "s1", slotKey: "sl", quantityValue: 1, quantityUnit: "pinch" },
+      ],
+    };
+    const view = buildCompareView(
+      [input({ versionId: "v", content })],
+      new Map([["ing-salt", ing("ing-salt", "Salt")]]), // no unitEquivalences for "pinch"
+    );
+    expect(view.ingredients[0]?.perServingGrams.v).toBe("present");
+  });
+
   it("columns carry dish + component verdicts, steps are per-version", () => {
     const fb = [
       { kind: "made" as const, id: "f1", recipeId: "r-vA", versionId: "vA", rating: "excellent" as const,
