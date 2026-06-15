@@ -117,6 +117,24 @@ export interface MacroSnapshot {
   lines: MacroLine[];
 }
 
+/**
+ * A pinned child sub-recipe's frozen macro view (M3), built by the service from the
+ * child version's snapshot and handed to `computeMacros` / `flattenContent`.
+ */
+export interface SubRecipeMacro {
+  total: Macros;
+  yield: Yield;
+  totalGrams: number;
+  basis: "complete" | "partial";
+}
+
+/** Provenance + staleness for one sub-recipe spliced into a flattened recipe (M3). */
+export interface FlattenSource {
+  versionId: VersionId;
+  recipeName: string;
+  behind: number;
+}
+
 export interface RecipeVersion {
   id: VersionId;
   recipeId: RecipeId;
