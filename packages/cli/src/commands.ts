@@ -106,18 +106,24 @@ export interface ListRow {
   recipeId: string; headVersionId: string; name: string;
   status: VersionStatus; tags: string[]; isVariant: boolean;
   kcalPerServing?: number; macroBasis?: "complete" | "partial";
+  tried: boolean; queued: boolean; verdict?: Rating;
 }
-export async function list(svc: RecipeService): Promise<ListRow[]> {
+export interface ListOpts { toMake?: boolean }
+export async function list(svc: RecipeService, opts: ListOpts = {}): Promise<ListRow[]> {
   const recipes = await svc.listRecipes();
+  const summary = await svc.feedbackSummary();
   const rows = await Promise.all(recipes.map(async (r): Promise<ListRow> => {
     const v = await svc.getVersion(r.headVersionId);
+    const fb = summary[r.id] ?? { tried: false, queued: false };
     return {
       recipeId: r.id, headVersionId: v.id, name: v.name,
       status: v.status, tags: v.tags, isVariant: v.derivesFromVersionId !== undefined,
       kcalPerServing: v.macros?.perServing.calories, macroBasis: v.macros?.basis,
+      tried: fb.tried, queued: fb.queued, ...(fb.verdict ? { verdict: fb.verdict } : {}),
     };
   }));
-  return rows.sort((a, b) => a.name.localeCompare(b.name));
+  const filtered = opts.toMake ? rows.filter((row) => row.queued) : rows;
+  return filtered.sort((a, b) => a.name.localeCompare(b.name));
 }
 
 export interface TreeNode {

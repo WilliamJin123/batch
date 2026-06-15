@@ -141,4 +141,21 @@ describe("commands", () => {
     await cmd.feedbackRemove(s, fb.id);
     expect((await cmd.feedbackList(s, version.id)).history).toEqual([]);
   });
+
+  it("list carries feedback markers and --to-make filters to the queue", async () => {
+    const s = svc();
+    const { version: a } = await cmd.create(s, { name: "Made-Good", yield: { amount: 1, unit: "x" }, content: content() });
+    const { version: b } = await cmd.create(s, { name: "Wishlist", yield: { amount: 1, unit: "x" }, content: content() });
+    await cmd.create(s, { name: "Untouched", yield: { amount: 1, unit: "x" }, content: content() });
+    await cmd.feedback(s, { versionId: a.id, kind: "made", rating: "good" });
+    await cmd.feedback(s, { versionId: b.id, kind: "to-make" });
+
+    const all = await cmd.list(s);
+    expect(all.find((r) => r.name === "Made-Good")).toMatchObject({ tried: true, queued: false, verdict: "good" });
+    expect(all.find((r) => r.name === "Wishlist")).toMatchObject({ tried: false, queued: true });
+    expect(all.find((r) => r.name === "Untouched")).toMatchObject({ tried: false, queued: false });
+
+    const queue = await cmd.list(s, { toMake: true });
+    expect(queue.map((r) => r.name)).toEqual(["Wishlist"]);
+  });
 });
