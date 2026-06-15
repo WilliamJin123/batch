@@ -518,6 +518,7 @@ describe("service.rebaseVariants (CM-8)", () => {
       expect(r.version.derivesFromVersionId).toBe(base2.version.id);
       expect(r.version.content.usages[0]?.quantityValue).toBe(70); // propagated to each
       expect(r.conflicts).toEqual([]);
+      expect((await s.getRecipe(r.recipeId)).headVersionId).toBe(r.version.id); // each variant head advanced
     }
     expect(results.map((r) => r.recipeId).sort()).toEqual([va.recipe.id, vb.recipe.id].sort());
   });

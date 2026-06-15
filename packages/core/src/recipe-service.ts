@@ -17,6 +17,7 @@ function sumLineGrams(lines: MacroLine[]): number {
 }
 
 export interface RebaseResult { version: RecipeVersion; conflicts: RebaseConflict[]; }
+export interface RebaseVariantItem extends RebaseResult { recipeId: RecipeId; }
 
 export class RecipeService {
   constructor(private repo: Repository, private deps: Deps) {}
@@ -383,11 +384,11 @@ export class RecipeService {
   /** Rebase every variant of a base recipe onto that base's head (CM-8) — the easy-propagate path. */
   async rebaseVariants(input: {
     baseVersionId: VersionId; author?: Author; commitMessage?: string;
-  }): Promise<{ results: Array<{ recipeId: RecipeId; version: RecipeVersion; conflicts: RebaseConflict[] }> }> {
+  }): Promise<{ results: RebaseVariantItem[] }> {
     const base = await this.getVersion(input.baseVersionId);
     const baseRecipe = await this.getRecipe(base.recipeId);
     const ontoId = baseRecipe.headVersionId;
-    const results: Array<{ recipeId: RecipeId; version: RecipeVersion; conflicts: RebaseConflict[] }> = [];
+    const results: RebaseVariantItem[] = [];
     for (const r of await this.repo.listRecipes()) {
       if (r.id === base.recipeId) continue;
       const head = await this.repo.getVersion(r.headVersionId);
