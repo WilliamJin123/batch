@@ -10,10 +10,13 @@ import { computeMacros } from "./compute-macros.js";
 import { flattenContent, type SubContent } from "./flatten.js";
 import { buildCompareView, type CompareInput, type CompareView } from "./compare.js";
 import { summarizeFeedback, latestFirst, type RecipeFeedbackSummary } from "./feedback.js";
+import { buildRebasePlan, type RebaseConflict } from "./rebase.js";
 
 function sumLineGrams(lines: MacroLine[]): number {
   return lines.reduce((g, l) => g + (l.grams ?? 0), 0);
 }
+
+export interface RebaseResult { version: RecipeVersion; conflicts: RebaseConflict[]; }
 
 export class RecipeService {
   constructor(private repo: Repository, private deps: Deps) {}
@@ -330,6 +333,45 @@ export class RecipeService {
       });
     }
     return buildCompareView(inputs, ingredients);
+  }
+
+  /** Re-point a variant onto an improved version of its own base (CM-5). Variant-wins + conflicts[]. */
+  async rebase(input: {
+    variantVersionId: VersionId; ontoVersionId: VersionId; author?: Author; commitMessage?: string;
+  }): Promise<RebaseResult> {
+    const variant = await this.getVersion(input.variantVersionId);
+    if (!variant.derivesFromVersionId || !variant.overrideSet) {
+      throw new Error(`${input.variantVersionId} is not a variant; nothing to rebase`);
+    }
+    const baseOld = await this.getVersion(variant.derivesFromVersionId);
+    const onto = await this.getVersion(input.ontoVersionId);
+    if (onto.recipeId !== baseOld.recipeId) {
+      throw new Error(
+        `cannot rebase across lineages: ${input.ontoVersionId} is not a version of base recipe ` +
+        `${baseOld.recipeId} — use compare + derive + override to converge unrelated recipes`);
+    }
+    const plan = buildRebasePlan(baseOld.content, onto.content, variant.overrideSet);
+    const content = materialize(onto.content, plan.overrideSet);
+    for (const slot of content.slots) {
+      if (slot.resolution.kind === "sub_recipe") await this.assertAcyclic(variant.recipeId, slot.resolution.subRecipeVersionId);
+    }
+    const macros = await this.macrosFor(content, variant.yield);
+    const version: RecipeVersion = {
+      ...variant,
+      id: this.deps.newId(),
+      prevVersionId: variant.id,
+      derivesFromVersionId: onto.id,
+      overrideSet: plan.overrideSet,
+      content,
+      macros,
+      author: input.author ?? variant.author,
+      commitMessage: input.commitMessage ?? `rebase onto ${onto.id}`,
+      status: "draft",
+      createdAt: this.deps.now(),
+    };
+    await this.repo.saveVersion(version);
+    await this.repo.setHead(version.recipeId, version.id);
+    return { version, conflicts: plan.conflicts };
   }
 
   /**

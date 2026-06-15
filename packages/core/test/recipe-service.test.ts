@@ -419,3 +419,62 @@ describe("service.compare (CM-3)", () => {
     await expect(s.compare([a.version.id, "nope"])).rejects.toThrow("version not found: nope");
   });
 });
+
+describe("service.rebase (CM-5/CM-6)", () => {
+  function twoSlot(sugar: number): RecipeContent {
+    return {
+      steps: [{ componentKey: "s1", order: 1, instructionText: "bake" }],
+      slots: [{ componentKey: "sl-sugar", name: "sugar", resolution: { kind: "raw", libraryIngredientId: "ing-sugar" } }],
+      usages: [{ componentKey: "u-sugar", stepKey: "s1", slotKey: "sl-sugar", quantityValue: sugar, quantityUnit: "g" }],
+    };
+  }
+
+  it("propagates a clean base improvement into the variant and re-points the lineage", async () => {
+    const s = makeService();
+    const base = await s.createRecipe({ name: "Base", yield: { amount: 1, unit: "x" }, content: twoSlot(100) });
+    const variant = await s.deriveVariant({ baseVersionId: base.version.id, name: "V" });
+    // variant tweaks the step only
+    await s.applyOverride({ versionId: variant.version.id, entry: { op: "replace", kind: "step", target: "s1",
+      payload: { componentKey: "s1", order: 1, instructionText: "bake longer" } } });
+    const variantHead = (await s.getRecipe(variant.recipe.id)).headVersionId;
+    // base cuts sugar 100→80
+    const base2 = await s.applyOverride({ versionId: base.version.id, entry: { op: "replace", kind: "usage", target: "u-sugar",
+      payload: { componentKey: "u-sugar", stepKey: "s1", slotKey: "sl-sugar", quantityValue: 80, quantityUnit: "g" } } });
+    const { version, conflicts } = await s.rebase({ variantVersionId: variantHead, ontoVersionId: base2.version.id });
+    expect(conflicts).toEqual([]);
+    expect(version.derivesFromVersionId).toBe(base2.version.id);
+    expect(version.content.usages.find((u) => u.componentKey === "u-sugar")?.quantityValue).toBe(80); // propagated
+    expect(version.content.steps[0]?.instructionText).toBe("bake longer"); // variant kept
+    expect((await s.getRecipe(variant.recipe.id)).headVersionId).toBe(version.id); // head advanced
+  });
+
+  it("reports a conflict when base and variant both changed the same usage (variant-wins)", async () => {
+    const s = makeService();
+    const base = await s.createRecipe({ name: "Base", yield: { amount: 1, unit: "x" }, content: twoSlot(100) });
+    const variant = await s.deriveVariant({ baseVersionId: base.version.id, name: "V" });
+    const v2 = await s.applyOverride({ versionId: variant.version.id, entry: { op: "replace", kind: "usage", target: "u-sugar",
+      payload: { componentKey: "u-sugar", stepKey: "s1", slotKey: "sl-sugar", quantityValue: 120, quantityUnit: "g" } } });
+    const base2 = await s.applyOverride({ versionId: base.version.id, entry: { op: "replace", kind: "usage", target: "u-sugar",
+      payload: { componentKey: "u-sugar", stepKey: "s1", slotKey: "sl-sugar", quantityValue: 80, quantityUnit: "g" } } });
+    const { version, conflicts } = await s.rebase({ variantVersionId: v2.version.id, ontoVersionId: base2.version.id });
+    expect(version.content.usages.find((u) => u.componentKey === "u-sugar")?.quantityValue).toBe(120); // variant-wins
+    expect(conflicts).toHaveLength(1);
+    expect(conflicts[0]?.componentKey).toBe("u-sugar");
+  });
+
+  it("rejects rebasing a root (not a variant)", async () => {
+    const s = makeService();
+    const base = await s.createRecipe({ name: "Base", yield: { amount: 1, unit: "x" }, content: twoSlot(100) });
+    await expect(s.rebase({ variantVersionId: base.version.id, ontoVersionId: base.version.id }))
+      .rejects.toThrow("not a variant");
+  });
+
+  it("rejects a cross-lineage onto target (CM-6)", async () => {
+    const s = makeService();
+    const base = await s.createRecipe({ name: "Base", yield: { amount: 1, unit: "x" }, content: twoSlot(100) });
+    const other = await s.createRecipe({ name: "Other", yield: { amount: 1, unit: "x" }, content: twoSlot(100) });
+    const variant = await s.deriveVariant({ baseVersionId: base.version.id, name: "V" });
+    await expect(s.rebase({ variantVersionId: variant.version.id, ontoVersionId: other.version.id }))
+      .rejects.toThrow("across lineages");
+  });
+});
