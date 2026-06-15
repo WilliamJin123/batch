@@ -308,6 +308,7 @@ export class RecipeService {
   async compare(versionIds: VersionId[]): Promise<CompareView> {
     if (versionIds.length < 2) throw new Error("compare needs at least two versions");
     const ingredients = new Map<string, LibraryIngredient>();
+    const allFeedback = await this.repo.listFeedback(); // fetch once, filter per version (avoid N full scans)
     const inputs: CompareInput[] = [];
     for (const id of versionIds) {
       const v = await this.getVersion(id); // throws on unknown id
@@ -325,7 +326,7 @@ export class RecipeService {
         perServing: v.macros?.perServing ?? { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 },
         macroBasis: v.macros?.basis ?? "partial",
         content,
-        feedback: await this.feedbackForRecipe(v.recipeId),
+        feedback: latestFirst(allFeedback.filter((e) => e.recipeId === v.recipeId)),
       });
     }
     return buildCompareView(inputs, ingredients);
