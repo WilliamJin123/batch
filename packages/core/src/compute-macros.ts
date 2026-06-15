@@ -52,6 +52,7 @@ export function computeMacros(
       if (!sub) { fail(`sub-recipe ${slot.resolution.subRecipeVersionId} not loaded`, { ingredientName: slot.name }); continue; }
       const fr = subRecipeFraction(usage, sub);
       if ("reason" in fr) { fail(fr.reason, { ingredientName: slot.name }); continue; }
+      // Frozen snapshot — scale the child's already-computed total; the child is NOT recomputed here (DM3-1).
       const macros = mapMacros(sub.total, (n) => n * fr.fraction);
       total = zipMacros(total, macros, (x, y) => x + y);
       lines.push({

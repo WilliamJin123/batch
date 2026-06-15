@@ -88,6 +88,22 @@ describe("computeMacros", () => {
     expect(snap.basis).toBe("partial");           // child was partial → parent partial
   });
 
+  it("flags a sub-recipe usage whose unit can't be measured against the child's yield", () => {
+    const c: RecipeContent = {
+      steps: [{ componentKey: "s1", order: 1, instructionText: "frost" }],
+      slots: [{ componentKey: "frosting", name: "frosting", resolution: { kind: "sub_recipe", subRecipeVersionId: "v-frost" } }],
+      usages: [{ componentKey: "u1", stepKey: "s1", slotKey: "frosting", quantityValue: 2, quantityUnit: "cups" }],
+    };
+    const subs = new Map<string, SubRecipeMacro>([["v-frost", {
+      total: { calories: 300, protein: 20, carbs: 10, fat: 18, fiber: 0 },
+      yield: { amount: 4, unit: "servings" }, totalGrams: 0, basis: "complete", // cups↔servings don't reconcile; no mass fallback
+    }]]);
+    const snap = computeMacros(c, { amount: 5, unit: "cookies" }, new Map(), subs);
+    expect(snap.basis).toBe("partial");
+    expect(snap.total.calories).toBe(0);          // nothing counted
+    expect(snap.lines.find((l) => l.slotKey === "frosting")?.status).toBe("unresolved");
+  });
+
   it("does not divide by a non-positive yield", () => {
     const snap = computeMacros(content(), { amount: 0, unit: "servings" }, lib(sugar, butter));
     expect(snap.perServing.calories).toBe(0);
