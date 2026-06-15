@@ -8,6 +8,7 @@ import type {
 export interface CreateInput {
   name: string; description?: string; tags?: string[];
   yield: Yield; content: RecipeContent; author?: Author; commitMessage?: string;
+  parents?: string[]; rationale?: string; // CM-7
 }
 export function create(svc: RecipeService, input: CreateInput): Promise<{ recipe: Recipe; version: RecipeVersion }> {
   return svc.createRecipe(input);
@@ -129,12 +130,14 @@ export async function list(svc: RecipeService, opts: ListOpts = {}): Promise<Lis
 export interface TreeNode {
   versionId: string; recipeId: string; name: string;
   derivesFromVersionId?: string; prevVersionId?: string;
+  parentVersionIds?: string[];
 }
 export async function tree(svc: RecipeService): Promise<TreeNode[]> {
   const versions = await svc.listVersions();
   return versions.map((v) => ({
     versionId: v.id, recipeId: v.recipeId, name: v.name,
     derivesFromVersionId: v.derivesFromVersionId, prevVersionId: v.prevVersionId,
+    ...(v.parentVersionIds ? { parentVersionIds: v.parentVersionIds } : {}),
   }));
 }
 

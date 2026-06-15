@@ -41,7 +41,14 @@ export async function run(argv: string[]): Promise<void> {
   program.command("create")
     .description("create a recipe from JSON ({name,yield,content,...}) on stdin or --file")
     .option("-f, --file <path>", "read input JSON from a file instead of stdin")
-    .action(async (opts) => out(await cmd.create(makeService(), await readJson(opts.file))));
+    .option("--parents <csv>", "comma-separated source version ids this recipe was amalgamated from (CM-7)")
+    .option("--rationale <text>", "why these sources were blended into this champion")
+    .action(async (opts) => {
+      const input = await readJson(opts.file);
+      if (opts.parents) input.parents = String(opts.parents).split(",").map((p: string) => p.trim()).filter(Boolean);
+      if (opts.rationale) input.rationale = opts.rationale;
+      out(await cmd.create(makeService(), input));
+    });
 
   program.command("derive <baseVersionId>")
     .description("fork a variant off a base version")

@@ -158,4 +158,18 @@ describe("commands", () => {
     const queue = await cmd.list(s, { toMake: true });
     expect(queue.map((r) => r.name)).toEqual(["Wishlist"]);
   });
+
+  it("create records provenance and tree surfaces parent edges (CM-7)", async () => {
+    const s = svc();
+    const a = await cmd.create(s, { name: "A", yield: { amount: 1, unit: "x" }, content: content() });
+    const b = await cmd.create(s, { name: "B", yield: { amount: 1, unit: "x" }, content: content() });
+    const champ = await cmd.create(s, {
+      name: "Champion", yield: { amount: 1, unit: "x" }, content: content(),
+      parents: [a.version.id, b.version.id], rationale: "blend",
+    });
+    expect(champ.version.parentVersionIds).toEqual([a.version.id, b.version.id]);
+    expect(champ.version.provenanceNote).toBe("blend");
+    const node = (await cmd.tree(s)).find((n) => n.versionId === champ.version.id);
+    expect(node?.parentVersionIds).toEqual([a.version.id, b.version.id]);
+  });
 });
