@@ -30,6 +30,7 @@ describe("InMemoryRepository", () => {
 import { RecipeService } from "../src/recipe-service.js";
 import { testDeps } from "../src/deps.js";
 import type { RecipeContent } from "../src/types.js";
+import { computeMacros } from "../src/compute-macros.js";
 
 function content(): RecipeContent {
   return {
@@ -193,5 +194,79 @@ describe("macros", () => {
     expect(v1.macros?.basis).toBe("complete");
     const { version: same } = await svc.recomputeMacros({ versionId: v1.id });
     expect(same.id).toBe(v1.id);
+  });
+});
+
+describe("composition (M3)", () => {
+  const flour = { id: "ing-flour", name: "flour", macrosPer100g: { calories: 364, protein: 10, carbs: 76, fat: 1, fiber: 2.7 } };
+  const cream = { id: "ing-cream", name: "cream cheese", macrosPer100g: { calories: 233, protein: 6, carbs: 8, fat: 19, fiber: 0 } };
+
+  function frostingContent(): RecipeContent {
+    return {
+      steps: [{ componentKey: "beat", order: 1, instructionText: "Beat smooth" }],
+      slots: [{ componentKey: "cc", name: "cream cheese", resolution: { kind: "raw", libraryIngredientId: "ing-cream" } }],
+      usages: [{ componentKey: "u-cc", stepKey: "beat", slotKey: "cc", quantityValue: 100, quantityUnit: "g" }],
+    };
+  }
+  function cookieContent(frostKey: string): RecipeContent {
+    return {
+      steps: [
+        { componentKey: "mix", order: 1, instructionText: "Mix" },
+        { componentKey: "frost", order: 2, instructionText: "Frost" },
+      ],
+      slots: [
+        { componentKey: "flour", name: "flour", resolution: { kind: "raw", libraryIngredientId: "ing-flour" } },
+        { componentKey: "frosting", name: "frosting", resolution: { kind: "sub_recipe", subRecipeVersionId: frostKey } },
+      ],
+      usages: [
+        { componentKey: "u-flour", stepKey: "mix", slotKey: "flour", quantityValue: 100, quantityUnit: "g" },
+        { componentKey: "u-frost", stepKey: "frost", slotKey: "frosting", quantityValue: 1, quantityUnit: "batch" },
+      ],
+    };
+  }
+  async function setup() {
+    const svc = makeService();
+    await svc.addIngredient(flour);
+    await svc.addIngredient(cream);
+    const { version: frost } = await svc.createRecipe({
+      name: "Cream Cheese Frosting", yield: { amount: 1, unit: "batch" }, content: frostingContent(),
+    });
+    const { version: cookie } = await svc.createRecipe({
+      name: "Cookie", yield: { amount: 5, unit: "cookies" }, content: cookieContent(frost.id),
+    });
+    return { svc, frost, cookie };
+  }
+
+  it("rolls a sub-recipe's macros up into the parent", async () => {
+    const { cookie } = await setup();
+    expect(cookie.macros?.basis).toBe("complete");
+    expect(cookie.macros?.total.calories).toBe(597); // 100 g flour (364) + 1 batch frosting (233)
+  });
+
+  it("flattens the composed recipe so the frosting reads inline, with provenance", async () => {
+    const { svc, cookie } = await setup();
+    const { content, sources } = await svc.flatten(cookie.id);
+    expect(content.slots.some((s) => s.resolution.kind === "sub_recipe")).toBe(false);
+    expect(content.usages.find((u) => u.slotKey === "frosting/cc")?.quantityValue).toBe(100);
+    expect(sources[0]?.recipeName).toBe("Cream Cheese Frosting");
+    expect(sources[0]?.behind).toBe(0);
+  });
+
+  it("macros are invariant to flattening (rollup == flattened, within rounding)", async () => {
+    const { svc, cookie } = await setup();
+    const { content } = await svc.flatten(cookie.id);
+    const flatSnap = computeMacros(content, cookie.yield, new Map([["ing-flour", flour], ["ing-cream", cream]]));
+    expect(Math.abs(flatSnap.total.calories - cookie.macros!.total.calories)).toBeLessThanOrEqual(0.01);
+  });
+
+  it("counts staleness after the child advances, and rejects a composition cycle", async () => {
+    const { svc, frost, cookie } = await setup();
+    expect(await svc.staleness(frost.id)).toBe(0);
+    await svc.editMetadata({ versionId: frost.id, patch: { name: "Cream Cheese Frosting v2" } });
+    expect(await svc.staleness(frost.id)).toBe(1);
+    await expect(svc.applyOverride({
+      versionId: frost.id,
+      entry: { op: "add", kind: "slot", payload: { componentKey: "loop", name: "loop", resolution: { kind: "sub_recipe", subRecipeVersionId: cookie.id } } },
+    })).rejects.toThrow(/cycle/);
   });
 });

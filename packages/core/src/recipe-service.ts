@@ -1,27 +1,44 @@
 import type {
-  Author, LibraryIngredient, MacroSnapshot, OverrideEntry, OverrideSet,
-  Recipe, RecipeContent, RecipeId, RecipeVersion, VersionId, VersionStatus, Yield,
+  Author, FlattenSource, LibraryIngredient, MacroLine, MacroSnapshot, OverrideEntry, OverrideSet,
+  Recipe, RecipeContent, RecipeId, RecipeVersion, SubRecipeMacro, VersionId, VersionStatus, Yield,
 } from "./types.js";
 import type { Repository } from "./repository.js";
 import type { Deps } from "./deps.js";
 import { materialize } from "./materialize.js";
 import { computeMacros } from "./compute-macros.js";
+import { flattenContent, type SubContent } from "./flatten.js";
+
+function sumLineGrams(lines: MacroLine[]): number {
+  return lines.reduce((g, l) => g + (l.grams ?? 0), 0);
+}
 
 export class RecipeService {
   constructor(private repo: Repository, private deps: Deps) {}
 
-  /** Load the library ingredients referenced by `content` and compute its macro snapshot. */
+  /** Load the library ingredients + pinned sub-recipe snapshots referenced by `content`, then compute. */
   private async macrosFor(content: RecipeContent, yieldSpec: Yield): Promise<MacroSnapshot> {
     const ids = new Set<string>();
+    const subIds = new Set<string>();
     for (const slot of content.slots) {
       if (slot.resolution.kind === "raw") ids.add(slot.resolution.libraryIngredientId);
+      else if (slot.resolution.kind === "sub_recipe") subIds.add(slot.resolution.subRecipeVersionId);
     }
     const ingredients = new Map<string, LibraryIngredient>();
     for (const id of ids) {
       const ing = await this.repo.getIngredient(id);
       if (ing) ingredients.set(id, ing);
     }
-    return computeMacros(content, yieldSpec, ingredients);
+    const subRecipes = new Map<string, SubRecipeMacro>();
+    for (const id of subIds) {
+      const v = await this.repo.getVersion(id);
+      if (v?.macros) {
+        subRecipes.set(id, {
+          total: v.macros.total, yield: v.macros.yield,
+          totalGrams: sumLineGrams(v.macros.lines), basis: v.macros.basis,
+        });
+      }
+    }
+    return computeMacros(content, yieldSpec, ingredients, subRecipes);
   }
 
   async getVersion(id: VersionId): Promise<RecipeVersion> {
@@ -114,6 +131,10 @@ export class RecipeService {
     commitMessage?: string;
   }): Promise<{ version: RecipeVersion }> {
     const current = await this.getVersion(input.versionId);
+    if ((input.entry.op === "add" || input.entry.op === "replace") && input.entry.kind === "slot") {
+      const res = input.entry.payload.resolution;
+      if (res.kind === "sub_recipe") await this.assertAcyclic(current.recipeId, res.subRecipeVersionId);
+    }
     let overrideSet: OverrideSet | undefined;
     let content: RecipeContent;
     if (current.overrideSet && current.derivesFromVersionId) {
@@ -248,5 +269,67 @@ export class RecipeService {
     await this.repo.saveVersion(version);
     await this.repo.setHead(version.recipeId, version.id);
     return { version };
+  }
+
+  /** Expand a composed recipe into one flat card (DM3-3) — derived, never stored. */
+  async flatten(versionId: VersionId): Promise<{ content: RecipeContent; sources: FlattenSource[] }> {
+    const v = await this.getVersion(versionId);
+    const subContents = new Map<string, SubContent>();
+    const sources: FlattenSource[] = [];
+    await this.gatherSubContents(v.content, subContents, sources);
+    return { content: flattenContent(v.content, subContents), sources };
+  }
+
+  private async gatherSubContents(
+    content: RecipeContent, subContents: Map<string, SubContent>, sources: FlattenSource[],
+  ): Promise<void> {
+    for (const slot of content.slots) {
+      if (slot.resolution.kind !== "sub_recipe") continue;
+      const id = slot.resolution.subRecipeVersionId;
+      if (subContents.has(id)) continue;
+      const child = await this.repo.getVersion(id);
+      if (!child) continue;
+      const totalGrams = child.macros ? sumLineGrams(child.macros.lines) : 0;
+      subContents.set(id, { content: child.content, yield: child.yield, totalGrams, name: child.name });
+      sources.push({ versionId: id, recipeName: child.name, behind: await this.staleness(id) });
+      await this.gatherSubContents(child.content, subContents, sources);
+    }
+  }
+
+  /** How many versions the pinned recipe's head is ahead of this pin (UC12; 0 = current). */
+  async staleness(pinVersionId: VersionId): Promise<number> {
+    const pin = await this.repo.getVersion(pinVersionId);
+    if (!pin) return 0;
+    const recipe = await this.repo.getRecipe(pin.recipeId);
+    if (!recipe) return 0;
+    let cursor: VersionId | undefined = recipe.headVersionId;
+    let n = 0;
+    while (cursor) {
+      if (cursor === pinVersionId) return n;
+      const v: RecipeVersion | undefined = await this.repo.getVersion(cursor);
+      if (!v) break;
+      cursor = v.prevVersionId;
+      n++;
+    }
+    return n;
+  }
+
+  /** Reject composing `targetSubVersionId` if its sub-recipe closure reaches `thisRecipeId` (UC15). */
+  private async assertAcyclic(thisRecipeId: RecipeId, targetSubVersionId: VersionId): Promise<void> {
+    const seen = new Set<VersionId>();
+    const stack: VersionId[] = [targetSubVersionId];
+    while (stack.length) {
+      const id = stack.pop()!;
+      if (seen.has(id)) continue;
+      seen.add(id);
+      const v = await this.repo.getVersion(id);
+      if (!v) continue;
+      if (v.recipeId === thisRecipeId) {
+        throw new Error(`composition cycle: sub-recipe ${targetSubVersionId} already depends on recipe ${thisRecipeId}`);
+      }
+      for (const slot of v.content.slots) {
+        if (slot.resolution.kind === "sub_recipe") stack.push(slot.resolution.subRecipeVersionId);
+      }
+    }
   }
 }
