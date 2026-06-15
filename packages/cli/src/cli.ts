@@ -119,6 +119,18 @@ export async function run(argv: string[]): Promise<void> {
     .description("align ≥2 versions side by side: ingredient matrix (by ingredient id) + macros + verdicts")
     .action(async (versions) => out(await cmd.compare(makeService(), versions)));
 
+  program.command("rebase <versionId>")
+    .description("re-point a variant onto an improved base (--onto), or propagate a base to all its variants (--all-variants)")
+    .option("--onto <baseVersionId>", "the improved base version to rebase the variant onto")
+    .option("--all-variants", "treat <versionId> as a base and rebase all of its variants onto its head")
+    .option("-m, --message <msg>", "commit message")
+    .action(async (versionId, opts) => {
+      if (opts.allVariants && opts.onto) throw new Error("--all-variants and --onto are mutually exclusive");
+      if (opts.allVariants) { out(await cmd.rebaseAll(makeService(), versionId, opts.message)); return; }
+      if (!opts.onto) throw new Error("specify --onto <baseVersionId> or --all-variants");
+      out(await cmd.rebase(makeService(), { variantVersionId: versionId, ontoVersionId: opts.onto, message: opts.message }));
+    });
+
   const ingredient = program.command("ingredient").description("manage library ingredients (macros + densities)");
   ingredient.command("add")
     .description("add/update a library ingredient from JSON ({name,macrosPer100g,densityGPerMl?,unitEquivalences?,...}) on stdin or --file")

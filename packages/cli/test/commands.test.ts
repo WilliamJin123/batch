@@ -183,4 +183,27 @@ describe("commands", () => {
     const sugar = view.ingredients.find((r) => r.ingredientId === "ing-sugar")!;
     expect(sugar.perServingGrams[a.version.id]).toBe(200); // content() uses 200g sugar, yield amount 1
   });
+
+  it("rebase propagates a base change to a variant and reports no conflict", async () => {
+    const s = svc();
+    const base = await cmd.create(s, { name: "Base", yield: { amount: 1, unit: "x" }, content: content() });
+    const variant = await cmd.derive(s, { baseVersionId: base.version.id, name: "V" });
+    const base2 = await cmd.override(s, { versionId: base.version.id, entry: { op: "replace", kind: "usage", target: "u1",
+      payload: { componentKey: "u1", stepKey: "s1", slotKey: "sugar", quantityValue: 120, quantityUnit: "g" } } });
+    const { version, conflicts } = await cmd.rebase(s, { variantVersionId: variant.version.id, ontoVersionId: base2.version.id });
+    expect(conflicts).toEqual([]);
+    expect(version.content.usages[0]?.quantityValue).toBe(120);
+  });
+
+  it("rebaseAll rebases all variants of a base", async () => {
+    const s = svc();
+    const base = await cmd.create(s, { name: "Base", yield: { amount: 1, unit: "x" }, content: content() });
+    await cmd.derive(s, { baseVersionId: base.version.id, name: "VA" });
+    await cmd.derive(s, { baseVersionId: base.version.id, name: "VB" });
+    const base2 = await cmd.override(s, { versionId: base.version.id, entry: { op: "replace", kind: "usage", target: "u1",
+      payload: { componentKey: "u1", stepKey: "s1", slotKey: "sugar", quantityValue: 90, quantityUnit: "g" } } });
+    const { results } = await cmd.rebaseAll(s, base2.version.id);
+    expect(results).toHaveLength(2);
+    expect(results.every((r) => r.version.content.usages[0]?.quantityValue === 90)).toBe(true);
+  });
 });

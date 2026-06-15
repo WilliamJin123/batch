@@ -1,8 +1,8 @@
 import { scale as scaleContent, currentVerdicts } from "@batch/core";
 import type {
   Author, CompareView, CurrentVerdicts, FeedbackEntry, FeedbackKind, FlattenSource, LibraryIngredient, Macros,
-  MacroSnapshot, OverrideEntry, Rating, Recipe, RecipeContent, RecipeService, RecipeVersion,
-  VersionStatus, Yield,
+  MacroSnapshot, OverrideEntry, Rating, RebaseConflict, RebaseResult, Recipe, RecipeContent, RecipeService,
+  RecipeVersion, VersionStatus, Yield,
 } from "@batch/core";
 
 export interface CreateInput {
@@ -143,6 +143,18 @@ export async function tree(svc: RecipeService): Promise<TreeNode[]> {
 
 export function compare(svc: RecipeService, versionIds: string[]): Promise<CompareView> {
   return svc.compare(versionIds);
+}
+
+export function rebase(
+  svc: RecipeService, input: { variantVersionId: string; ontoVersionId: string; message?: string },
+): Promise<RebaseResult> {
+  return svc.rebase({ variantVersionId: input.variantVersionId, ontoVersionId: input.ontoVersionId, commitMessage: input.message });
+}
+
+export function rebaseAll(
+  svc: RecipeService, baseVersionId: string, message?: string,
+): Promise<{ results: Array<{ recipeId: string; version: RecipeVersion; conflicts: RebaseConflict[] }> }> {
+  return svc.rebaseVariants({ baseVersionId, commitMessage: message });
 }
 
 // --- feedback (tasting log) ---
