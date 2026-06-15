@@ -1,13 +1,14 @@
 import { promises as fs } from "node:fs";
 import { dirname } from "node:path";
 import type {
-  LibraryIngredient, Recipe, RecipeId, RecipeVersion, VersionId, Repository,
+  FeedbackEntry, LibraryIngredient, Recipe, RecipeId, RecipeVersion, VersionId, Repository,
 } from "@batch/core";
 
 interface Db {
   recipes: Record<string, Recipe>;
   versions: Record<string, RecipeVersion>;
   ingredients: Record<string, LibraryIngredient>;
+  feedback: Record<string, FeedbackEntry>;
 }
 
 export class FileRepository implements Repository {
@@ -25,10 +26,11 @@ export class FileRepository implements Repository {
         recipes: parsed.recipes ?? {},
         versions: parsed.versions ?? {},
         ingredients: parsed.ingredients ?? {},
+        feedback: parsed.feedback ?? {},
       };
     } catch (err) {
       if ((err as NodeJS.ErrnoException).code === "ENOENT") {
-        this.data = { recipes: {}, versions: {}, ingredients: {} };
+        this.data = { recipes: {}, versions: {}, ingredients: {}, feedback: {} };
       } else {
         throw err;
       }
@@ -86,5 +88,22 @@ export class FileRepository implements Repository {
   }
   async listIngredients(): Promise<LibraryIngredient[]> {
     return Object.values((await this.load()).ingredients).map((i) => structuredClone(i));
+  }
+  async saveFeedback(entry: FeedbackEntry): Promise<void> {
+    const d = await this.load();
+    d.feedback[entry.id] = structuredClone(entry);
+    await this.flush();
+  }
+  async getFeedback(id: string): Promise<FeedbackEntry | undefined> {
+    const f = (await this.load()).feedback[id];
+    return f ? structuredClone(f) : undefined;
+  }
+  async listFeedback(): Promise<FeedbackEntry[]> {
+    return Object.values((await this.load()).feedback).map((f) => structuredClone(f));
+  }
+  async deleteFeedback(id: string): Promise<void> {
+    const d = await this.load();
+    delete d.feedback[id];
+    await this.flush();
   }
 }

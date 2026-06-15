@@ -71,4 +71,23 @@ describe("FileRepository", () => {
     expect(await repo.listIngredients()).toEqual([]);
     expect(await repo.getIngredient("anything")).toBeUndefined();
   });
+
+  it("persists feedback across instances", async () => {
+    const a = new FileRepository(DB);
+    await a.saveFeedback({
+      kind: "made", id: "f1", recipeId: "r1", versionId: "v1", rating: "good",
+      date: "2026-06-01", author: "user", createdAt: "2026-06-01T00:00:00.000Z",
+    });
+    const b = new FileRepository(DB);
+    expect((await b.getFeedback("f1"))?.kind).toBe("made");
+    expect(await b.listFeedback()).toHaveLength(1);
+  });
+
+  it("loads a legacy store written before the feedback key existed", async () => {
+    await fs.mkdir(DIR, { recursive: true });
+    await fs.writeFile(DB, JSON.stringify({ recipes: {}, versions: {}, ingredients: {} }), "utf8");
+    const repo = new FileRepository(DB);
+    expect(await repo.listFeedback()).toEqual([]);
+    expect(await repo.getFeedback("anything")).toBeUndefined();
+  });
 });
