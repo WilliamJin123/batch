@@ -21,7 +21,7 @@ A recipe's `content` has three arrays joined by `componentKey` (stable, human-re
 
 ## Commands
 
-- `./batch create` — reads recipe JSON `{ name, yield, content, description?, tags? }` from **stdin**. Prints `{ recipe, version }`.
+- `./batch create` — reads recipe JSON `{ name, yield, content, description?, tags? }` from **stdin** (or `--file <path>`). Prints `{ recipe, version }`. Add `--parents <csv> --rationale "<why>"` to record that this recipe was **synthesized** from several sources (an amalgam champion) — the parent edges show in `tree`. This is metadata only; it does **not** change how the recipe materializes.
 - `./batch derive <baseVersionId> --name "<name>"` — fork a variant. Prints `{ recipe, version }`.
 - `./batch override <versionId> -m "<msg>"` — reads ONE override entry from **stdin**; applies it to a **base OR a variant**, creating a new immutable version. On a base the change is baked straight into its content (this is how you tune a base in place — cut its sugar, drop its bake temp). On a variant it's recorded as a component-level delta over the base, inheriting everything else. Entry shapes:
   - replace: `{ "op": "replace", "kind": "usage", "target": "u_sugar", "payload": { ...full StepUsage... } }` (kind ∈ step|slot|usage)
@@ -40,6 +40,8 @@ A recipe's `content` has three arrays joined by `componentKey` (stable, human-re
 - `./batch macros <versionId>` — the computed macro snapshot: `total`, `perServing`, `basis` (`complete`|`partial`), `unresolved[]`, and per-usage `lines`.
 - `./batch recompute <versionId>` — recompute macros against the **current** library → new version (author=system). Run after adding/fixing ingredients so an existing recipe picks up the numbers. Idempotent when nothing changed.
 - `./batch promote <targetVersionId> --from <sourceVersionId> --component <csv> [-m msg]` — bake winning component(s) from a source version into a target base, as new version(s) on the target. Promoting a **slot** also lifts its usages (so no ingredient is left dangling); each component becomes one override (`add` if the target lacks the key, else `replace`). Use it to graft a dialed-in ingredient from one experiment into your canonical base.
+- `./batch compare <v1> <v2> [v3…]` — align ≥2 versions side by side: an **ingredient matrix** (rows joined by library-ingredient id, cells = grams **per serving**; `null` = the version doesn't use it, `"present"` = used but no honest gram figure — unconvertible unit, unknown ingredient, or mixed units), per-serving **macros**, and the tasting **verdicts**. The read you make tuning decisions from.
+- `./batch rebase <variantVersionId> --onto <baseVersionId> [-m msg]` — re-point a variant onto an improved version of **its own base** (3-way merge). Clean base changes flow in; where base and variant both changed the same component the **variant wins**, with the collision in `conflicts[]`. `./batch rebase <baseVersionId> --all-variants` propagates a base's head to **all** its variants at once. (Cross-lineage `--onto` is rejected — that's a `compare` + `derive` job, see below.)
 - `./batch init` — print the store path (`$BATCH_DB`, else `~/.batch/db.json`).
 
 ## Macros & the ingredient library
@@ -77,6 +79,38 @@ Each entry pins to the exact version you tasted and, optionally, one component.
 Rating scale (worst→best): `bad` (major issue) · `okay` (some things need work) · `good` ·
 `excellent` (a favorite, shown ★). `list` carries `tried` / `queued` / `verdict` per recipe; an
 **experiment** is just a queued, not-yet-`made` variant — `batch list --to-make` is your queue.
+
+## Tuning across recipes — compare, promote, rebase (M4)
+
+The quality-driven loop: build a **champion base** from the *best-tasting* choices, then push it down
+to the variants. The judgment — which choice wins, when to converge vs. fork — stays in your
+conversation with the user; these commands just do the mechanical work once you've decided.
+
+- **See where recipes differ** — `batch compare <v1> <v2> [v3…]`. The ingredient matrix lines them up
+  row-by-row (joined by library-ingredient id, so the same flour compares even across separate roots),
+  with per-serving macros and the tasting verdicts beside each column. This is how you spot that, say,
+  only one of three protein cookies uses cornstarch — and that it's the one rated `excellent`.
+- **Promote the winning choice** — `batch promote <champion> --from <sourceVersion> --component <key>`.
+  The base should adopt the *best-tasting* choice at each decision point, not just the ingredients all
+  three happen to share. If cornstarch tested best in recipe A, promote `sl-cornstarch` from A into the
+  champion (the slot pulls its usage along). The champion isn't the lowest common denominator — it's
+  the assembled best-of.
+- **Push a base win down to its variants** — `batch rebase <variant> --onto <improvedBase>` re-points one
+  variant; `batch rebase <base> --all-variants` does the whole family at once. Clean base changes flow
+  in automatically. Where a variant deliberately diverged on the same component, the **variant wins** and
+  the clash is reported in `conflicts[]` — walk those with the user: adopt the base value with a quick
+  `override`, or keep the intentional fork.
+- **Record a synthesized champion's lineage** — when you build a champion by blending several recipes,
+  `batch create --file champion.json --parents <a,b,c> --rationale "cornstarch from A, zest from C"`.
+  The amalgam provenance is visible in `tree`, distinct from the single `derivesFrom` lineage a normal
+  variant carries.
+
+**Cross-recipe convergence (important):** `rebase` only merges *within one lineage* — a variant and an
+improved version of its own base, where the component keys line up. To fold an **unrelated** root into a
+champion's family there is deliberately no mechanical merge (a blind cross-root diff would just say
+"delete all of A's steps, add all of B's"). Instead: read `compare`, `derive` a fresh variant from the
+champion, and apply only the genuine differences as `override`s. The result shares the champion's
+structure, so from then on ordinary `rebase` keeps it in sync.
 
 ## Typical workflow (the user's real loop)
 
