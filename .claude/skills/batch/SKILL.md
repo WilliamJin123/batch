@@ -59,6 +59,24 @@ A slot can resolve to **another recipe version** instead of a raw ingredient —
 - **Swap it** (test a different frosting): one override — `{ "op": "replace", "kind": "slot", "target": "frosting", "payload": { ...same slot, "resolution": { "kind": "sub_recipe", "subRecipeVersionId": "<other frosting version>" } } }`. Keep a family of interchangeable sub-recipes on the **same yield unit** so the `1 batch` usage still resolves.
 - **Compose-and-verify loop**: build the shared sub-recipe as its own root → `override` the parent to remove its inline copy and add the sub_recipe slot+usage → `./batch macros <parent>` to confirm the total is preserved. A sub_recipe pin can go "N behind" its child's head; re-pointing/rebasing onto a newer child is M4 (not yet built).
 
+## Recording feedback (the tasting log)
+
+Feedback is an **append-only** log beside the recipe — it never edits a recipe or writes a version.
+Each entry pins to the exact version you tasted and, optionally, one component.
+
+- **Queue something to make:** `batch feedback add <versionId> --to-make -m "why"`
+- **Log an outcome:** `batch feedback add <versionId> --made --rating <bad|okay|good|excellent> -m "notes"`
+- **Rate a specific part:** add `--component <key>` (e.g. `--component sl-glaze`) — the dish and a
+  weak part get separate verdicts.
+- **See the log:** `batch feedback list <versionId>` → current dish verdict, current per-component
+  verdicts, then full history.
+- **Fix a mistake:** `batch feedback rm <id>` (hard delete — for a wrong-version/dup entry, NOT for
+  changing your mind; to change your mind, just `add` a newer entry — the most recent per scope wins).
+
+Rating scale (worst→best): `bad` (major issue) · `okay` (some things need work) · `good` ·
+`excellent` (a favorite, shown ★). `list` carries `tried` / `queued` / `verdict` per recipe; an
+**experiment** is just a queued, not-yet-`made` variant — `batch list --to-make` is your queue.
+
 ## Typical workflow (the user's real loop)
 
 1. The user shares an Instagram reel caption, a blog URL, or a screenshot of a recipe.
