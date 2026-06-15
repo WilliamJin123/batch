@@ -157,6 +157,16 @@ export function rebaseAll(
   return svc.rebaseVariants({ baseVersionId, commitMessage: message });
 }
 
+export function promote(
+  svc: RecipeService,
+  input: { targetVersionId: string; sourceVersionId: string; componentKeys: string[]; message?: string },
+): Promise<{ version: RecipeVersion }> {
+  return svc.promote({
+    targetVersionId: input.targetVersionId, sourceVersionId: input.sourceVersionId,
+    componentKeys: input.componentKeys, commitMessage: input.message,
+  });
+}
+
 // --- feedback (tasting log) ---
 
 export interface FeedbackInput {

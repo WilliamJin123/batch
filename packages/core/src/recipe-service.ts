@@ -1,7 +1,7 @@
 import type {
   Author, ComponentKey, FeedbackBase, FeedbackEntry, FeedbackKind, FlattenSource, LibraryIngredient,
   MacroLine, MacroSnapshot, OverrideEntry, OverrideSet, Rating, Recipe, RecipeContent, RecipeId,
-  RecipeVersion, SubRecipeMacro, VersionId, VersionStatus, Yield,
+  RecipeVersion, StepUsage, SubRecipeMacro, VersionId, VersionStatus, Yield,
 } from "./types.js";
 import type { Repository } from "./repository.js";
 import type { Deps } from "./deps.js";
@@ -402,6 +402,58 @@ export class RecipeService {
       results.push({ recipeId: r.id, version: res.version, conflicts: res.conflicts });
     }
     return { results };
+  }
+
+  /**
+   * Bake component(s) from a source version into a target (CM-4) — thin sugar over applyOverride.
+   * Promoting a slot also lifts the usages that reference it (so no ingredient is left dangling).
+   * Each lifted component is one override (add if the target lacks the key, else replace).
+   */
+  async promote(input: {
+    targetVersionId: VersionId; sourceVersionId: VersionId; componentKeys: ComponentKey[];
+    author?: Author; commitMessage?: string;
+  }): Promise<{ version: RecipeVersion }> {
+    const source = await this.getVersion(input.sourceVersionId);
+    const sc = source.content;
+    const toLift: Array<{ kind: "step" | "slot" | "usage"; key: ComponentKey }> = [];
+    const seen = new Set<string>();
+    const add = (kind: "step" | "slot" | "usage", key: ComponentKey): void => {
+      const id = `${kind}:${key}`;
+      if (!seen.has(id)) { seen.add(id); toLift.push({ kind, key }); }
+    };
+    for (const key of input.componentKeys) {
+      if (sc.steps.some((x) => x.componentKey === key)) add("step", key);
+      else if (sc.slots.some((x) => x.componentKey === key)) {
+        add("slot", key);
+        for (const u of sc.usages) if (u.slotKey === key) add("usage", u.componentKey);
+      } else if (sc.usages.some((x) => x.componentKey === key)) add("usage", key);
+      else throw new Error(`component not found in source ${input.sourceVersionId}: ${key}`);
+    }
+
+    let targetId = input.targetVersionId;
+    for (const { kind, key } of toLift) {
+      const target = await this.getVersion(targetId);
+      const payload =
+        kind === "step" ? sc.steps.find((x) => x.componentKey === key)!
+        : kind === "slot" ? sc.slots.find((x) => x.componentKey === key)!
+        : sc.usages.find((x) => x.componentKey === key)!;
+      if (kind === "usage") {
+        const stepKey = (payload as StepUsage).stepKey;
+        const present = target.content.steps.some((x) => x.componentKey === stepKey) || toLift.some((t) => t.kind === "step" && t.key === stepKey);
+        if (!present) throw new Error(`usage ${key} references step ${stepKey} missing in target ${targetId}`);
+      }
+      const arr = kind === "step" ? target.content.steps : kind === "slot" ? target.content.slots : target.content.usages;
+      const exists = arr.some((x) => x.componentKey === key);
+      const entry: OverrideEntry = exists
+        ? ({ op: "replace", kind, target: key, payload } as OverrideEntry)
+        : ({ op: "add", kind, payload } as OverrideEntry);
+      const { version } = await this.applyOverride({
+        versionId: targetId, entry, author: input.author,
+        commitMessage: input.commitMessage ?? `promote ${key} from ${input.sourceVersionId}`,
+      });
+      targetId = version.id;
+    }
+    return { version: await this.getVersion(targetId) };
   }
 
   /**

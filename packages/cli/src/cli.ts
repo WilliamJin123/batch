@@ -131,6 +131,17 @@ export async function run(argv: string[]): Promise<void> {
       out(await cmd.rebase(makeService(), { variantVersionId: versionId, ontoVersionId: opts.onto, message: opts.message }));
     });
 
+  program.command("promote <targetVersionId>")
+    .description("bake winning component(s) from a source version into a target base (a slot pulls its usages)")
+    .requiredOption("--from <sourceVersionId>", "the version to lift the winning component(s) from")
+    .requiredOption("--component <csv>", "comma-separated component keys to promote")
+    .option("-m, --message <msg>", "commit message")
+    .action(async (targetVersionId, opts) => out(await cmd.promote(makeService(), {
+      targetVersionId, sourceVersionId: opts.from,
+      componentKeys: String(opts.component).split(",").map((c: string) => c.trim()).filter(Boolean),
+      message: opts.message,
+    })));
+
   const ingredient = program.command("ingredient").description("manage library ingredients (macros + densities)");
   ingredient.command("add")
     .description("add/update a library ingredient from JSON ({name,macrosPer100g,densityGPerMl?,unitEquivalences?,...}) on stdin or --file")

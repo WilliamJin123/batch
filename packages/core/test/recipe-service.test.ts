@@ -523,3 +523,44 @@ describe("service.rebaseVariants (CM-8)", () => {
     expect(results.map((r) => r.recipeId).sort()).toEqual([va.recipe.id, vb.recipe.id].sort());
   });
 });
+
+describe("service.promote (CM-4)", () => {
+  function withCorn(): RecipeContent {
+    return {
+      steps: [{ componentKey: "s1", order: 1, instructionText: "bake" }],
+      slots: [
+        { componentKey: "sl-sugar", name: "sugar", resolution: { kind: "raw", libraryIngredientId: "ing-sugar" } },
+        { componentKey: "sl-corn", name: "corn", resolution: { kind: "raw", libraryIngredientId: "ing-corn" } },
+      ],
+      usages: [
+        { componentKey: "u-sugar", stepKey: "s1", slotKey: "sl-sugar", quantityValue: 100, quantityUnit: "g" },
+        { componentKey: "u-corn", stepKey: "s1", slotKey: "sl-corn", quantityValue: 12, quantityUnit: "g" },
+      ],
+    };
+  }
+  function noCorn(): RecipeContent {
+    return {
+      steps: [{ componentKey: "s1", order: 1, instructionText: "bake" }],
+      slots: [{ componentKey: "sl-sugar", name: "sugar", resolution: { kind: "raw", libraryIngredientId: "ing-sugar" } }],
+      usages: [{ componentKey: "u-sugar", stepKey: "s1", slotKey: "sl-sugar", quantityValue: 100, quantityUnit: "g" }],
+    };
+  }
+
+  it("lifts a slot and auto-includes its usage, baking into the target base", async () => {
+    const s = makeService();
+    const winner = await s.createRecipe({ name: "Winner", yield: { amount: 1, unit: "x" }, content: withCorn() });
+    const base = await s.createRecipe({ name: "Base", yield: { amount: 1, unit: "x" }, content: noCorn() });
+    const { version } = await s.promote({ targetVersionId: base.version.id, sourceVersionId: winner.version.id, componentKeys: ["sl-corn"] });
+    expect(version.content.slots.some((sl) => sl.componentKey === "sl-corn")).toBe(true);
+    expect(version.content.usages.find((u) => u.componentKey === "u-corn")?.quantityValue).toBe(12); // usage came along
+    expect(version.derivesFromVersionId).toBeUndefined(); // target was a root → stays a root (baked in)
+  });
+
+  it("throws on an unknown component in the source", async () => {
+    const s = makeService();
+    const winner = await s.createRecipe({ name: "Winner", yield: { amount: 1, unit: "x" }, content: withCorn() });
+    const base = await s.createRecipe({ name: "Base", yield: { amount: 1, unit: "x" }, content: noCorn() });
+    await expect(s.promote({ targetVersionId: base.version.id, sourceVersionId: winner.version.id, componentKeys: ["sl-nope"] }))
+      .rejects.toThrow("component not found");
+  });
+});

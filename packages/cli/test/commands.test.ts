@@ -206,4 +206,23 @@ describe("commands", () => {
     expect(results).toHaveLength(2);
     expect(results.every((r) => r.version.content.usages[0]?.quantityValue === 90)).toBe(true);
   });
+
+  it("promote bakes a winning ingredient from a source into a base, with its usage (CM-4)", async () => {
+    const s = svc();
+    const withCorn: RecipeContent = {
+      steps: [{ componentKey: "s1", order: 1, instructionText: "bake" }],
+      slots: [
+        { componentKey: "sugar", name: "sugar", resolution: { kind: "raw", libraryIngredientId: "ing-sugar" } },
+        { componentKey: "sl-corn", name: "corn", resolution: { kind: "raw", libraryIngredientId: "ing-corn" } },
+      ],
+      usages: [
+        { componentKey: "u1", stepKey: "s1", slotKey: "sugar", quantityValue: 200, quantityUnit: "g" },
+        { componentKey: "u-corn", stepKey: "s1", slotKey: "sl-corn", quantityValue: 12, quantityUnit: "g" },
+      ],
+    };
+    const winner = await cmd.create(s, { name: "Winner", yield: { amount: 1, unit: "x" }, content: withCorn });
+    const base = await cmd.create(s, { name: "Base", yield: { amount: 1, unit: "x" }, content: content() });
+    const { version } = await cmd.promote(s, { targetVersionId: base.version.id, sourceVersionId: winner.version.id, componentKeys: ["sl-corn"] });
+    expect(version.content.usages.find((u) => u.componentKey === "u-corn")?.quantityValue).toBe(12);
+  });
 });
