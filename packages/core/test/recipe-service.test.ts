@@ -477,4 +477,20 @@ describe("service.rebase (CM-5/CM-6)", () => {
     await expect(s.rebase({ variantVersionId: variant.version.id, ontoVersionId: other.version.id }))
       .rejects.toThrow("across lineages");
   });
+
+  it("does not inherit CM-7 amalgam provenance (parentVersionIds/provenanceNote) into the rebased version", async () => {
+    const repo = new InMemoryRepository();
+    const s = new RecipeService(repo, testDeps());
+    const base = await s.createRecipe({ name: "Base", yield: { amount: 1, unit: "x" }, content: twoSlot(100) });
+    const variant = await s.deriveVariant({ baseVersionId: base.version.id, name: "V" });
+    // Make the variant a "champion": stamp amalgam provenance onto its head version directly.
+    const champ = { ...variant.version, parentVersionIds: ["p1", "p2"], provenanceNote: "merged from p1 + p2" };
+    await repo.saveVersion(champ);
+    const base2 = await s.applyOverride({ versionId: base.version.id, entry: { op: "replace", kind: "usage", target: "u-sugar",
+      payload: { componentKey: "u-sugar", stepKey: "s1", slotKey: "sl-sugar", quantityValue: 80, quantityUnit: "g" } } });
+    const { version } = await s.rebase({ variantVersionId: champ.id, ontoVersionId: base2.version.id });
+    expect(version.parentVersionIds).toBeUndefined(); // single derivation lineage, not multi-parent
+    expect(version.provenanceNote).toBeUndefined();
+    expect(version.derivesFromVersionId).toBe(base2.version.id);
+  });
 });

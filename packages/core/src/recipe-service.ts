@@ -353,7 +353,9 @@ export class RecipeService {
     const plan = buildRebasePlan(baseOld.content, onto.content, variant.overrideSet);
     const content = materialize(onto.content, plan.overrideSet);
     for (const slot of content.slots) {
-      if (slot.resolution.kind === "sub_recipe") await this.assertAcyclic(variant.recipeId, slot.resolution.subRecipeVersionId);
+      if (slot.resolution.kind === "sub_recipe") {
+        await this.assertAcyclic(variant.recipeId, slot.resolution.subRecipeVersionId);
+      }
     }
     const macros = await this.macrosFor(content, variant.yield);
     const version: RecipeVersion = {
@@ -368,6 +370,10 @@ export class RecipeService {
       commitMessage: input.commitMessage ?? `rebase onto ${onto.id}`,
       status: "draft",
       createdAt: this.deps.now(),
+      // A rebased version has a single derivation lineage (derivesFromVersionId), not
+      // multi-parent amalgam provenance — don't let a champion variant's CM-7 metadata leak in.
+      parentVersionIds: undefined,
+      provenanceNote: undefined,
     };
     await this.repo.saveVersion(version);
     await this.repo.setHead(version.recipeId, version.id);
