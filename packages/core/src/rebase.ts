@@ -103,7 +103,7 @@ export function buildRebasePlan(
     }
   }
 
-  const b1: Record<ComponentKind, Map<ComponentKey, Component>> = {
+  const baseNewIndex: Record<ComponentKind, Map<ComponentKey, Component>> = {
     step: indexFor(baseNew, "step"),
     slot: indexFor(baseNew, "slot"),
     usage: indexFor(baseNew, "usage"),
@@ -116,7 +116,7 @@ export function buildRebasePlan(
     const i = id.indexOf(":");
     const kind = id.slice(0, i) as ComponentKind;
     const key = id.slice(i + 1);
-    const baseNewVal = b1[kind].get(key) ?? null;
+    const baseNewVal = baseNewIndex[kind].get(key) ?? null;
     conflicts.push({
       kind,
       componentKey: key,

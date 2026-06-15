@@ -74,4 +74,17 @@ describe("buildRebasePlan (CM-5)", () => {
     expect(plan.conflicts).toEqual([]);
     expect(materialize(base(80), plan.overrideSet)).toEqual(base(80));
   });
+
+  it("add of a key base-new already has is rewritten to replace (no throw, no duplicate)", () => {
+    const b0 = base(100), b1 = base(100); // base left u-sugar untouched
+    const variant: OverrideSet = { name: "V", entries: [
+      { op: "add", kind: "usage",
+        payload: { componentKey: "u-sugar", stepKey: "s1", slotKey: "sl-sugar", quantityValue: 50, quantityUnit: "g" } },
+    ] };
+    const plan = buildRebasePlan(b0, b1, variant);
+    expect(plan.conflicts).toEqual([]); // base didn't touch u-sugar
+    const out = materialize(b1, plan.overrideSet); // must NOT throw (add→replace) and must not duplicate the key
+    expect(out.usages.filter((u) => u.componentKey === "u-sugar")).toHaveLength(1);
+    expect(out.usages.find((u) => u.componentKey === "u-sugar")?.quantityValue).toBe(50); // variant value wins
+  });
 });
