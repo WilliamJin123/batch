@@ -7,8 +7,9 @@ export type FractionResult = { fraction: number } | { reason: string };
  * What fraction of a sub-recipe's batch a usage consumes (M3, DM3-2). One ladder:
  *  1. usage unit reconciles with the child's yield unit (same unit, or same dimension via
  *     the universal table) → quantity ÷ yield.amount.
- *  2. usage is a mass unit but the yield isn't → grams ÷ the child's total batch weight.
- *  3. otherwise → unresolved (never throws).
+ *  2. usage is a mass unit and rung 1 didn't resolve (yield not mass-convertible, or a
+ *     non-positive yield.amount) → grams ÷ the child's total batch weight.
+ *  3. otherwise (incl. a zero-weight child) → unresolved (never throws, never divides by zero).
  */
 export function subRecipeFraction(
   usage: Pick<StepUsage, "quantityValue" | "quantityUnit">,

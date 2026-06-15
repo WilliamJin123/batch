@@ -22,6 +22,10 @@ describe("subRecipeFraction", () => {
   });
   it("rung 3: unresolved when the units can't be reconciled", () => {
     const r = subRecipeFraction({ quantityValue: 1, quantityUnit: "cup" }, child(1, "batch", 150));
+    expect("reason" in r && r.reason.includes("cup")).toBe(true);
+  });
+  it("degenerate child (zero yield amount and zero weight) is unresolved, never divides by zero", () => {
+    const r = subRecipeFraction({ quantityValue: 30, quantityUnit: "g" }, child(0, "batch", 0));
     expect("reason" in r).toBe(true);
   });
 });
