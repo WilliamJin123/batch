@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { computeMacros } from "../src/compute-macros.js";
-import type { LibraryIngredient, RecipeContent } from "../src/types.js";
+import type { LibraryIngredient, RecipeContent, SubRecipeMacro } from "../src/types.js";
 
 const sugar: LibraryIngredient = {
   id: "ing-sugar", name: "sugar",
@@ -48,12 +48,44 @@ describe("computeMacros", () => {
     expect(snap.lines.find((l) => l.slotKey === "sugar")?.status).toBe("ok");
   });
 
-  it("flags a sub-recipe slot as unresolved (deferred to M3)", () => {
+  it("treats a sub-recipe slot as unresolved when its macros aren't provided", () => {
     const c = content();
     c.slots[0]!.resolution = { kind: "sub_recipe", subRecipeVersionId: "v-x" };
     const snap = computeMacros(c, { amount: 4, unit: "servings" }, lib(sugar, butter));
     expect(snap.basis).toBe("partial");
     expect(snap.lines.find((l) => l.slotKey === "sugar")?.status).toBe("unresolved");
+  });
+
+  it("rolls up a sub-recipe's macros scaled by the usage fraction", () => {
+    const c: RecipeContent = {
+      steps: [{ componentKey: "s1", order: 1, instructionText: "frost" }],
+      slots: [{ componentKey: "frosting", name: "frosting", resolution: { kind: "sub_recipe", subRecipeVersionId: "v-frost" } }],
+      usages: [{ componentKey: "u1", stepKey: "s1", slotKey: "frosting", quantityValue: 1, quantityUnit: "batch" }],
+    };
+    const subs = new Map<string, SubRecipeMacro>([["v-frost", {
+      total: { calories: 300, protein: 20, carbs: 10, fat: 18, fiber: 0 },
+      yield: { amount: 1, unit: "batch" }, totalGrams: 150, basis: "complete",
+    }]]);
+    const snap = computeMacros(c, { amount: 5, unit: "cookies" }, new Map(), subs);
+    expect(snap.basis).toBe("complete");
+    expect(snap.total.calories).toBe(300);        // whole batch
+    expect(snap.perServing.calories).toBe(60);    // ÷ 5
+    expect(snap.lines.find((l) => l.slotKey === "frosting")?.grams).toBe(150);
+  });
+
+  it("scales a partial-batch usage and propagates a partial child", () => {
+    const c: RecipeContent = {
+      steps: [{ componentKey: "s1", order: 1, instructionText: "frost" }],
+      slots: [{ componentKey: "frosting", name: "frosting", resolution: { kind: "sub_recipe", subRecipeVersionId: "v-frost" } }],
+      usages: [{ componentKey: "u1", stepKey: "s1", slotKey: "frosting", quantityValue: 0.5, quantityUnit: "batch" }],
+    };
+    const subs = new Map<string, SubRecipeMacro>([["v-frost", {
+      total: { calories: 300, protein: 20, carbs: 10, fat: 18, fiber: 0 },
+      yield: { amount: 1, unit: "batch" }, totalGrams: 150, basis: "partial",
+    }]]);
+    const snap = computeMacros(c, { amount: 5, unit: "cookies" }, new Map(), subs);
+    expect(snap.total.calories).toBe(150);        // half a batch
+    expect(snap.basis).toBe("partial");           // child was partial → parent partial
   });
 
   it("does not divide by a non-positive yield", () => {

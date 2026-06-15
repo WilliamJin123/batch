@@ -1,7 +1,8 @@
 import type {
-  ComponentKey, IngredientSlot, LibraryIngredient, MacroLine, Macros, MacroSnapshot, RecipeContent, Yield,
+  ComponentKey, IngredientSlot, LibraryIngredient, MacroLine, Macros, MacroSnapshot, RecipeContent, SubRecipeMacro, Yield,
 } from "./types.js";
 import { toGrams } from "./units.js";
+import { subRecipeFraction } from "./sub-recipe.js";
 
 const ZERO: Macros = { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 };
 
@@ -28,6 +29,7 @@ export function computeMacros(
   content: RecipeContent,
   yieldSpec: Yield,
   ingredients: Map<string, LibraryIngredient>,
+  subRecipes: Map<string, SubRecipeMacro> = new Map(),
 ): MacroSnapshot {
   const slotByKey = new Map<ComponentKey, IngredientSlot>();
   for (const s of content.slots) slotByKey.set(s.componentKey, s);
@@ -45,8 +47,18 @@ export function computeMacros(
     };
 
     if (!slot) { fail(`references missing slot "${usage.slotKey}"`); continue; }
-    if (slot.resolution.kind !== "raw") {
-      fail("sub-recipe macros not computed yet (M3)", { ingredientName: slot.name });
+    if (slot.resolution.kind === "sub_recipe") {
+      const sub = subRecipes.get(slot.resolution.subRecipeVersionId);
+      if (!sub) { fail(`sub-recipe ${slot.resolution.subRecipeVersionId} not loaded`, { ingredientName: slot.name }); continue; }
+      const fr = subRecipeFraction(usage, sub);
+      if ("reason" in fr) { fail(fr.reason, { ingredientName: slot.name }); continue; }
+      const macros = mapMacros(sub.total, (n) => n * fr.fraction);
+      total = zipMacros(total, macros, (x, y) => x + y);
+      lines.push({
+        slotKey: usage.slotKey, ingredientName: slot.name,
+        grams: round2(fr.fraction * sub.totalGrams), macros: mapMacros(macros, round2), status: "ok",
+      });
+      if (sub.basis === "partial") unresolved.push(`${label}: sub-recipe macros are partial`);
       continue;
     }
     const ingId = slot.resolution.libraryIngredientId;
