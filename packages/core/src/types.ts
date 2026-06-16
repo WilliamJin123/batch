@@ -115,6 +115,8 @@ export interface MacroSnapshot {
   basis: "complete" | "partial";
   unresolved: string[];
   lines: MacroLine[];
+  /** calories ÷ grams of protein — the lean-bake north-star metric. Absent when protein is 0. */
+  caloriesPerGramProtein?: number;
 }
 
 /**

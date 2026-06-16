@@ -39,6 +39,13 @@ describe("computeMacros", () => {
     expect(snap.perServing.calories).toBeCloseTo(372.75, 2);
   });
 
+  it("reports calories per gram of protein, and omits it when there is no protein", () => {
+    const withProtein = computeMacros(content(), { amount: 4, unit: "servings" }, lib(sugar, butter));
+    expect(withProtein.caloriesPerGramProtein).toBeCloseTo(withProtein.total.calories / withProtein.total.protein, 2);
+    const noProtein = computeMacros(content(), { amount: 4, unit: "servings" }, lib(sugar)); // butter (the only protein) unresolved
+    expect(noProtein.caloriesPerGramProtein).toBeUndefined();
+  });
+
   it("returns a partial result that lists the unresolved usage and sums the rest", () => {
     const snap = computeMacros(content(), { amount: 4, unit: "servings" }, lib(sugar)); // butter not in library
     expect(snap.basis).toBe("partial");

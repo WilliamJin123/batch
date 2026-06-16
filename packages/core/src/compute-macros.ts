@@ -94,5 +94,6 @@ export function computeMacros(
     basis: unresolved.length === 0 ? "complete" : "partial",
     unresolved,
     lines,
+    ...(total.protein > 0 ? { caloriesPerGramProtein: round2(total.calories / total.protein) } : {}),
   };
 }
