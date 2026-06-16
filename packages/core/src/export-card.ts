@@ -43,6 +43,13 @@ export function renderCard(meta: CardMeta, content: RecipeContent, macros: Macro
     minOrder.set(sec, Math.min(minOrder.get(sec) ?? Infinity, s.order));
     allChild.set(sec, (allChild.get(sec) ?? true) && s.componentKey.includes("/"));
   }
+  // An ingredient's section comes from its step; if that step is absent the usage
+  // falls back to "Base". Register any such section so its ingredients never vanish
+  // from the card (they sort after real parent sections, with no method steps).
+  for (const u of content.usages) {
+    const sec = stepSection.get(u.stepKey) ?? "Base";
+    if (!minOrder.has(sec)) { minOrder.set(sec, Infinity); allChild.set(sec, false); }
+  }
   const sections = [...minOrder.keys()].sort((a, b) => {
     const ca = allChild.get(a) ? 1 : 0;
     const cb = allChild.get(b) ? 1 : 0;

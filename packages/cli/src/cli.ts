@@ -21,7 +21,9 @@ let outputMode: "json" | "human" | "auto" = "auto";
 function out(value: unknown): void {
   if (typeof value === "string") { process.stdout.write(value + "\n"); return; }
   const asJson = outputMode === "json" || (outputMode === "auto" && !process.stdout.isTTY);
-  process.stdout.write((asJson ? JSON.stringify(value, null, 2) : renderHuman(value)) + "\n");
+  // `value ?? null` keeps the piped stream valid JSON — JSON.stringify(undefined) yields
+  // the bare token `undefined`, which would break a downstream `| jq`.
+  process.stdout.write((asJson ? JSON.stringify(value ?? null, null, 2) : renderHuman(value)) + "\n");
 }
 
 async function readJson(file?: string): Promise<any> {

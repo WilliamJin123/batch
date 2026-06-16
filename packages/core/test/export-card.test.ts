@@ -47,4 +47,14 @@ describe("renderCard", () => {
     const md = renderCard({ name: "X", yield: { amount: 8, unit: "slices" } }, content(), m);
     expect(md).toMatch(/cal\/g protein/); // 1721/150 = 11.5
   });
+
+  it("never drops an ingredient whose usage resolves to a section no step carries", () => {
+    const c = content();
+    c.steps[1]!.section = "Filling"; // now no step maps to the "Base" fallback section
+    // A usage pointing at a step that isn't present → its section falls back to "Base".
+    // It must still surface in Ingredients, not vanish.
+    c.usages.push({ componentKey: "u-x", stepKey: "ghost", slotKey: "graham", quantityValue: 5, quantityUnit: "g" });
+    const md = renderCard({ name: "X", yield: { amount: 8, unit: "slices" } }, c, macros());
+    expect(md).toMatch(/graham crumbs — 5 g/);
+  });
 });
