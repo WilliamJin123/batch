@@ -1,6 +1,6 @@
 import type {
   Author, ComponentKey, FeedbackBase, FeedbackEntry, FeedbackKind, FlattenSource, LibraryIngredient,
-  MacroLine, MacroSnapshot, OverrideEntry, OverrideSet, Rating, Recipe, RecipeContent, RecipeId,
+  MacroLine, Macros, MacroSnapshot, OverrideEntry, OverrideSet, Rating, Recipe, RecipeContent, RecipeId,
   RecipeVersion, StepUsage, SubRecipeMacro, VersionId, VersionStatus, Yield,
 } from "./types.js";
 import type { Repository } from "./repository.js";
@@ -14,6 +14,15 @@ import { buildRebasePlan, type RebaseConflict } from "./rebase.js";
 
 function sumLineGrams(lines: MacroLine[]): number {
   return lines.reduce((g, l) => g + (l.grams ?? 0), 0);
+}
+
+const ZERO_MACROS: Macros = { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 };
+const round2 = (n: number): number => Math.round(n * 100) / 100;
+function addMacros(a: Macros, b: Macros): Macros {
+  return {
+    calories: round2(a.calories + b.calories), protein: round2(a.protein + b.protein),
+    carbs: round2(a.carbs + b.carbs), fat: round2(a.fat + b.fat), fiber: round2(a.fiber + b.fiber),
+  };
 }
 
 export interface RebaseResult { version: RecipeVersion; conflicts: RebaseConflict[]; }
@@ -52,6 +61,47 @@ export class RecipeService {
     const v = await this.repo.getVersion(id);
     if (!v) throw new Error(`version not found: ${id}`);
     return v;
+  }
+
+  /**
+   * Resolve a user-supplied reference to a version id. Tries, in order: an exact
+   * version id, an exact recipe name (case-insensitive) → its head, then a unique
+   * version-id prefix (≥6 chars). Ambiguity or no match throws with the candidates,
+   * so a name never silently resolves to the wrong recipe.
+   */
+  async resolveRef(ref: string): Promise<VersionId> {
+    const trimmed = ref.trim();
+    if (!trimmed) throw new Error("empty recipe reference");
+    if (await this.repo.getVersion(trimmed)) return trimmed;
+
+    const versions = await this.repo.listVersions();
+    const nameOf = new Map(versions.map((v) => [v.id, v.name] as const));
+    const recipes = await this.repo.listRecipes();
+    const byName = recipes.filter((r) => (nameOf.get(r.headVersionId) ?? "").toLowerCase() === trimmed.toLowerCase());
+    if (byName.length === 1) return byName[0]!.headVersionId;
+    if (byName.length > 1) {
+      const cands = byName.map((r) => `${nameOf.get(r.headVersionId)} (${r.headVersionId})`).join(", ");
+      throw new Error(`ambiguous name "${ref}" matches multiple recipes: ${cands}`);
+    }
+
+    if (trimmed.length >= 6) {
+      const hits = versions.filter((v) => v.id.startsWith(trimmed));
+      if (hits.length === 1) return hits[0]!.id;
+      if (hits.length > 1) throw new Error(`ambiguous id prefix "${ref}" matches ${hits.length} versions`);
+    }
+    throw new Error(`no recipe or version matches "${ref}"`);
+  }
+
+  /** Resolve an ingredient by exact id, then case-insensitive name or alias. Throws if nothing matches. */
+  async getIngredientRef(ref: string): Promise<LibraryIngredient> {
+    const byId = await this.repo.getIngredient(ref);
+    if (byId) return byId;
+    const lc = ref.trim().toLowerCase();
+    const hit = (await this.repo.listIngredients()).find(
+      (i) => i.name.toLowerCase() === lc || (i.aliases ?? []).some((a) => a.toLowerCase() === lc),
+    );
+    if (!hit) throw new Error(`no ingredient matches "${ref}"`);
+    return hit;
   }
 
   async resolve(id: VersionId): Promise<RecipeContent> {
@@ -290,6 +340,34 @@ export class RecipeService {
     const sources: FlattenSource[] = [];
     await this.gatherSubContents(v.content, subContents, sources);
     return { content: flattenContent(v.content, subContents), sources };
+  }
+
+  /**
+   * Macros broken down by recipe section (Crust / Topping / a sub-recipe's name / …).
+   * Computed on the flattened content — sections only exist after flatten — by attributing
+   * each usage's contribution to the section of the step that uses it. Section totals sum to `snapshot.total`.
+   */
+  async macrosBySection(versionId: VersionId): Promise<{ snapshot: MacroSnapshot; bySection: Record<string, Macros> }> {
+    const version = await this.getVersion(versionId);
+    const { content } = await this.flatten(versionId);
+    const snapshot = await this.macrosFor(content, version.yield);
+    const sectionOfStep = new Map(content.steps.map((s) => [s.componentKey, s.section ?? "Base"] as const));
+    const bySection: Record<string, Macros> = {};
+    content.usages.forEach((usage, i) => {
+      const line = snapshot.lines[i];
+      if (!line || line.status !== "ok" || !line.macros) return;
+      const section = sectionOfStep.get(usage.stepKey) ?? "Base";
+      bySection[section] = addMacros(bySection[section] ?? ZERO_MACROS, line.macros);
+    });
+    return { snapshot, bySection };
+  }
+
+  /** Gather what a card renderer needs: version metadata, flattened content, and a fresh macro snapshot. */
+  async exportCard(versionId: VersionId): Promise<{ version: RecipeVersion; content: RecipeContent; macros: MacroSnapshot }> {
+    const version = await this.getVersion(versionId);
+    const { content } = await this.flatten(versionId);
+    const macros = await this.macrosFor(content, version.yield);
+    return { version, content, macros };
   }
 
   private async gatherSubContents(
