@@ -225,4 +225,45 @@ describe("commands", () => {
     const { version } = await cmd.promote(s, { targetVersionId: base.version.id, sourceVersionId: winner.version.id, componentKeys: ["sl-corn"] });
     expect(version.content.usages.find((u) => u.componentKey === "u-corn")?.quantityValue).toBe(12);
   });
+
+  it("resolves a recipe by name across read commands", async () => {
+    const s = svc();
+    await cmd.create(s, { name: "Brownies", yield: { amount: 16, unit: "squares" }, content: content() });
+    expect((await cmd.show(s, "Brownies")).name).toBe("Brownies");
+    expect((await cmd.history(s, "brownies")).length).toBe(1);
+  });
+
+  it("list filters by tag and by name substring", async () => {
+    const s = svc();
+    await cmd.create(s, { name: "Turtle Cheesecake", tags: ["cheesecake", "turtle"], yield: { amount: 8, unit: "slices" }, content: content() });
+    await cmd.create(s, { name: "Banana Bread", tags: ["bread"], yield: { amount: 8, unit: "slices" }, content: content() });
+    expect((await cmd.list(s, { tag: "cheesecake" })).map((r) => r.name)).toEqual(["Turtle Cheesecake"]);
+    expect((await cmd.list(s, { name: "banana" })).map((r) => r.name)).toEqual(["Banana Bread"]);
+  });
+
+  it("ingredient show resolves by id or name", async () => {
+    const s = svc();
+    await cmd.ingredientAdd(s, { name: "White Sugar", macrosPer100g: { calories: 387, protein: 0, carbs: 100, fat: 0, fiber: 0 } });
+    expect((await cmd.ingredientShow(s, "white sugar")).id).toBe("ing-white-sugar");
+    expect((await cmd.ingredientShow(s, "ing-white-sugar")).name).toBe("White Sugar");
+  });
+
+  it("macrosBySection groups contributions by recipe section", async () => {
+    const s = svc();
+    await cmd.ingredientAdd(s, { id: "ing-sugar", name: "sugar", macrosPer100g: { calories: 387, protein: 0, carbs: 100, fat: 0, fiber: 0 } });
+    const { version } = await cmd.create(s, { name: "Sectioned", yield: { amount: 2, unit: "x" }, content: content() });
+    const { bySection } = await cmd.macrosBySection(s, version.id);
+    expect(bySection["Base"]?.calories).toBe(774); // content()'s unsectioned step → "Base"; 200 g sugar
+  });
+
+  it("export renders a markdown card (md) and a machine view (json)", async () => {
+    const s = svc();
+    await cmd.ingredientAdd(s, { id: "ing-sugar", name: "sugar", macrosPer100g: { calories: 387, protein: 0, carbs: 100, fat: 0, fiber: 0 } });
+    await cmd.create(s, { name: "Card Test", yield: { amount: 2, unit: "servings" }, content: content() });
+    const md = await cmd.exportRecipe(s, "Card Test", { format: "md" });
+    expect(typeof md).toBe("string");
+    expect(md as string).toMatch(/^# Card Test/m);
+    const json = await cmd.exportRecipe(s, "Card Test", { format: "json" });
+    expect((json as { macros: { total: { calories: number } } }).macros.total.calories).toBe(774);
+  });
 });
