@@ -4,14 +4,24 @@ import { RecipeService, realDeps } from "@batch/core";
 import type { OverrideEntry } from "@batch/core";
 import { FileRepository } from "./file-repository.js";
 import { resolveDbPath } from "./db-path.js";
+import { renderHuman } from "./format.js";
 import * as cmd from "./commands.js";
 
 function makeService(): RecipeService {
   return new RecipeService(new FileRepository(resolveDbPath()), realDeps());
 }
 
+let outputMode: "json" | "human" | "auto" = "auto";
+
+/**
+ * Emit a command result. Strings (e.g. an export card) print raw. Otherwise emit
+ * JSON when forced with --json or when stdout is piped (so `… | jq` keeps working),
+ * and scannable human text when run in a terminal or forced with --human.
+ */
 function out(value: unknown): void {
-  process.stdout.write(JSON.stringify(value, null, 2) + "\n");
+  if (typeof value === "string") { process.stdout.write(value + "\n"); return; }
+  const asJson = outputMode === "json" || (outputMode === "auto" && !process.stdout.isTTY);
+  process.stdout.write((asJson ? JSON.stringify(value, null, 2) : renderHuman(value)) + "\n");
 }
 
 async function readJson(file?: string): Promise<any> {
@@ -31,8 +41,17 @@ function readStdin(): Promise<string> {
 }
 
 export async function run(argv: string[]): Promise<void> {
+  // Reading output through `| head`/`| less` closes our pipe early; exit quietly instead of an EPIPE stack trace.
+  process.stdout.on("error", (e: NodeJS.ErrnoException) => { if (e.code === "EPIPE") process.exit(0); });
+
   const program = new Command();
   program.name("batch").description("git for recipes — versioned recipe substrate").version("0.0.0");
+  program.option("--json", "force JSON output (the default when piped)");
+  program.option("--human", "force human-readable output (the default in a terminal)");
+  program.hook("preAction", () => {
+    const o = program.opts();
+    outputMode = o.json ? "json" : o.human ? "human" : "auto";
+  });
 
   program.command("init")
     .description("show the store path (created lazily on first write)")
@@ -109,7 +128,9 @@ export async function run(argv: string[]): Promise<void> {
   program.command("list")
     .description("list all recipes by head version")
     .option("--to-make", "only recipes queued to make (untried experiments)")
-    .action(async (opts) => out(await cmd.list(makeService(), { toMake: opts.toMake })));
+    .option("--tag <tag>", "only recipes carrying this tag")
+    .option("--name <substr>", "only recipes whose name contains this substring (case-insensitive)")
+    .action(async (opts) => out(await cmd.list(makeService(), { toMake: opts.toMake, tag: opts.tag, name: opts.name })));
 
   program.command("tree")
     .description("list all versions with their derivation/history edges")
@@ -150,14 +171,25 @@ export async function run(argv: string[]): Promise<void> {
   ingredient.command("list")
     .description("list all library ingredients")
     .action(async () => out(await cmd.ingredientList(makeService())));
+  ingredient.command("show <ref>")
+    .description("show one library ingredient by id, name, or alias")
+    .action(async (ref) => out(await cmd.ingredientShow(makeService(), ref)));
 
-  program.command("macros <versionId>")
-    .description("show the computed macro snapshot for a version (total + per-serving + unresolved)")
-    .action(async (versionId) => out(await cmd.macros(makeService(), versionId)));
+  program.command("macros <ref>")
+    .description("show the computed macro snapshot (total + per-serving + cal/g-protein ratio); --by-section breaks it down")
+    .option("--by-section", "break the totals down by recipe section (crust / filling / toppings / sub-recipes)")
+    .action(async (ref, opts) => out(opts.bySection
+      ? await cmd.macrosBySection(makeService(), ref)
+      : await cmd.macros(makeService(), ref)));
 
-  program.command("recompute <versionId>")
+  program.command("export <ref>")
+    .description("render a recipe as a phone-readable markdown bake card (--format json for the machine view)")
+    .option("--format <fmt>", "md | json", "md")
+    .action(async (ref, opts) => out(await cmd.exportRecipe(makeService(), ref, { format: opts.format === "json" ? "json" : "md" })));
+
+  program.command("recompute <ref>")
     .description("recompute macros against the current library → new version (author=system)")
-    .action(async (versionId) => out(await cmd.recompute(makeService(), versionId)));
+    .action(async (ref) => out(await cmd.recompute(makeService(), ref)));
 
   const feedback = program.command("feedback")
     .description("record and inspect tasting feedback (to-make intent, made outcomes)");
