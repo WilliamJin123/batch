@@ -1,13 +1,13 @@
 ---
 name: batch
-description: Use when the user wants to add, tune, fork, scale, or browse cooking recipes in their Batch store (the "git for recipes" CLI) — e.g. importing an Instagram/blog recipe, creating a base, deriving a variant, adjusting an ingredient, or viewing their recipe tree.
+description: Use when the user wants to add, tune, fork, scale, or browse cooking recipes in their Batch store (the "git for recipes" CLI) — e.g. importing an Instagram/blog recipe, creating a base, deriving a variant, adjusting an ingredient, viewing their recipe tree, or exporting a recipe to a markdown bake card.
 ---
 
 # Batch — git for recipes
 
 Batch stores recipes as **immutable versions** on two edges: a **history** edge (each edit is a new version) and a **derivation** edge (a *variant* is forked from a base version and stores only component-level **overrides**, inheriting everything else). A recipe's content is always a materialized snapshot of `{ steps, slots, usages }`.
 
-Operate it through the `batch` CLI (run from the repo root `/Users/williamjin/Documents/batch`). Every command prints JSON; parse it and render the result to the user clearly (a readable summary, not raw JSON, unless they ask). On error the CLI prints `{ "error": "..." }` to stderr and exits non-zero.
+Operate it through the `batch` CLI (run from the repo root `/Users/williamjin/Documents/batch`). **Wherever a command below takes a `<versionId>`, you can pass a recipe *name* (case-insensitive), a short version-id prefix (≥6 chars), or a full version id — they all resolve to the right version; an ambiguous name or prefix errors with the candidate list.** When piped (how you run it), every command prints JSON; parse it and render the result to the user clearly (a readable summary, not raw JSON, unless they ask). In a terminal — or with `--human` — reads instead render as human-readable tables/cards; force machine output anywhere with `--json`. On error the CLI prints `{ "error": "..." }` to stderr and exits non-zero.
 
 ## The data model (what you author)
 
@@ -33,11 +33,13 @@ A recipe's `content` has three arrays joined by `componentKey` (stable, human-re
 - `./batch resolve <versionId>` — just the resolved content.
 - `./batch scale <versionId> --to <amount>` — content with quantities scaled to a target yield amount (units preserved; step times intentionally NOT scaled).
 - `./batch history <versionId>` — versions newest-first along the history edge.
-- `./batch list` — all recipes by head version (`name, status, tags, isVariant`, plus `kcalPerServing` / `macroBasis`, plus `tried` / `queued` / `verdict` from the tasting log). `--to-make` filters to the queued (untried) recipes.
+- `./batch list` — all recipes by head version (`name, status, tags, isVariant`, plus `kcalPerServing` / `macroBasis`, plus `tried` / `queued` / `verdict` from the tasting log). `--to-make` filters to the queued (untried) recipes; `--tag <tag>` (exact, case-insensitive) and `--name <substr>` (case-insensitive substring) narrow the list.
 - `./batch tree` — all versions with `derivesFromVersionId` / `prevVersionId` edges (build the forest of bases → variants).
 - `./batch ingredient add` — reads a **library ingredient** JSON from stdin (`{ name, macrosPer100g, densityGPerMl?, unitEquivalences?, id? }`); `id` defaults to a slug of the name. Adds/updates the (mutable) library.
 - `./batch ingredient list` — list the library. (There is **no `ingredient rm`** — to delete a library entry, remove it from `~/.batch/sources/ingredients.json` *and* `del()` its key from `db.json` directly. `ingredients` is an id-keyed object in the store; verify the temp file before replacing, since the store is local-only.)
-- `./batch macros <versionId>` — the computed macro snapshot: `total`, `perServing`, `basis` (`complete`|`partial`), `unresolved[]`, and per-usage `lines`.
+- `./batch ingredient show <ref>` — show one library ingredient by id, name, or alias (macros per 100 g, density, unit equivalences).
+- `./batch macros <ref>` — the computed macro snapshot: `total`, `perServing`, `yield`, `basis` (`complete`|`partial`), `unresolved[]`, per-usage `lines`, and `caloriesPerGramProtein` — the cal/g-protein ratio, the lean-bake north-star metric (absent when protein is 0). Add `--by-section` to break the totals down by recipe section (crust / filling / toppings / each sub-recipe) — returns `{ snapshot, bySection }`.
+- `./batch export <ref> [--format md|json]` — **compile a recipe into a phone-readable markdown bake card**: title, a macro table with the ratio, ingredients grouped by section, and numbered method by section (sub-recipes flattened in). `md` (the default) prints raw markdown — redirect it to a `.md` file the user can AirDrop or open and print-to-PDF (`./batch export "Turtle Protein Cheesecake" > card.md`); `json` returns `{ content, macros }` for the machine view. This is the "give me something I can actually cook from" command.
 - `./batch recompute <versionId>` — recompute macros against the **current** library → new version (author=system). Run after adding/fixing ingredients so an existing recipe picks up the numbers. Idempotent when nothing changed.
 - `./batch promote <targetVersionId> --from <sourceVersionId> --component <csv> [-m msg]` — bake winning component(s) from a source version into a target base, as new version(s) on the target. Promoting a **slot** also lifts its usages (so no ingredient is left dangling); each component becomes one override (`add` if the target lacks the key, else `replace`). Use it to graft a dialed-in ingredient from one experiment into your canonical base.
 - `./batch compare <v1> <v2> [v3…]` — align ≥2 versions side by side: an **ingredient matrix** (rows joined by library-ingredient id, cells = grams **per serving**; `null` = the version doesn't use it, `"present"` = used but no honest gram figure — unconvertible unit, unknown ingredient, or mixed units), per-serving **macros**, and the tasting **verdicts**. The read you make tuning decisions from.
@@ -61,7 +63,7 @@ A slot can resolve to **another recipe version** instead of a raw ingredient —
 - **How much** is a fraction of the child's *yield*: `1 batch` of a `yield 1 batch` frosting = the whole thing; `0.5 batch` = half; `18 ladyfingers` of a `yield 24 ladyfingers` recipe = 18/24. Grams always work too (`20 g`), even against a `batch` yield. Units that can't reconcile show up as unresolved — give the child a yield unit you'll measure it in.
 - **Read it**: `./batch show <id>` and `./batch resolve <id>` **flatten** by default — the child's steps and ingredients are spliced in (scaled), sectioned under the child's name, with a `sources[]` list noting each child and how many versions behind it is. Add `--structure` to see the raw pins instead.
 - **Swap it** (test a different frosting): one override — `{ "op": "replace", "kind": "slot", "target": "frosting", "payload": { ...same slot, "resolution": { "kind": "sub_recipe", "subRecipeVersionId": "<other frosting version>" } } }`. Keep a family of interchangeable sub-recipes on the **same yield unit** so the `1 batch` usage still resolves.
-- **Compose-and-verify loop**: build the shared sub-recipe as its own root → `override` the parent to remove its inline copy and add the sub_recipe slot+usage → `./batch macros <parent>` to confirm the total is preserved. A sub_recipe pin can go "N behind" its child's head; re-pointing/rebasing onto a newer child is M4 (not yet built).
+- **Compose-and-verify loop**: build the shared sub-recipe as its own root → `override` the parent to remove its inline copy and add the sub_recipe slot+usage → `./batch macros <parent>` to confirm the total is preserved. A sub_recipe pin can go "N behind" its child's head (shown in `--structure` and the flattened `sources[]`); variant `rebase` shipped (M4, below), but re-pointing a stale **sub_recipe pin** onto its child's newer head is still done by hand — a `replace`-slot override.
 
 ## Recording feedback (the tasting log)
 
