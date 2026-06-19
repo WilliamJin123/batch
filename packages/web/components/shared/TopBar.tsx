@@ -10,8 +10,7 @@ export function TopBar() {
       </div>
       <nav className="nav">
         <Link className="on" href="/">Tree</Link>
-        <Link href="/index">Recipes</Link>
-        <Link href="/index">Index</Link>
+        <Link href="/recipes">Recipes</Link>
       </nav>
       <div className="spacer"></div>
       <div className="search">Search recipes <span className="kbd">⌘K</span></div>
