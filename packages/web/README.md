@@ -2,7 +2,7 @@
 
 A read-only, statically-generated Next.js viewer over the Batch recipe store. It renders the
 same macros the CLI computes (via `@batch/core`) as a pannable/zoomable recipe **Tree** (`/`),
-a full **Bake Card** per recipe (`/r/[recipeId]`), and a filterable **index** (`/index`).
+a full **Bake Card** per recipe (`/r/[recipeId]`), and a filterable index (`/recipes`).
 
 ## Data source
 
@@ -36,6 +36,7 @@ future agent share one operation set.
 
 ## Deploy (Vercel)
 
-`vercel.json` builds with the monorepo filter and emits `packages/web/.next`. A push to the
-data repo can trigger a Vercel deploy hook (with a read-only deploy key that bakes `db.json`),
-making the published site track the store — "live" without a runtime backend.
+Set the Vercel project's **Root Directory to `packages/web`**. The build (`vercel.json`) clones
+the private `batch-data` repo with a read-only token (`BATCH_DATA_TOKEN`), bakes its `db.json`,
+then runs `next build` — so the public site renders your store **without committing any recipe
+data to this public repo**. Full runbook: [`DEPLOY.md`](./DEPLOY.md).
