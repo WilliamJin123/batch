@@ -1,6 +1,7 @@
 import "../styles/tokens.css";
 import "../styles/topbar.css";
 import "../styles/shared.css";
+import "../styles/card.css";
 import { Fraunces, Inter, JetBrains_Mono } from "next/font/google";
 import { TopBar } from "../components/shared/TopBar";
 

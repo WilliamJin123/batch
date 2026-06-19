@@ -10,3 +10,9 @@ export function roundGrams(g?: number): number | undefined {
 }
 export type BakeCardRating = Rating | undefined;
 export function ratingFrom(verdict?: Rating): BakeCardRating { return verdict; }
+export function splitName(name: string): { title: string; paren?: string } {
+  const m = name.match(/^(.*?)\s*(\([^)]*\))\s*$/);
+  return m ? { title: m[1], paren: m[2] } : { title: name };
+}
+export const r0 = (n: number) => Math.round(n);
+export const r1 = (n: number) => Math.round(n * 10) / 10;
