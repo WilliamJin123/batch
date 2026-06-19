@@ -4,7 +4,9 @@
   --line:rgba(60,44,18,.10); --line2:rgba(60,44,18,.16);
   --accent:#B47A37; --accent-deep:#956120; --accent-soft:#F6EBD9;
   --green:#5E9A6B; --gold:#C79A3B; --warn:#9a5230;
-  --serif:'Fraunces',Georgia,serif; --mono:'JetBrains Mono',ui-monospace,monospace; --sans:'Inter',system-ui,sans-serif;
+  --serif: var(--font-serif), 'Fraunces', Georgia, serif;
+  --mono: var(--font-mono), 'JetBrains Mono', ui-monospace, monospace;
+  --sans: var(--font-sans), 'Inter', system-ui, sans-serif;
 }
 *{box-sizing:border-box}
 html,body{margin:0}
