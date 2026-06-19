@@ -8,9 +8,10 @@ const NODE_W = 200, SUB_W = 184;
  *  Nodes render content-tall (feedback notes wrap), so a fixed height made tall
  *  cards overlap their neighbours (e.g. Lemon's glaze note over Lucky Charms).
  *  Deterministic — no measurement, no Math.random/Date. */
-function nodeDims(n: Pick<TreeNodeVM, "kind" | "name" | "feedbackNote" | "needsTuning">): { w: number; h: number } {
+function nodeDims(n: Pick<TreeNodeVM, "kind" | "name" | "feedbackNote" | "needsTuning" | "servings">): { w: number; h: number } {
   if (n.kind === "sub-recipe") return { w: SUB_W, h: 90 };
   let h = 120; // role chip + 1-line name + 2-line meta + rating row
+  if ((n.servings ?? 1) > 1) h += 16; // extra whole-batch "total" macro line
   if ((n.name ?? "").length > 22) h += 17; // long names wrap to a second line
   if (n.needsTuning) h += 8;
   if (n.feedbackNote) h += 20 + Math.ceil(n.feedbackNote.length / 28) * 18; // note wraps ~28 chars/line

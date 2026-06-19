@@ -169,12 +169,13 @@ export function TreeView({ graph, pos, width, height, cards }: {
         <button className="fbtn ico" onClick={() => zoom(BTN_STEP)} aria-label="Zoom in">+</button>
         <button className="fbtn ico" onClick={() => zoom(1 / BTN_STEP)} aria-label="Zoom out">−</button>
         <button className="fbtn" onClick={fit} aria-label="Fit graph">⤢ Fit</button>
+        <span className="tdiv" />
+        <div className="legendbox">
+          <button className={`fbtn${legendOpen ? " on" : ""}`} onClick={() => setLegendOpen((o) => !o)} aria-label="Toggle legend" aria-expanded={legendOpen}>▦ Legend</button>
+          {legendOpen && <div className="legendpop"><Legend /></div>}
+        </div>
       </div>
 
-      <div className="tctl bl legendbox">
-        {legendOpen && <div className="legendpop"><Legend /></div>}
-        <button className={`fbtn${legendOpen ? " on" : ""}`} onClick={() => setLegendOpen((o) => !o)} aria-label="Toggle legend" aria-expanded={legendOpen}>▦ Legend</button>
-      </div>
       <div className="panhint">scroll to zoom · drag to pan · click a node to open its card</div>
 
       <div className={`drawer${drawerOpen ? " open" : ""}`} aria-hidden={!drawerOpen}>

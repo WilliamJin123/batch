@@ -18,7 +18,7 @@ export function EdgeLayer({ edges, pos, connectors, width, height }: {
   return (
     <svg width={width} height={height} style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 1 }}>
       <defs>
-        {/* inheritance: hollow triangle at the base a variant derives from */}
+        {/* derivation: hollow triangle on the variant end (parent → variant) */}
         <marker id="m-tri" markerWidth="18" markerHeight="16" refX="15" refY="8" orient="auto" markerUnits="userSpaceOnUse">
           <path d="M15,8 L3,2.5 L3,13.5 Z" fill="#FFFDFA" stroke="#956120" strokeWidth="1.3" />
         </marker>
@@ -43,10 +43,13 @@ export function EdgeLayer({ edges, pos, connectors, width, height }: {
         if (!a || !b) return null;
         const { A, B } = side(a, b);
         const mid = (A.x + B.x) / 2;
+        if (e.rel === "derives") {
+          // parent → variant: draw base (to=B) → variant (from=A) so the triangle lands on the variant
+          const d = `M${B.x},${B.y} C${mid},${B.y} ${mid},${A.y} ${A.x},${A.y}`;
+          return <path key={i} d={d} fill="none" stroke="#B47A37" strokeWidth={1.5} opacity={0.9} markerEnd="url(#m-tri)" />;
+        }
         const d = `M${A.x},${A.y} C${mid},${A.y} ${mid},${B.y} ${B.x},${B.y}`;
-        return e.rel === "derives"
-          ? <path key={i} d={d} fill="none" stroke="#B47A37" strokeWidth={1.5} opacity={0.9} markerEnd="url(#m-tri)" />
-          : <path key={i} d={d} fill="none" stroke="#8C8474" strokeWidth={1.4} strokeDasharray="5 4" opacity={0.9} markerStart="url(#m-dia)" />;
+        return <path key={i} d={d} fill="none" stroke="#8C8474" strokeWidth={1.4} strokeDasharray="5 4" opacity={0.9} markerStart="url(#m-dia)" />;
       })}
     </svg>
   );

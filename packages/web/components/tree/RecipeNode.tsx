@@ -29,7 +29,11 @@ export function RecipeNode({ node, pos, arm, selected, onOpen }: {
     >
       <span className="role">{arm ? `${role} · ${arm}` : role}</span>
       <div className="nname">{title} {paren && <span className="q">{paren}</span>}{node.needsTuning && <span className="tune">needs-tuning</span>}</div>
-      <div className="nmeta">{r0(node.cal)} cal · {r1(node.protein)} P<br />{node.calPerGramProtein != null ? r1(node.calPerGramProtein) : "—"} cal/g · makes {node.servings}</div>
+      <div className="nmeta">
+        {r0(node.cal)} cal · {r1(node.protein)} P <span className="munit">/ serving</span><br />
+        {node.servings > 1 && <>{r0(node.wholeCal).toLocaleString("en-US")} cal · {r0(node.wholeProtein)} P <span className="munit">total</span><br /></>}
+        {node.calPerGramProtein != null ? r1(node.calPerGramProtein) : "—"} cal/g · makes {node.servings} {node.servingUnit}
+      </div>
       <Rate node={node} />
       {node.feedbackNote && <div className={`nfb${node.needsTuning ? " bad" : ""}`}>{node.feedbackNote}</div>}
     </div>
