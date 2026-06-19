@@ -104,6 +104,55 @@ export function TreeView({ graph, pos, width, height, cards }: {
     return () => board.removeEventListener("wheel", onWheel);
   }, [pushHist]);
 
+  // touch: 1-finger drag pans, 2-finger pinch zooms (mobile). Native non-passive so
+  // preventDefault() stops the browser's own scroll/zoom and the synthesized mouse events.
+  useEffect(() => {
+    const board = boardRef.current; if (!board) return;
+    let tpan: { sx: number; sy: number } | null = null;
+    let pinch: { d0: number; s0: number; mx: number; my: number; ox0: number; oy0: number } | null = null;
+    let moved = false;
+    const dist = (a: Touch, b: Touch) => Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
+    const onStart = (e: TouchEvent) => {
+      const el = e.target as HTMLElement;
+      if (el.closest(".node") || el.closest(".bopill")) return; // let node taps / pill hovers through
+      if (e.touches.length === 1) {
+        setSmooth(false); moved = false; pinch = null;
+        tpan = { sx: e.touches[0].clientX - tRef.current.ox, sy: e.touches[0].clientY - tRef.current.oy };
+        e.preventDefault();
+      } else if (e.touches.length === 2) {
+        setSmooth(false); tpan = null;
+        const r = board.getBoundingClientRect(), a = e.touches[0], b = e.touches[1];
+        pinch = { d0: dist(a, b), s0: tRef.current.scale, mx: (a.clientX + b.clientX) / 2 - r.left, my: (a.clientY + b.clientY) / 2 - r.top, ox0: tRef.current.ox, oy0: tRef.current.oy };
+        e.preventDefault();
+      }
+    };
+    const onMove = (e: TouchEvent) => {
+      if (pinch && e.touches.length >= 2) {
+        e.preventDefault();
+        const ns = clampS(pinch.s0 * (dist(e.touches[0], e.touches[1]) / pinch.d0)), k = ns / pinch.s0;
+        setT({ scale: ns, ox: pinch.mx - k * (pinch.mx - pinch.ox0), oy: pinch.my - k * (pinch.my - pinch.oy0) });
+      } else if (tpan && e.touches.length === 1) {
+        e.preventDefault(); moved = true;
+        const t0 = e.touches[0];
+        setT((p) => ({ ...p, ox: t0.clientX - tpan!.sx, oy: t0.clientY - tpan!.sy }));
+      }
+    };
+    const onEnd = (e: TouchEvent) => {
+      if (pinch && e.touches.length < 2) { pinch = null; pushHist(tRef.current); }
+      if (tpan && e.touches.length === 0) { tpan = null; if (moved) { moved = false; pushHist(tRef.current); } }
+    };
+    board.addEventListener("touchstart", onStart, { passive: false });
+    board.addEventListener("touchmove", onMove, { passive: false });
+    board.addEventListener("touchend", onEnd);
+    board.addEventListener("touchcancel", onEnd);
+    return () => {
+      board.removeEventListener("touchstart", onStart);
+      board.removeEventListener("touchmove", onMove);
+      board.removeEventListener("touchend", onEnd);
+      board.removeEventListener("touchcancel", onEnd);
+    };
+  }, [pushHist]);
+
   const onDown = (e: React.MouseEvent) => {
     const el = e.target as HTMLElement;
     if (el.closest(".node") || el.closest(".bopill")) return; // let node clicks / pill hovers through

@@ -7,5 +7,5 @@
 .nav{display:flex;gap:4px;margin-left:4px}
 .nav a{font-size:13px;color:var(--muted);padding:6px 11px;border-radius:8px;position:relative}
 .nav a.on{color:var(--ink)}
-.nav a.on::after{content:"";position:absolute;left:11px;right:11px;bottom:-19px;height:2px;background:var(--accent);border-radius:2px}
+.nav a.on::after{content:"";position:absolute;left:11px;right:11px;bottom:-13px;height:2px;background:var(--accent);border-radius:2px}
 .spacer{flex:1}

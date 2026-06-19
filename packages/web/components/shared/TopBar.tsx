@@ -1,6 +1,10 @@
+"use client";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 export function TopBar() {
+  const path = usePathname() ?? "/";
+  const onRecipes = path.startsWith("/recipes");
   return (
     <div className="topbar">
       <div className="brand">
@@ -9,8 +13,8 @@ export function TopBar() {
         <span className="branch">main</span>
       </div>
       <nav className="nav">
-        <Link className="on" href="/">Tree</Link>
-        <Link href="/recipes">Recipes</Link>
+        <Link className={onRecipes ? undefined : "on"} href="/">Tree</Link>
+        <Link className={onRecipes ? "on" : undefined} href="/recipes">Recipes</Link>
       </nav>
       <div className="spacer"></div>
     </div>
