@@ -13,8 +13,6 @@ export function TopBar() {
         <Link href="/recipes">Recipes</Link>
       </nav>
       <div className="spacer"></div>
-      <div className="search">Search recipes <span className="kbd">⌘K</span></div>
-      <div className="me">wj</div>
     </div>
   );
 }

@@ -1,6 +1,5 @@
 import { vi, it, expect } from "vitest";
-vi.mock("next/link", () => ({ default: ({ children, ...p }: any) => <a {...p}>{children}</a> }));
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import { RecipeNode } from "./RecipeNode";
 
 const node: any = {
@@ -14,4 +13,11 @@ it("RecipeNode renders name, macro line, and a rating", () => {
   expect(screen.getByText(/Red Velvet/)).toBeTruthy();
   expect(screen.getByText(/205 cal/)).toBeTruthy();
   expect(screen.getByText(/to make/)).toBeTruthy();
+});
+
+it("RecipeNode opens the card (fires onOpen with the recipeId) when clicked", () => {
+  const onOpen = vi.fn();
+  render(<RecipeNode node={node} pos={{ x: 0, y: 0, w: 200, h: 96 }} onOpen={onOpen} />);
+  fireEvent.click(screen.getByRole("button", { name: /Open Red Velvet/ }));
+  expect(onOpen).toHaveBeenCalledWith("r1");
 });

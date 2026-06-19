@@ -1,6 +1,7 @@
 import type { Pos } from "../../lib/layout/graphLayout";
 
 type Edge = { from: string; to: string; rel: "derives" | "composes" };
+export type Connector = { ax: number; ay: number; bx: number; by: number; mx: number; my: number };
 
 /** Anchor on the side of each box that faces the other, so the curve flows horizontally. */
 function side(a: Pos, b: Pos) {
@@ -11,8 +12,8 @@ function side(a: Pos, b: Pos) {
   };
 }
 
-export function EdgeLayer({ edges, pos, width, height }: {
-  edges: Edge[]; pos: Map<string, Pos>; width: number; height: number;
+export function EdgeLayer({ edges, pos, connectors, width, height }: {
+  edges: Edge[]; pos: Map<string, Pos>; connectors?: Connector[]; width: number; height: number;
 }) {
   return (
     <svg width={width} height={height} style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 1 }}>
@@ -26,6 +27,17 @@ export function EdgeLayer({ edges, pos, width, height }: {
           <path d="M3,7 L10,2.5 L17,7 L10,11.5 Z" fill="#FFFDFA" stroke="#8C8474" strokeWidth="1.2" />
         </marker>
       </defs>
+      {/* bake-off brackets: link the two arms through the pill that sits at the midpoint */}
+      {connectors?.map((c, i) => {
+        const d = `M${c.ax},${c.ay} Q${c.mx},${c.ay} ${c.mx},${c.my} Q${c.mx},${c.by} ${c.bx},${c.by}`;
+        return (
+          <g key={`bo-${i}`}>
+            <path d={d} fill="none" stroke="#B47A37" strokeWidth={1.6} strokeDasharray="2 4" strokeLinecap="round" opacity={0.85} />
+            <circle cx={c.ax} cy={c.ay} r={2.6} fill="#B47A37" />
+            <circle cx={c.bx} cy={c.by} r={2.6} fill="#B47A37" />
+          </g>
+        );
+      })}
       {edges.map((e, i) => {
         const a = pos.get(e.from), b = pos.get(e.to);
         if (!a || !b) return null;

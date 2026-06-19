@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { layoutGraph } from "./graphLayout";
 
 const g = { nodes: [
-  { recipeId: "base", kind: "base" }, { recipeId: "v1", kind: "variant" }, { recipeId: "sub", kind: "sub-recipe" },
+  { recipeId: "base", kind: "base", name: "Base Cookie" }, { recipeId: "v1", kind: "variant", name: "Variant One" }, { recipeId: "sub", kind: "sub-recipe", name: "Frosting" },
 ] as any, edges: [ { from: "v1", to: "base", rel: "derives" }, { from: "v1", to: "sub", rel: "composes" } ] as any };
 
 it("places every node with finite coords, deterministically", () => {
