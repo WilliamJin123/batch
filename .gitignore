@@ -221,3 +221,6 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# visual brainstorming companion (local mockups)
+.superpowers/
