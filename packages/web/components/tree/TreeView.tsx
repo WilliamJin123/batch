@@ -10,7 +10,8 @@ import type { BakeCardVM, BakeoffNote, TreeGraphVM } from "../../lib/viewmodel/t
 import type { Pos } from "../../lib/layout/graphLayout";
 
 const MIN_SCALE = 0.2, MAX_SCALE = 2.6, INIT_SCALE = 0.95;
-const FAR_SCALE = 0.55;  // below this, nodes collapse to a big, counter-scaled title (semantic zoom)
+const FAR_SCALE = 0.55;  // below this, nodes collapse to a title-only card (semantic zoom)
+const INV_CAP = 2.2;     // cap the far-mode counter-scale so cards stay constant-size, then shrink gently
 const WHEEL_K = 0.0045;  // wheel/pinch sensitivity (higher = snappier)
 const BTN_STEP = 1.25;   // per-click zoom factor for the +/- buttons
 const HIST_MAX = 60;     // navigation undo/redo depth
@@ -202,7 +203,7 @@ export function TreeView({ graph, pos, width, height, cards }: {
   return (
     <div className="treepage">
       <div className="board" ref={boardRef} onMouseDown={onDown}>
-        <div className={`scene${t.scale < FAR_SCALE ? " far" : ""}`} style={{ transform: `translate(${t.ox}px,${t.oy}px) scale(${t.scale})`, width, height, transition: smooth ? "transform .26s cubic-bezier(.22,.61,.36,1)" : "none", ["--inv" as string]: 1 / t.scale } as React.CSSProperties}>
+        <div className={`scene${t.scale < FAR_SCALE ? " far" : ""}`} style={{ transform: `translate(${t.ox}px,${t.oy}px) scale(${t.scale})`, width, height, transition: smooth ? "transform .26s cubic-bezier(.22,.61,.36,1)" : "none", ["--inv" as string]: Math.min(1 / t.scale, INV_CAP) } as React.CSSProperties}>
           <EdgeLayer edges={graph.edges} pos={posMap} connectors={connectors} width={width} height={height} />
           {graph.nodes.map((n) => <RecipeNode key={n.recipeId} node={n} pos={posMap.get(n.recipeId)!} arm={arm.get(n.recipeId)} selected={focus === n.recipeId} onOpen={openFromNode} />)}
           {connectors.map((c, i) => <BakeoffPill key={i} note={c.note} pos={{ x: c.mx, y: c.my }} />)}

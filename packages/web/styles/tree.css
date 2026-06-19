@@ -98,11 +98,14 @@
 .node.sub{width:184px;border-style:dashed;background:rgba(255,253,250,.7)}
 .node.sub .nname{font-size:13.5px}
 
-/* semantic zoom: past FAR_SCALE the scene gets .far; nodes drop their detail and show only
-   the title, counter-scaled by --inv (=1/scale) so it stays a constant, legible size at any zoom */
-.scene.far .node{display:flex;align-items:center;justify-content:center;text-align:center;padding:10px 12px}
+/* semantic zoom: past FAR_SCALE the scene gets .far; nodes drop their detail and show only the
+   title. The whole card is counter-scaled by --inv (=min(1/scale, cap)) so it keeps its natural
+   200px proportions on screen — the title wraps inside it like a normal card instead of overflowing. */
+.scene.far .node,.scene.far .node:hover{transform:scale(var(--inv,1));transform-origin:center center;transition:none}
+.scene.far .node{display:flex;align-items:center;justify-content:center;text-align:center;padding:12px;overflow:hidden}
 .scene.far .node .role,.scene.far .node .nmeta,.scene.far .node .nrate,.scene.far .node .nfb,.scene.far .node .tune,.scene.far .node .nname .q{display:none}
-.scene.far .node .nname{font-size:clamp(20px,calc(13px * var(--inv,1)),60px);line-height:1.08;font-weight:600;width:100%;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.scene.far .node .nname{font-size:16px;line-height:1.16;font-weight:600;width:100%;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:break-word;word-break:normal;hyphens:none}
+.scene.far .node.sub .nname{font-size:15px}
 
 /* bake-off pill (centres on the bracket midpoint) */
 .bopill{position:absolute;z-index:5;font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent-deep);background:var(--accent-soft);border:1px solid rgba(180,122,55,.32);border-radius:20px;padding:3px 10px;cursor:help;display:flex;align-items:center;gap:6px;box-shadow:0 1px 4px rgba(60,44,18,.12)}
