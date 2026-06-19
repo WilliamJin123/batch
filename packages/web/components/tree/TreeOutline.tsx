@@ -3,26 +3,50 @@ import { useState } from "react";
 import type { TreeGraphVM, TreeNodeVM } from "../../lib/viewmodel/types";
 import { StateDot } from "../shared/StateDot";
 
-export function TreeOutline({ graph, focus, onJump }: {
-  graph: TreeGraphVM; focus: string | null; onJump: (id: string) => void;
+/** The "all recipes" drawer: a live filter over every recipe, grouped by family.
+ *  Picking a row centres that node in the canvas and opens its card. */
+export function TreeOutline({ graph, focus, onPick, onClose }: {
+  graph: TreeGraphVM; focus: string | null; onPick: (id: string) => void; onClose: () => void;
 }) {
+  const [q, setQ] = useState("");
+  const [closed, setClosed] = useState<Record<string, boolean>>({});
+  const ql = q.trim().toLowerCase();
+  const searching = ql.length > 0;
+  const match = (n: TreeNodeVM) =>
+    !searching ||
+    n.name.toLowerCase().includes(ql) ||
+    n.family.toLowerCase().includes(ql) ||
+    n.tags.some((t) => t.toLowerCase().includes(ql));
+
   const families = new Map<string, TreeNodeVM[]>();
-  for (const n of graph.nodes) { (families.get(n.family) ?? families.set(n.family, []).get(n.family)!).push(n); }
-  const [open, setOpen] = useState<Record<string, boolean>>({});
-  const isOpen = (f: string) => open[f] ?? true;
+  let total = 0;
+  for (const n of graph.nodes) {
+    if (!match(n)) continue;
+    total++;
+    (families.get(n.family) ?? families.set(n.family, []).get(n.family)!).push(n);
+  }
+  const isOpen = (f: string) => searching || !closed[f];
+
   return (
-    <>
-      <div className="rt"><span>All recipes</span><span>{graph.nodes.length}</span></div>
-      <div className="tree-ol">
+    <div className="drawer-inner">
+      <div className="dhead">
+        <span className="dt">All recipes</span>
+        <button className="dx" onClick={onClose} aria-label="Close recipes">✕</button>
+      </div>
+      <input className="dq" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search name, family, or tag…" aria-label="Search recipes" />
+      <div className="dct">{total} of {graph.nodes.length}</div>
+      <div className="dlist">
         {[...families.entries()].map(([fam, nodes]) => (
           <div key={fam}>
-            <div className="tol-row grp" onClick={() => setOpen((o) => ({ ...o, [fam]: !isOpen(fam) }))}>
+            <div className="tol-row grp" onClick={() => setClosed((c) => ({ ...c, [fam]: isOpen(fam) }))}>
               <span className="tol-tw">{isOpen(fam) ? "▾" : "▸"}</span>
               <span className="tol-nm">{fam}</span>
               <span className="tol-ct">{nodes.length}</span>
             </div>
             {isOpen(fam) && nodes.map((n) => (
-              <div key={n.recipeId} className={`tol-row ind1${focus === n.recipeId ? " on" : ""}`} onClick={() => onJump(n.recipeId)}>
+              <div key={n.recipeId} className={`tol-row ind1${focus === n.recipeId ? " on" : ""}`} role="button" tabIndex={0}
+                onClick={() => onPick(n.recipeId)}
+                onKeyDown={(e) => { if (e.key === "Enter") onPick(n.recipeId); }}>
                 <span className="tol-tw" />
                 <span className="tol-nm">{n.name}{n.kind === "base" && <span className="basel">base</span>}{n.needsTuning && <span className="flag">tune</span>}</span>
                 <StateDot made={n.made} rating={n.rating} />
@@ -30,8 +54,9 @@ export function TreeOutline({ graph, focus, onJump }: {
             ))}
           </div>
         ))}
+        {total === 0 && <div className="dempty">No recipes match “{q}”.</div>}
       </div>
       <div className="railsum"><span className="star">★</span> excellent &nbsp; <span className="dotg" /> good &nbsp; <span className="ringa" /> to-make</div>
-    </>
+    </div>
   );
 }

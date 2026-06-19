@@ -9,6 +9,3 @@
 .nav a.on{color:var(--ink)}
 .nav a.on::after{content:"";position:absolute;left:11px;right:11px;bottom:-19px;height:2px;background:var(--accent);border-radius:2px}
 .spacer{flex:1}
-.search{display:flex;align-items:center;gap:9px;font-size:12.5px;color:var(--muted);border:1px solid var(--line);border-radius:9px;padding:7px 11px;background:var(--surface)}
-.kbd{font-family:var(--mono);font-size:10.5px;color:var(--faint);border:1px solid var(--line);border-radius:4px;padding:1px 5px}
-.me{width:25px;height:25px;border-radius:50%;background:#EBE2D2;color:var(--muted);font-family:var(--mono);font-size:10px;display:flex;align-items:center;justify-content:center;border:1px solid var(--line)}
