@@ -1,5 +1,5 @@
 {
-  "buildCommand": "pnpm --filter @batch/web build",
-  "outputDirectory": "packages/web/.next",
+  "framework": "nextjs",
+  "buildCommand": "git clone --depth 1 --branch master https://x-access-token:$BATCH_DATA_TOKEN@github.com/WilliamJin123/batch-data.git /tmp/batch-data && BATCH_DB=/tmp/batch-data/db.json pnpm build",
   "installCommand": "pnpm install"
 }
