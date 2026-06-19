@@ -1,0 +1,15 @@
+/* MacroLine — mirrors .nmeta from the node card */
+.macroline{font-family:var(--mono);font-size:10px;color:var(--muted);line-height:1.5}
+
+/* Rating chip */
+.rate{font-family:var(--mono);font-size:10.5px;display:inline-flex;align-items:center;gap:6px}
+.rate.excellent{color:var(--accent-deep)}
+.rate.good{color:var(--green)}
+.rate.okay{color:var(--muted)}
+.rate.bad{color:var(--warn)}
+.rate.plan{color:var(--accent-deep)}
+
+/* State dot glyphs */
+.star{color:var(--gold)}
+.dotg{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--green)}
+.ringa{display:inline-block;width:7px;height:7px;border-radius:50%;border:1.5px solid var(--accent-deep);background:transparent}
