@@ -110,6 +110,18 @@ Decomposition: the `lib/` logic layers are pure and TDD'd (this is where correct
 const nextConfig = {
   transpilePackages: ["@batch/core"],
   reactStrictMode: true,
+  // @batch/core is raw ESM-TS: its intra-package imports use `.js` specifiers that point
+  // at `.ts` files (e.g. `./types.js` -> `types.ts`), with no build step. transpilePackages
+  // tells Next to COMPILE core, but webpack must also be told to RESOLVE those `.js`
+  // specifiers to `.ts` sources — otherwise `next build` dies on "Can't resolve './types.js'".
+  // This alias is the isolated fix: it touches ONLY the web package (not core/CLI/tsconfig).
+  webpack: (config) => {
+    config.resolve.extensionAlias = {
+      ".js": [".ts", ".tsx", ".js"],
+      ".mjs": [".mts", ".mjs"],
+    };
+    return config;
+  },
 };
 export default nextConfig;
 ```
@@ -157,14 +169,30 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 }
 ```
 ```tsx
-// app/page.tsx
-export default function Page() { return <main>Batch web — scaffold</main>; }
+// app/page.tsx — imports @batch/core so the build PROVES webpack resolves the raw-TS
+// ESM package (the `.js`-specifier resolution gate) at real build time, not just typecheck.
+import { RecipeService } from "@batch/core";
+export default function Page() {
+  return <main>Batch web — scaffold (core: {RecipeService.name})</main>;
+}
 ```
 
 - [ ] **Step 7: Install + typecheck**
 
 Run: `pnpm install && pnpm --filter @batch/web typecheck`
 Expected: install resolves `@batch/core` as a workspace dep; typecheck passes (no errors).
+
+- [ ] **Step 7b: PROVE the core ESM resolution with a real build (load-bearing gate)**
+
+Run: `pnpm --filter @batch/web exec next build`  (call `next build` DIRECTLY, not the `build`
+npm-script — that script also runs `scripts/bake-data.mjs`, which doesn't exist until Task 3.)
+Expected: `next build` compiles and the `/` route resolves `@batch/core` — whose intra-package
+imports use `.js` specifiers on `.ts` files — with **no** `Module not found: Can't resolve './types.js'`.
+If it fails here, the `webpack.resolve.extensionAlias` in `next.config.mjs` is the fix; do NOT
+proceed to any other task until this build is green. (Fallback only if extensionAlias proves
+insufficient: build `@batch/core` to `dist/` with an `exports` map — but that regresses the
+CLI's no-build tsx dev loop, so treat it as a last resort.) The build may warn that there's no
+data yet — fine; this step only proves package resolution.
 
 - [ ] **Step 8: Commit**
 
@@ -703,7 +731,12 @@ export async function buildTreeGraph(svc: RecipeService): Promise<TreeGraphVM> {
     }
   }
 
-  // bake-off: same name-stem, ≥2 recipes, none tried yet (head-to-head awaiting a verdict)
+  // bake-off: a stem family that is EXACTLY two untried siblings awaiting a head-to-head
+  // verdict. Deliberately the strictest, lowest-false-positive rule: it flags Red Velvet
+  // (family = {Oat, Crumbl}, both to-make) and refuses to guess on larger families — e.g.
+  // Browned-Butter has 4 siblings incl. a 50g/60g *ablation sweep* (a concept the user keeps
+  // SEPARATE from bake-offs), correctly NOT flagged. A name heuristic can't itself tell a
+  // bake-off from an ablation; the robust answer is explicit bake-off metadata once arms exist.
   const byStem = new Map<string, TreeNodeVM[]>();
   for (const n of nodes) { const k = nameStem(n.name); (byStem.get(k) ?? byStem.set(k, []).get(k)!).push(n); }
   const bakeoffs: BakeoffVM[] = [];
@@ -1211,6 +1244,17 @@ git commit -m "docs(web): deploy config + no-rewrite write-path note"
 **Known judgment calls (flag in review):** (1) bake-off detection is heuristic (name-stem + both-untried) — fine for the red-velvet case, becomes explicit metadata later; (2) sub-recipe section detection in `bakeCard.ts` uses a name regex — robust alternative is to check each step's source via `flatten()` `sources[]`; (3) `app/**/*.test.tsx` render Server Components by calling the source directly then rendering child components (not the async page) to stay in jsdom.
 
 ---
+
+## Adversarial Review (2026-06-18) — findings applied
+
+Four parallel source/data audits ran against `packages/core/src` and the real `~/.batch/db.json`. Outcomes:
+
+- **Blocker fixed — ESM resolution.** `@batch/core` is raw ESM-TS (`.js` specifiers on `.ts` files, no build, no `exports`). `transpilePackages` alone fails `next build`. Fix applied in `next.config.mjs` via `webpack.resolve.extensionAlias` (isolated to `packages/web`; does NOT touch the shared `tsconfig.base.json`, which would have hit core+CLI). Task 1 Step 7b now proves it with a real build before anything else is built on top.
+- **Field vocabulary — verified 100% correct** against both the TS types and the serialized JSON. `version.yield = {amount,unit}` lives on the version; `usage = {componentKey,stepKey,slotKey,quantityValue,quantityUnit}`; `step` has optional `section/temperature/timerSeconds` (so non-composed recipes collapse to one "Base"/"Method" group — expected); feedback entries have optional `notes`/`componentKey` (so tree feedback snippets are sparse — expected, not a bug).
+- **`v.macros` is persisted on every version** (set at commit) — the tree's `v.macros!` is safe, no crash.
+- **Macro parity zip proven** — `exportCard` flattens then computes; one line per usage; sub-recipe expansion keeps `usages[i] ↔ lines[i]` aligned. Core's own `macrosBySection` relies on the same invariant.
+- **Bake-off rule kept strict** (`group.length===2 && all-untried`) and documented inline — it cannot mislabel the Browned-Butter 50g/60g *ablation sweep* as a bake-off. Robust fix (explicit metadata) deferred.
+- **Accepted minors:** tree reads stored `v.macros` while the card recomputes via `exportCard` (equal today; switch tree to computed if drift ever shows). The test fixture is the whole real store with a few hardcoded recipe names (verified exact); re-sync when recipes are renamed/added.
 
 ## Execution Handoff
 
