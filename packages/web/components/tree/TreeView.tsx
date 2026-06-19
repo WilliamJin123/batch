@@ -10,8 +10,8 @@ import type { BakeCardVM, BakeoffNote, TreeGraphVM } from "../../lib/viewmodel/t
 import type { Pos } from "../../lib/layout/graphLayout";
 
 const MIN_SCALE = 0.2, MAX_SCALE = 2.6, INIT_SCALE = 0.95;
-const WHEEL_K = 0.003;   // wheel/pinch sensitivity (higher = snappier)
-const BTN_STEP = 1.4;    // per-click zoom factor for the +/- buttons
+const WHEEL_K = 0.0045;  // wheel/pinch sensitivity (higher = snappier)
+const BTN_STEP = 1.25;   // per-click zoom factor for the +/- buttons
 const clampS = (s: number) => Math.min(MAX_SCALE, Math.max(MIN_SCALE, s));
 
 export function TreeView({ graph, pos, width, height, cards }: {
