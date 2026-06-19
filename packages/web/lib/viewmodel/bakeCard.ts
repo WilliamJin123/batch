@@ -22,7 +22,12 @@ export async function buildBakeCard(svc: RecipeService, recipeId: string): Promi
     const line = macros.lines[i];
     const slot = slotByKey.get(u.slotKey);
     const section = sectionOfStep.get(u.stepKey) ?? "Base";
-    const g = groups.get(section) ?? { title: section.replace(/ · sub-recipe$/i, ""), subRecipe: /sub-recipe/i.test(section), calories: 0, items: [] };
+    // flatten() prefixes a composed sub-recipe's usage keys as "<parentSlot>/..."; that "/"
+    // is the robust structural signal that this ingredient came from a sub-recipe (the step's
+    // section is the child recipe's NAME, so a name regex can't detect it).
+    const isSub = u.slotKey.includes("/");
+    const g = groups.get(section) ?? { title: section, subRecipe: isSub, calories: 0, items: [] };
+    g.subRecipe = g.subRecipe || isSub;
     g.calories += line?.macros?.calories ?? 0;
     g.items.push({ qtyNatural: qtyNatural(u.quantityValue, u.quantityUnit), grams: roundGrams(line?.grams), name: slot?.name ?? line?.ingredientName ?? u.slotKey });
     groups.set(section, g);

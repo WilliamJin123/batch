@@ -8,9 +8,13 @@ async function svc() { return serviceFrom(await buildRepository(fixture as any))
 describe("buildBakeCard", () => {
   it("matches core macros exactly (parity) and carries dual-unit grams", async () => {
     const s = await svc();
-    const v = (await s.listVersions()).find((x) => x.name === "Red Velvet Protein Cookies (Crumbl Base)")!;
-    const core = await s.exportCard(v.id);
-    const card = await buildBakeCard(s, v.recipeId);
+    // The recipe now has many versions; resolve its HEAD (what buildBakeCard renders) and
+    // anchor the parity comparison there. find() returns the OLDEST version with the name,
+    // so comparing exportCard(named.id) would pit two different versions against each other.
+    const named = (await s.listVersions()).find((x) => x.name === "Red Velvet Protein Cookies (Crumbl Base)")!;
+    const headId = (await s.getRecipe(named.recipeId)).headVersionId;
+    const core = await s.exportCard(headId);
+    const card = await buildBakeCard(s, named.recipeId);
     expect(card.perServing.calories).toBe(core.macros.perServing.calories);
     expect(card.whole.calories).toBe(core.macros.total.calories);
     expect(card.calPerGramProtein).toBe(core.macros.caloriesPerGramProtein ?? null);
