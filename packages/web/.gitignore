@@ -1,3 +1,5 @@
 /.next
 /data/db.json
 node_modules
+# unignore lib/ (root .gitignore has a Python-artifact `lib/` pattern)
+!lib/
