@@ -81,7 +81,7 @@ export function TreeView({ graph, pos, width, height, cards }: {
 
   // pan continues even when the cursor leaves the board → listen on window; commit one history entry per drag
   useEffect(() => {
-    const onMove = (e: MouseEvent) => { if (!pan.current) return; panMoved.current = true; setT((p) => ({ ...p, ox: e.clientX - pan.current!.sx, oy: e.clientY - pan.current!.sy })); };
+    const onMove = (e: MouseEvent) => { const pc = pan.current; if (!pc) return; panMoved.current = true; const nox = e.clientX - pc.sx, noy = e.clientY - pc.sy; setT((p) => ({ ...p, ox: nox, oy: noy })); };
     const onUp = () => { if (!pan.current) return; pan.current = null; boardRef.current?.classList.remove("grabbing"); if (panMoved.current) { panMoved.current = false; pushHist(tRef.current); } };
     window.addEventListener("mousemove", onMove);
     window.addEventListener("mouseup", onUp);
@@ -127,14 +127,16 @@ export function TreeView({ graph, pos, width, height, cards }: {
       }
     };
     const onMove = (e: TouchEvent) => {
-      if (pinch && e.touches.length >= 2) {
+      if (pinch && e.touches.length >= 2 && pinch.d0 > 0) {
         e.preventDefault();
         const ns = clampS(pinch.s0 * (dist(e.touches[0], e.touches[1]) / pinch.d0)), k = ns / pinch.s0;
         setT({ scale: ns, ox: pinch.mx - k * (pinch.mx - pinch.ox0), oy: pinch.my - k * (pinch.my - pinch.oy0) });
       } else if (tpan && e.touches.length === 1) {
         e.preventDefault(); moved = true;
-        const t0 = e.touches[0];
-        setT((p) => ({ ...p, ox: t0.clientX - tpan!.sx, oy: t0.clientY - tpan!.sy }));
+        // capture offsets as primitives — never deref tpan/the Touch inside the updater,
+        // which React can replay after touchend has nulled tpan (intermittent crash).
+        const nox = e.touches[0].clientX - tpan.sx, noy = e.touches[0].clientY - tpan.sy;
+        setT((p) => ({ ...p, ox: nox, oy: noy }));
       }
     };
     const onEnd = (e: TouchEvent) => {
