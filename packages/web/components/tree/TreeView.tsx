@@ -89,13 +89,21 @@ export function TreeView({ graph, pos, width, height, cards }: {
   const arm = new Map<string, "A" | "B">();
   for (const b of graph.bakeoffs) { arm.set(b.a, "A"); arm.set(b.b, "B"); }
 
-  // bake-off brackets: connect the facing edges of the two arms, pill at the gap midpoint
+  // bake-off brackets: connect the two arms along whichever axis they're separated on
+  // (side-by-side → facing vertical edges; stacked → facing horizontal edges), pill at the midpoint
   const connectors = graph.bakeoffs.map((b) => {
     const a = posMap.get(b.a), bb = posMap.get(b.b);
     if (!a || !bb) return null;
-    const [hi, lo] = a.y <= bb.y ? [a, bb] : [bb, a];
-    const ax = hi.x + hi.w / 2, ay = hi.y + hi.h, bx = lo.x + lo.w / 2, by = lo.y;
-    const mx = ((a.x + a.w / 2) + (bb.x + bb.w / 2)) / 2, my = (ay + by) / 2;
+    const dx = Math.abs((a.x + a.w / 2) - (bb.x + bb.w / 2)), dy = Math.abs((a.y + a.h / 2) - (bb.y + bb.h / 2));
+    let ax, ay, bx, by;
+    if (dx >= dy) { // side by side: right edge of the left box ↔ left edge of the right box
+      const [L, R] = a.x <= bb.x ? [a, bb] : [bb, a];
+      ax = L.x + L.w; ay = L.y + L.h / 2; bx = R.x; by = R.y + R.h / 2;
+    } else { // stacked: bottom of the upper box ↔ top of the lower box
+      const [U, D] = a.y <= bb.y ? [a, bb] : [bb, a];
+      ax = U.x + U.w / 2; ay = U.y + U.h; bx = D.x + D.w / 2; by = D.y;
+    }
+    const mx = (ax + bx) / 2, my = (ay + by) / 2;
     return { note: b.note as BakeoffNote, ax, ay, bx, by, mx, my };
   }).filter((c): c is NonNullable<typeof c> => c !== null);
 
