@@ -1,0 +1,4 @@
+#!/usr/bin/env sh
+# Run the Batch CLI via tsx (no build step). Resolves relative to this script.
+DIR="$(cd "$(dirname "$0")" && pwd)"
+exec "$DIR/node_modules/.bin/tsx" "$DIR/packages/cli/src/bin.ts" "$@"
