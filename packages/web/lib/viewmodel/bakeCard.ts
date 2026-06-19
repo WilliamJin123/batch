@@ -1,5 +1,5 @@
 import type { RecipeService } from "@batch/core";
-import type { BakeCardVM, IngredientGroupVM, MacroVM } from "./types";
+import type { BakeCardVM, IngredientGroupVM, IngredientRowVM, MacroVM } from "./types";
 import { qtyNatural, roundGrams } from "./format";
 import { summarizeRecipe } from "@batch/core";
 
@@ -18,6 +18,7 @@ export async function buildBakeCard(svc: RecipeService, recipeId: string): Promi
   const slotByKey = new Map(content.slots.map((s) => [s.componentKey, s] as const));
   const sectionOfStep = new Map(content.steps.map((s) => [s.componentKey, s.section ?? "Base"] as const));
   const groups = new Map<string, IngredientGroupVM>();
+  const stepUses = new Map<string, IngredientRowVM[]>();   // step componentKey -> the ingredients that step adds (cook-mode chips)
   content.usages.forEach((u, i) => {
     const line = macros.lines[i];
     const slot = slotByKey.get(u.slotKey);
@@ -26,11 +27,16 @@ export async function buildBakeCard(svc: RecipeService, recipeId: string): Promi
     // is the robust structural signal that this ingredient came from a sub-recipe (the step's
     // section is the child recipe's NAME, so a name regex can't detect it).
     const isSub = u.slotKey.includes("/");
+    const row: IngredientRowVM = { qtyNatural: qtyNatural(u.quantityValue, u.quantityUnit), grams: roundGrams(line?.grams), name: slot?.name ?? line?.ingredientName ?? u.slotKey };
     const g = groups.get(section) ?? { title: section, subRecipe: isSub, calories: 0, items: [] };
     g.subRecipe = g.subRecipe || isSub;
     g.calories += line?.macros?.calories ?? 0;
-    g.items.push({ qtyNatural: qtyNatural(u.quantityValue, u.quantityUnit), grams: roundGrams(line?.grams), name: slot?.name ?? line?.ingredientName ?? u.slotKey });
+    g.items.push(row);
     groups.set(section, g);
+    // same row attaches to the step that uses it, so the method can show ingredients inline
+    const su = stepUses.get(u.stepKey) ?? [];
+    su.push(row);
+    stepUses.set(u.stepKey, su);
   });
   for (const g of groups.values()) g.calories = Math.round(g.calories);
 
@@ -47,7 +53,7 @@ export async function buildBakeCard(svc: RecipeService, recipeId: string): Promi
     ingredientGroups: [...groups.values()],
     composition: Object.entries(bySection).map(([name, m]) => ({ name: name.replace(/ · sub-recipe$/i, ""), calories: Math.round(m.calories), protein: Math.round(m.protein * 10) / 10 })),
     lineage: await buildLineage(svc, version),
-    method: buildMethod(content),
+    method: buildMethod(content, stepUses),
     tastingLog: feedback.map((e) => ({ kind: e.kind, rating: e.kind === "made" ? e.rating : undefined, date: e.date.slice(0, 10), note: e.notes, component: e.componentKey })),
   };
 }
@@ -67,12 +73,12 @@ async function buildLineage(svc: RecipeService, version: import("@batch/core").R
   return out;
 }
 
-function buildMethod(content: import("@batch/core").RecipeContent): BakeCardVM["method"] {
+function buildMethod(content: import("@batch/core").RecipeContent, stepUses: Map<string, IngredientRowVM[]>): BakeCardVM["method"] {
   const bySection = new Map<string, BakeCardVM["method"][number]["steps"]>();
   for (const s of [...content.steps].sort((a, b) => a.order - b.order)) {
     const sec = (s.section ?? "Method").replace(/ · sub-recipe$/i, "");
     const arr = bySection.get(sec) ?? [];
-    arr.push({ text: s.instructionText, tempF: s.temperature, minutes: s.timerSeconds ? Math.round(s.timerSeconds / 60) : undefined });
+    arr.push({ text: s.instructionText, tempF: s.temperature, minutes: s.timerSeconds ? Math.round(s.timerSeconds / 60) : undefined, ingredients: stepUses.get(s.componentKey) ?? [] });
     bySection.set(sec, arr);
   }
   return [...bySection.entries()].map(([section, steps]) => ({ section, steps }));

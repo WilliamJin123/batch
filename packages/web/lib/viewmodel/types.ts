@@ -16,7 +16,7 @@ export interface BakeCardVM {
   ingredientGroups: IngredientGroupVM[];
   composition: Array<{ name: string; calories: number; protein: number }>;
   lineage: Array<{ name: string; rel: "forked-from" | "composes" | "sibling"; recipeId?: string }>;
-  method: Array<{ section: string; steps: Array<{ text: string; tempF?: number; minutes?: number }> }>;
+  method: Array<{ section: string; steps: Array<{ text: string; tempF?: number; minutes?: number; ingredients: IngredientRowVM[] }> }>;
   tastingLog: Array<{ kind: "made" | "to-make"; rating?: string; date: string; note?: string; component?: string }>;
 }
 export interface TreeNodeVM extends RecipeSummary { feedbackNote?: string; needsTuning: boolean; }

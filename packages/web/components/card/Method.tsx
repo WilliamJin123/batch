@@ -10,7 +10,16 @@ export function Method({ sections }: { sections: BakeCardVM["method"] }) {
           {sec.steps.map((st, i) => (
             <div className="step" key={i}>
               <span className="n">{i + 1}</span>
-              <span className="t">{(st.tempF || st.minutes) ? <span className="temp">{[st.tempF ? `${st.tempF}°F` : null, st.minutes ? `~${st.minutes} min` : null].filter(Boolean).join(" · ")}</span> : null}{st.text}</span>
+              <span className="t">
+                {(st.tempF || st.minutes) ? <span className="temp">{[st.tempF ? `${st.tempF}°F` : null, st.minutes ? `~${st.minutes} min` : null].filter(Boolean).join(" · ")}</span> : null}{st.text}
+                {st.ingredients.length > 0 && (
+                  <span className="sing">
+                    {st.ingredients.map((g, j) => (
+                      <span className="schip" key={j}><b>{g.qtyNatural}</b>{g.name}</span>
+                    ))}
+                  </span>
+                )}
+              </span>
             </div>
           ))}
         </div>

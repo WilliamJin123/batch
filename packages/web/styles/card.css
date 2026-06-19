@@ -45,11 +45,12 @@
 .cmodal-bar{display:flex;align-items:center;justify-content:space-between;padding:11px 16px;border-bottom:1px solid var(--line);background:var(--surface);flex:none}
 .cmodal-link{font-family:var(--mono);font-size:11px;color:var(--muted)}
 .cmodal-link:hover{color:var(--accent-deep)}
-.cmodal-x{font-family:var(--mono);font-size:11px;color:var(--ink-soft);border:1px solid var(--line2);background:var(--page);border-radius:8px;padding:5px 10px;cursor:pointer;display:flex;align-items:center;gap:7px}
-.cmodal-x span{font-size:9px;color:var(--faint);border:1px solid var(--line);border-radius:4px;padding:0 4px}
+.cmodal-x{font-family:var(--mono);color:var(--ink-soft);border:1px solid var(--line2);background:var(--page);border-radius:9px;padding:6px 11px;cursor:pointer;display:flex;align-items:center;gap:8px;flex:none}
+.cmodal-x .esc{font-size:9px;color:var(--faint);border:1px solid var(--line);border-radius:4px;padding:1px 5px}
+.cmodal-x .xg{font-size:16px;line-height:1}
 .cmodal-x:hover{border-color:var(--accent);color:var(--accent-deep)}
 .cmodal-scroll{overflow-y:auto;padding:4px 32px 36px}
-@media(max-width:880px){.cmodal{padding:16px 10px}.cmodal-panel{max-height:calc(100vh - 32px)}.cmodal-scroll{padding:4px 20px 28px}}
+@media(max-width:880px){.cmodal{padding:16px 10px}.cmodal-panel{max-height:calc(100vh - 32px)}.cmodal-scroll{padding:4px 20px 28px}.cmodal-x{padding:0;width:40px;height:40px;justify-content:center;border-radius:10px}.cmodal-x .esc{display:none}.cmodal-x .xg{font-size:19px}}
 
 /* section heading */
 .sh{font-family:var(--serif);font-size:13px;font-weight:600;letter-spacing:.02em;text-transform:uppercase;color:var(--accent-deep);display:flex;align-items:baseline;justify-content:space-between;border-bottom:1px solid var(--line2);padding-bottom:8px;margin:0 0 4px}
@@ -108,3 +109,8 @@
 .step .n{font-family:var(--mono);font-size:13px;color:var(--accent);width:20px;flex:none;padding-top:2px}
 .step .t{font-size:14px;line-height:1.62;color:var(--ink-soft)}
 .temp{font-family:var(--mono);font-size:10.5px;color:var(--accent-deep);background:var(--accent-soft);border-radius:5px;padding:1px 7px;margin-right:9px;white-space:nowrap}
+/* per-step ingredient chips (cook mode): the exact things this step adds, so you never
+   scroll back to the ingredient list while you're mid-step */
+.sing{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}
+.schip{font-family:var(--mono);font-size:11px;color:var(--muted);background:var(--page);border:1px solid var(--line);border-radius:6px;padding:2px 8px;line-height:1.55}
+.schip b{color:var(--accent-deep);font-weight:600;margin-right:5px}
