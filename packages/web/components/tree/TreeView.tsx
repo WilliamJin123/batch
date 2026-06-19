@@ -9,6 +9,11 @@ import { CardModal } from "./CardModal";
 import type { BakeCardVM, BakeoffNote, TreeGraphVM } from "../../lib/viewmodel/types";
 import type { Pos } from "../../lib/layout/graphLayout";
 
+const MIN_SCALE = 0.2, MAX_SCALE = 2.6, INIT_SCALE = 0.95;
+const WHEEL_K = 0.003;   // wheel/pinch sensitivity (higher = snappier)
+const BTN_STEP = 1.4;    // per-click zoom factor for the +/- buttons
+const clampS = (s: number) => Math.min(MAX_SCALE, Math.max(MIN_SCALE, s));
+
 export function TreeView({ graph, pos, width, height, cards }: {
   graph: TreeGraphVM; pos: Record<string, Pos>; width: number; height: number; cards: Record<string, BakeCardVM>;
 }) {
@@ -20,19 +25,26 @@ export function TreeView({ graph, pos, width, height, cards }: {
   const [openCard, setOpenCard] = useState<string | null>(null);
   const pan = useRef<{ sx: number; sy: number } | null>(null);
 
-  // frame the whole graph into the viewport (both axes), centred — always re-frames
+  // frame the whole graph into the viewport (both axes), centred — the Fit button
   const fit = useCallback(() => {
     const board = boardRef.current; if (!board) return;
     const bw = board.clientWidth, bh = board.clientHeight, pad = 56;
-    const scale = Math.max(0.25, Math.min(1.1, Math.min((bw - pad) / width, (bh - pad) / height)));
+    const scale = clampS(Math.min(1.1, Math.min((bw - pad) / width, (bh - pad) / height)));
     setT({ scale, ox: (bw - width * scale) / 2, oy: (bh - height * scale) / 2 });
   }, [width, height]);
-  useEffect(() => { fit(); }, [fit]);
+
+  // first paint: start zoomed in at the top-left of the tree (roots/bases), not fit-to-all
+  const initialView = useCallback(() => {
+    const board = boardRef.current; if (!board) return;
+    const bh = board.clientHeight, sh = height * INIT_SCALE;
+    setT({ scale: INIT_SCALE, ox: 40, oy: sh <= bh - 48 ? (bh - sh) / 2 : 28 });
+  }, [height]);
+  useEffect(() => { initialView(); }, [initialView]);
 
   const zoom = (factor: number) => {
     const board = boardRef.current; if (!board) return;
     const cx = board.clientWidth / 2, cy = board.clientHeight / 2;
-    setT((p) => { const ns = Math.min(2, Math.max(0.25, p.scale * factor)), k = ns / p.scale; return { scale: ns, ox: cx - k * (cx - p.ox), oy: cy - k * (cy - p.oy) }; });
+    setT((p) => { const ns = clampS(p.scale * factor), k = ns / p.scale; return { scale: ns, ox: cx - k * (cx - p.ox), oy: cy - k * (cy - p.oy) }; });
   };
 
   // pan continues even when the cursor leaves the board → listen on window
@@ -50,7 +62,8 @@ export function TreeView({ graph, pos, width, height, cards }: {
     const onWheel = (e: WheelEvent) => {
       e.preventDefault();
       const r = board.getBoundingClientRect(), mx = e.clientX - r.left, my = e.clientY - r.top;
-      setT((p) => { const ns = Math.min(2, Math.max(0.25, p.scale * (1 - e.deltaY * 0.0016))); const k = ns / p.scale; return { scale: ns, ox: mx - k * (mx - p.ox), oy: my - k * (my - p.oy) }; });
+      // exp() keeps zoom stable + symmetric even on fast momentum/pinch bursts
+      setT((p) => { const ns = clampS(p.scale * Math.exp(-e.deltaY * WHEEL_K)); const k = ns / p.scale; return { scale: ns, ox: mx - k * (mx - p.ox), oy: my - k * (my - p.oy) }; });
     };
     board.addEventListener("wheel", onWheel, { passive: false });
     return () => board.removeEventListener("wheel", onWheel);
@@ -104,8 +117,8 @@ export function TreeView({ graph, pos, width, height, cards }: {
       </div>
 
       <div className="tctl tr">
-        <button className="fbtn ico" onClick={() => zoom(1.2)} aria-label="Zoom in">+</button>
-        <button className="fbtn ico" onClick={() => zoom(1 / 1.2)} aria-label="Zoom out">−</button>
+        <button className="fbtn ico" onClick={() => zoom(BTN_STEP)} aria-label="Zoom in">+</button>
+        <button className="fbtn ico" onClick={() => zoom(1 / BTN_STEP)} aria-label="Zoom out">−</button>
         <button className="fbtn" onClick={fit} aria-label="Fit graph">⤢ Fit</button>
       </div>
 
