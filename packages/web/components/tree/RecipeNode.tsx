@@ -1,0 +1,29 @@
+import Link from "next/link";
+import type { TreeNodeVM } from "../../lib/viewmodel/types";
+import type { Pos } from "../../lib/layout/graphLayout";
+import { splitName, r0, r1 } from "../../lib/viewmodel/format";
+
+function Rate({ node }: { node: TreeNodeVM }) {
+  if (node.kind === "sub-recipe") return null;
+  if (!node.made) return <div className="nrate plan"><span className="ringa" /> to make</div>;
+  if (node.rating === "excellent") return <div className="nrate exc"><span className="star">★</span> excellent</div>;
+  if (node.rating === "bad") return <div className="nrate plan"><span className="ringa" /> needs work</div>;
+  return <div className="nrate good"><span className="dotg" /> {node.rating ?? "good"}</div>;
+}
+
+export function RecipeNode({ node, pos, arm, selected }: {
+  node: TreeNodeVM; pos: Pos; arm?: "A" | "B"; selected?: boolean;
+}) {
+  const { title, paren } = splitName(node.name);
+  const role = node.kind === "sub-recipe" ? "sub-recipe" : node.kind === "base" ? "base" : node.kind === "root" ? "root" : "variant";
+  const cls = ["node", node.kind === "sub-recipe" ? "sub" : "", node.kind === "base" ? "base" : "", selected ? "cur" : ""].filter(Boolean).join(" ");
+  return (
+    <Link className={cls} href={`/r/${node.recipeId}`} style={{ left: pos.x, top: pos.y, width: pos.w }}>
+      <span className="role">{arm ? `${role} · ${arm}` : role}</span>
+      <div className="nname">{title} {paren && <span className="q">{paren}</span>}{node.needsTuning && <span className="tune">needs-tuning</span>}</div>
+      <div className="nmeta">{r0(node.cal)} cal · {r1(node.protein)} P<br />{node.calPerGramProtein != null ? r1(node.calPerGramProtein) : "—"} cal/g · makes {node.servings}</div>
+      <Rate node={node} />
+      {node.feedbackNote && <div className={`nfb${node.needsTuning ? " bad" : ""}`}>{node.feedbackNote}</div>}
+    </Link>
+  );
+}

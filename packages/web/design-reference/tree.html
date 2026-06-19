@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Batch — Tree</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,500&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --page:#FBF7F0; --surface:#FFFDFA; --panel:#FFFFFF;
+    --ink:#241D13; --ink-soft:#463D2E; --muted:#8C8474; --faint:#B5AC9A;
+    --line:rgba(60,44,18,.10); --line2:rgba(60,44,18,.16);
+    --accent:#B47A37; --accent-deep:#956120; --accent-soft:#F6EBD9;
+    --green:#5E9A6B; --gold:#C79A3B; --warn:#9a5230;
+    --serif:'Fraunces',Georgia,serif;
+    --mono:'JetBrains Mono',ui-monospace,monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{background:var(--page);color:var(--ink);font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased;font-size:14px;font-optical-sizing:auto}
+  ::selection{background:rgba(180,122,55,.20)}
+  .app{max-width:1280px;margin:0 auto;padding:0 30px 60px}
+  a{color:inherit;text-decoration:none}
+
+  .topbar{display:flex;align-items:center;gap:24px;height:60px;border-bottom:1px solid var(--line);position:sticky;top:0;background:rgba(251,247,240,.86);backdrop-filter:blur(8px);z-index:30}
+  .brand{display:flex;align-items:center;gap:10px}
+  .mark{width:20px;height:20px;border-radius:6px;background:var(--accent);box-shadow:0 1px 2px rgba(60,44,18,.22)}
+  .brand b{font-family:var(--serif);font-weight:600;font-size:17px;letter-spacing:-.01em}
+  .branch{font-family:var(--mono);font-size:11px;color:var(--muted);border:1px solid var(--line);border-radius:6px;padding:2px 8px;display:flex;align-items:center;gap:6px;background:var(--surface)}
+  .branch::before{content:"";width:5px;height:5px;border-radius:50%;background:var(--green)}
+  .nav{display:flex;gap:4px;margin-left:4px}
+  .nav a{font-size:13px;color:var(--muted);padding:6px 11px;border-radius:8px;position:relative}
+  .nav a.on{color:var(--ink)}
+  .nav a.on::after{content:"";position:absolute;left:11px;right:11px;bottom:-19px;height:2px;background:var(--accent);border-radius:2px}
+  .spacer{flex:1}
+  .search{display:flex;align-items:center;gap:9px;font-size:12.5px;color:var(--muted);border:1px solid var(--line);border-radius:9px;padding:7px 11px;background:var(--surface)}
+  .kbd{font-family:var(--mono);font-size:10.5px;color:var(--faint);border:1px solid var(--line);border-radius:4px;padding:1px 5px}
+  .me{width:25px;height:25px;border-radius:50%;background:#EBE2D2;color:var(--muted);font-family:var(--mono);font-size:10px;display:flex;align-items:center;justify-content:center;border:1px solid var(--line)}
+
+  .crumb{display:flex;align-items:center;gap:9px;font-family:var(--mono);font-size:11px;color:var(--muted);padding:18px 2px 14px}
+  .crumb .sep{color:var(--faint)}
+  .crumb .here{color:var(--ink)}
+
+  .wrap{display:grid;grid-template-columns:248px 1fr;gap:28px;align-items:start;transition:grid-template-columns .2s}
+  .wrap.collapsed{grid-template-columns:0 1fr}
+  .wrap.collapsed .rail{opacity:0;pointer-events:none}
+
+  .rail{overflow:hidden;transition:opacity .15s}
+  .rail .rt{font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);margin:2px 2px 10px;display:flex;justify-content:space-between}
+  .tree-ol{border:1px solid var(--line);border-radius:13px;background:var(--surface);padding:8px 6px}
+  .tol-row{display:flex;align-items:center;gap:7px;padding:5px 8px;border-radius:8px;cursor:pointer}
+  .tol-row:hover{background:var(--page)}
+  .tol-row.on{background:var(--accent-soft)}
+  .tol-tw{width:11px;flex:none;text-align:center;color:var(--faint);font-size:9px}
+  .tol-nm{font-family:var(--serif);font-size:13.5px;font-weight:500;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .tol-row.grp .tol-nm{font-weight:600}
+  .tol-row.on .tol-nm{color:var(--accent-deep)}
+  .tol-ct{font-family:var(--mono);font-size:9.5px;color:var(--faint)}
+  .ind1{padding-left:18px} .ind2{padding-left:32px}
+  .basel{font-family:var(--mono);font-size:8px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);margin-left:5px}
+  .flag{font-family:var(--mono);font-size:8px;color:var(--warn);border:1px solid rgba(154,82,48,.32);border-radius:3px;padding:0 3px;margin-left:5px}
+  .ab{font-family:var(--mono);font-size:8.5px;color:var(--accent-deep);background:var(--accent-soft);border:1px solid rgba(180,122,55,.3);border-radius:3px;padding:0 4px;margin-left:5px}
+  .railsum{margin-top:12px;padding:0 4px;font-family:var(--mono);font-size:10px;color:var(--muted);line-height:1.85}
+
+  .star{color:var(--gold)}
+  .dotg{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--green)}
+  .ringa{display:inline-block;width:7px;height:7px;border-radius:50%;border:1.5px solid var(--accent-deep);background:transparent}
+
+  .chead{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:10px}
+  .chead h1{font-family:var(--serif);font-size:26px;font-weight:600;letter-spacing:-.01em;margin:0}
+  .chead .csub{font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:6px}
+  .ctrls{display:flex;align-items:center;gap:8px}
+  .btn{font-family:var(--mono);font-size:11px;color:var(--ink-soft);border:1px solid var(--line2);background:var(--surface);border-radius:8px;padding:6px 11px;cursor:pointer;display:flex;align-items:center;gap:7px}
+  .btn:hover{border-color:var(--accent);color:var(--accent-deep)}
+  .legend{display:flex;gap:13px;font-family:var(--mono);font-size:10.5px;color:var(--muted);flex-wrap:wrap;align-items:center;margin:0 0 12px}
+  .legend span{display:flex;align-items:center;gap:6px}
+  .lk{width:20px;height:0;border-top:1.5px solid var(--accent);opacity:.85}
+  .lk.dash{border-top:1.5px dashed var(--muted)}
+  .lk.dot{border-top:1.6px dotted var(--accent-deep)}
+  .lgnote{color:var(--faint);font-style:italic}
+
+  /* board = pannable + zoomable viewport */
+  .boardwrap{position:relative;overflow:hidden;border:1px solid var(--line);border-radius:16px;background:var(--surface);height:640px;cursor:grab}
+  .boardwrap.grabbing{cursor:grabbing}
+  .scene{position:absolute;top:0;left:0;width:1080px;height:760px;transform-origin:0 0;background-image:radial-gradient(rgba(60,44,18,.09) 1.1px,transparent 1.1px);background-size:26px 26px;background-position:6px 6px}
+  .scene svg{position:absolute;inset:0;width:1080px;height:760px;z-index:1;pointer-events:none}
+  .panhint{position:absolute;left:14px;bottom:12px;z-index:20;font-family:var(--mono);font-size:10px;color:var(--faint);background:rgba(255,253,250,.82);border:1px solid var(--line);border-radius:7px;padding:4px 9px;pointer-events:none}
+
+  .node{position:absolute;width:200px;background:var(--panel);border:1px solid var(--line2);border-radius:13px;padding:12px 13px 13px;box-shadow:0 1px 2px rgba(60,44,18,.08);z-index:2;cursor:pointer;transition:box-shadow .12s,border-color .12s,transform .12s}
+  .node:hover{border-color:var(--accent);box-shadow:0 6px 18px rgba(60,44,18,.13)}
+  .node .role{position:absolute;top:-9px;left:13px;font-family:var(--mono);font-size:8.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);background:var(--surface);padding:0 6px}
+  .node.base .role,.node.cur .role{color:var(--accent-deep)}
+  .node .nname{font-family:var(--serif);font-size:15px;font-weight:500;line-height:1.12}
+  .node .nname .q{color:var(--muted);font-style:italic;font-weight:500;font-size:12.5px}
+  .node .nmeta{font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:7px;line-height:1.5}
+  .node .nrate{font-family:var(--mono);font-size:10.5px;margin-top:8px;display:flex;align-items:center;gap:6px}
+  .node .nrate.exc{color:var(--accent-deep)}
+  .node .nrate.good{color:var(--green)}
+  .node .nrate.plan{color:var(--accent-deep)}
+  .node .nfb{font-size:11px;font-style:italic;color:var(--muted);margin-top:8px;line-height:1.42;border-left:2px solid var(--line2);padding-left:8px}
+  .node .nfb.bad{border-left-color:var(--warn);color:var(--warn)}
+  .node.cur{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft),0 6px 18px rgba(60,44,18,.14)}
+  .tune{font-family:var(--mono);font-size:9px;color:var(--warn);border:1px solid rgba(154,82,48,.3);border-radius:4px;padding:0 4px;margin-left:6px;vertical-align:1px}
+
+  .node.sub{width:184px;border-style:dashed;background:rgba(255,253,250,.7)}
+  .node.sub .nname{font-size:13.5px}
+
+  .bopill{position:absolute;z-index:5;font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent-deep);background:var(--accent-soft);border:1px solid rgba(180,122,55,.32);border-radius:20px;padding:3px 10px;cursor:help;display:flex;align-items:center;gap:6px}
+  .bopill .info{width:13px;height:13px;border-radius:50%;border:1px solid rgba(180,122,55,.5);display:flex;align-items:center;justify-content:center;font-size:8px;font-style:italic;text-transform:none}
+  .bonote{display:none;position:absolute;left:-6px;bottom:26px;width:320px;background:var(--panel);border:1px solid var(--line2);border-radius:12px;box-shadow:0 12px 30px rgba(60,44,18,.18);padding:13px 14px;z-index:9;cursor:default}
+  .bopill:hover .bonote{display:block}
+  .bonote b{font-family:var(--serif);font-size:13px;font-weight:600;color:var(--ink);letter-spacing:0;text-transform:none}
+  .bonote .bln{font-size:12px;color:var(--ink-soft);margin-top:9px;line-height:1.5;letter-spacing:0;text-transform:none}
+  .bonote .bln i{font-family:var(--mono);font-style:normal;font-size:10.5px;color:var(--muted)}
+  .bonote .ba{display:inline-block;width:15px;height:15px;border-radius:4px;background:var(--accent-soft);border:1px solid rgba(180,122,55,.4);color:var(--accent-deep);font-family:var(--mono);font-size:9px;text-align:center;line-height:14px;margin-right:6px}
+  .bonote .bvs{font-size:11.5px;color:var(--muted);margin-top:9px;padding-top:9px;border-top:1px solid var(--line);line-height:1.5;letter-spacing:0;text-transform:none}
+  .bonote .bvs em{font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);font-style:normal}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="topbar">
+    <div class="brand"><div class="mark"></div><b>Batch</b><span class="branch">main</span></div>
+    <nav class="nav"><a class="on" href="#">Tree</a><a href="#">Recipes</a><a href="#">Index</a></nav>
+    <div class="spacer"></div>
+    <div class="search">Search recipes <span class="kbd">⌘K</span></div>
+    <div class="me">wj</div>
+  </div>
+
+  <div class="crumb"><span class="here">Tree</span><span class="sep">/</span><span>Crumbl Cookies</span><span class="sep">/</span><span>Red Velvet · A</span></div>
+
+  <div class="wrap" id="wrap">
+
+    <div class="rail">
+      <div class="rt"><span>All recipes</span><span>25</span></div>
+      <div class="tree-ol">
+        <div class="tol-row grp"><span class="tol-tw">&#9662;</span><span class="tol-nm">Cheesecake</span><span class="tol-ct">3</span></div>
+        <div class="tol-row ind1"><span class="tol-tw"></span><span class="tol-nm">Vanilla Pumpkin<span class="basel">base</span></span><span class="ringa"></span></div>
+        <div class="tol-row ind1"><span class="tol-tw"></span><span class="tol-nm">Banana</span><span class="star">&#9733;</span></div>
+        <div class="tol-row ind1"><span class="tol-tw"></span><span class="tol-nm">Turtle</span><span class="star">&#9733;</span></div>
+
+        <div class="tol-row grp on"><span class="tol-tw">&#9662;</span><span class="tol-nm">Crumbl Cookies</span><span class="tol-ct">6</span></div>
+        <div class="tol-row ind1"><span class="tol-tw">&#9662;</span><span class="tol-nm">Crumbl Base<span class="basel">base</span></span><span class="ringa"></span></div>
+        <div class="tol-row ind2"><span class="tol-tw"></span><span class="tol-nm">Birthday Cake</span><span class="star">&#9733;</span></div>
+        <div class="tol-row ind2"><span class="tol-tw"></span><span class="tol-nm">Lemon<span class="flag">glaze</span></span><span class="star">&#9733;</span></div>
+        <div class="tol-row ind2"><span class="tol-tw"></span><span class="tol-nm">Lucky Charms</span><span class="dotg"></span></div>
+        <div class="tol-row ind2 on"><span class="tol-tw"></span><span class="tol-nm">Red Velvet<span class="ab">A</span></span><span class="ringa"></span></div>
+        <div class="tol-row ind1"><span class="tol-tw"></span><span class="tol-nm">Red Velvet · Oat<span class="ab">B</span></span><span class="ringa"></span></div>
+
+        <div class="tol-row grp"><span class="tol-tw">&#9656;</span><span class="tol-nm">Browned-Butter</span><span class="tol-ct">4</span></div>
+        <div class="tol-row grp"><span class="tol-tw">&#9656;</span><span class="tol-nm">Frostings</span><span class="tol-ct">2</span></div>
+        <div class="tol-row grp"><span class="tol-tw">&#9656;</span><span class="tol-nm">Crusts</span><span class="tol-ct">2</span></div>
+        <div class="tol-row grp"><span class="tol-tw">&#9656;</span><span class="tol-nm">Turtle add-ons</span><span class="tol-ct">3</span></div>
+        <div class="tol-row grp"><span class="tol-tw">&#9656;</span><span class="tol-nm">Singles &amp; No-bake</span><span class="tol-ct">5</span></div>
+      </div>
+      <div class="railsum"><span class="star">&#9733;</span> excellent &nbsp; <span class="dotg"></span> good &nbsp; <span class="ringa"></span> to-make</div>
+    </div>
+
+    <div class="main">
+      <div class="chead">
+        <div>
+          <h1>Crumbl Cookies</h1>
+          <div class="csub">6 recipes · 1 shared base · 2 frostings · a bake-off in progress</div>
+        </div>
+        <div class="ctrls">
+          <button class="btn" id="toggle">&#10094; Hide tree</button>
+          <button class="btn" id="reset">&#10530; Fit</button>
+        </div>
+      </div>
+
+      <div class="legend">
+        <span><span class="lk"></span> inherits &#9655;</span>
+        <span><span class="lk dash"></span> composes &#9671;</span>
+        <span><span class="lk dot"></span> bake-off</span>
+        <span><span class="star">&#9733;</span> excellent</span>
+        <span><span class="dotg"></span> good</span>
+        <span><span class="ringa"></span> to-make</span>
+      </div>
+
+      <div class="boardwrap" id="boardwrap">
+        <div class="scene" id="scene">
+          <svg viewBox="0 0 1080 760">
+            <defs>
+              <!-- inheritance: hollow triangle at the base a variant derives from -->
+              <marker id="m-tri" markerWidth="18" markerHeight="16" refX="15" refY="8" orient="auto" markerUnits="userSpaceOnUse">
+                <path d="M15,8 L3,2.5 L3,13.5 Z" fill="#FFFDFA" stroke="#956120" stroke-width="1.3"/>
+              </marker>
+              <!-- composition: hollow diamond at the recipe that composes the sub-recipe -->
+              <marker id="m-dia" markerWidth="20" markerHeight="14" refX="10" refY="7" orient="auto" markerUnits="userSpaceOnUse">
+                <path d="M3,7 L10,2.5 L17,7 L10,11.5 Z" fill="#FFFDFA" stroke="#8C8474" stroke-width="1.2"/>
+              </marker>
+            </defs>
+            <!-- DERIVES = inheritance (solid): variant ──▷ base -->
+            <g fill="none" stroke="#B47A37" stroke-width="1.5" opacity="0.9" marker-end="url(#m-tri)">
+              <path d="M441,113 C350,113 332,365 244,365"/>
+              <path d="M441,267 C350,267 332,365 244,365"/>
+              <path d="M441,407 C350,407 345,365 244,365"/>
+              <path d="M441,539 C350,539 332,365 244,365"/>
+            </g>
+            <!-- COMPOSES = composition (dashed): recipe ◇── sub-recipe -->
+            <g fill="none" stroke="#8C8474" stroke-width="1.4" stroke-dasharray="5 4" opacity="0.9" marker-start="url(#m-dia)">
+              <path d="M140,414 C140,470 132,505 132,536"/>
+              <path d="M646,539 C740,539 770,572 846,573"/>
+              <path d="M600,689 C730,689 780,590 846,581"/>
+            </g>
+            <!-- bake-off — annotation overlay, not a schema relationship -->
+            <path d="M544,586 C530,608 518,618 500,642" fill="none" stroke="#956120" stroke-width="1.6" stroke-dasharray="1.5 5" opacity="0.8"/>
+          </svg>
+
+          <div class="node cookie base" style="left:40px;top:318px">
+            <span class="role">base</span>
+            <div class="nname">Crumbl Base <span class="q">Protein Cookie</span></div>
+            <div class="nmeta">163 cal · 14.3 P<br>11.4 cal/g · makes 6</div>
+            <div class="nrate plan"><span class="ringa"></span> to make</div>
+          </div>
+
+          <div class="node cookie" style="left:444px;top:66px">
+            <span class="role">variant</span>
+            <div class="nname">Birthday Cake</div>
+            <div class="nmeta">163 cal · 14.3 P<br>11.4 cal/g · makes 6</div>
+            <div class="nrate exc"><span class="star">&#9733;</span> excellent</div>
+          </div>
+
+          <div class="node cookie" style="left:444px;top:206px">
+            <span class="role">variant</span>
+            <div class="nname">Lemon <span class="tune">needs-tuning</span></div>
+            <div class="nmeta">151 cal · 11.2 P<br>13.5 cal/g · makes 6</div>
+            <div class="nrate exc"><span class="star">&#9733;</span> excellent <span style="color:var(--faint)">· cookie</span></div>
+            <div class="nfb bad">glaze too weak / thin — needs work</div>
+          </div>
+
+          <div class="node cookie" style="left:444px;top:360px">
+            <span class="role">variant</span>
+            <div class="nname">Lucky Charms</div>
+            <div class="nmeta">163 cal · 14.3 P<br>11.4 cal/g · makes 6</div>
+            <div class="nrate good"><span class="dotg"></span> good</div>
+          </div>
+
+          <div class="node cookie cur" style="left:444px;top:492px">
+            <span class="role">variant · A</span>
+            <div class="nname">Red Velvet <span class="q">(Crumbl Base)</span></div>
+            <div class="nmeta">205 cal · 17.8 P<br>11.5 cal/g · makes 6</div>
+            <div class="nrate plan"><span class="ringa"></span> to make</div>
+          </div>
+
+          <div class="node cookie" style="left:398px;top:642px">
+            <span class="role">root · B</span>
+            <div class="nname">Red Velvet <span class="q">(Oat Base)</span></div>
+            <div class="nmeta">198 cal · 19.9 P<br>9.9 cal/g · makes 5</div>
+            <div class="nrate plan"><span class="ringa"></span> to make</div>
+          </div>
+
+          <div class="node sub" style="left:40px;top:538px">
+            <span class="role">sub-recipe</span>
+            <div class="nname">Cool-Whip Frosting</div>
+            <div class="nmeta">126 cal · base default</div>
+          </div>
+          <div class="node sub" style="left:850px;top:544px">
+            <span class="role">sub-recipe</span>
+            <div class="nname">Cream-Cheese Frosting</div>
+            <div class="nmeta">342 cal · shared · A + B</div>
+          </div>
+
+          <div class="bopill" style="left:502px;top:600px">bake-off <span class="info">i</span>
+            <div class="bonote">
+              <b>Same red velvet, two bases — bake both, keep the winner.</b>
+              <div class="bln"><span class="ba">A</span>Crumbl chassis — AP flour + butter, baking powder. Firmer, proven texture. <i>205 cal · 11.5 cal/g · 6</i></div>
+              <div class="bln"><span class="ba">B</span>Oat base — oat flour, no butter, pumpkin. Leaner, more protein, unproven. <i>198 cal · 9.9 cal/g · 5</i></div>
+              <div class="bvs"><em>vs the base it forked</em><br>A = Crumbl Base + cocoa + a splash of vinegar (tang) + red gel, frosting swapped vanilla → cream-cheese. <i style="font-family:var(--mono);color:var(--muted)">+42 cal · +3.4 P</i></div>
+            </div>
+          </div>
+        </div>
+        <div class="panhint">scroll to zoom · drag to pan · click a node → open its card</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  var wrap=document.getElementById('boardwrap'), scene=document.getElementById('scene');
+  var ox=0, oy=0, scale=1, panning=false, sx=0, sy=0;
+  function apply(){ scene.style.transform='translate('+ox+'px,'+oy+'px) scale('+scale+')'; }
+  function fit(){ var w=wrap.clientWidth||1000; scale=Math.min(1,(w-24)/1080); ox=Math.max(12,(w-1080*scale)/2); oy=8; apply(); }
+
+  wrap.addEventListener('mousedown', function(e){
+    if(e.target.closest('.node')||e.target.closest('.bopill')) return;
+    panning=true; sx=e.clientX-ox; sy=e.clientY-oy; wrap.classList.add('grabbing');
+  });
+  window.addEventListener('mousemove', function(e){ if(!panning) return; ox=e.clientX-sx; oy=e.clientY-sy; apply(); });
+  window.addEventListener('mouseup', function(){ panning=false; wrap.classList.remove('grabbing'); });
+
+  wrap.addEventListener('wheel', function(e){
+    e.preventDefault();
+    var r=wrap.getBoundingClientRect(), mx=e.clientX-r.left, my=e.clientY-r.top;
+    var ns=Math.min(2, Math.max(0.35, scale*(1 - e.deltaY*0.0016)));
+    var k=ns/scale; ox=mx-k*(mx-ox); oy=my-k*(my-oy); scale=ns; apply();
+  }, {passive:false});
+
+  document.getElementById('reset').addEventListener('click', fit);
+  var t=document.getElementById('toggle');
+  t.addEventListener('click', function(){
+    var w=document.getElementById('wrap'); w.classList.toggle('collapsed');
+    t.innerHTML = w.classList.contains('collapsed') ? '&#10095; Show tree' : '&#10094; Hide tree';
+    setTimeout(fit, 210);
+  });
+  fit();
+</script>
+</body>
+</html>

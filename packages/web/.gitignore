@@ -1,0 +1,6 @@
+/.next
+/data/db.json
+node_modules
+*.tsbuildinfo
+# unignore lib/ (root .gitignore has a Python-artifact `lib/` pattern)
+!lib/

@@ -1,0 +1,5 @@
+{
+  "buildCommand": "pnpm --filter @batch/web build",
+  "outputDirectory": "packages/web/.next",
+  "installCommand": "pnpm install"
+}
