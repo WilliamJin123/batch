@@ -42,10 +42,12 @@
 .cmodal{position:fixed;inset:0;z-index:60;background:rgba(36,29,19,.42);backdrop-filter:blur(3px);display:flex;align-items:flex-start;justify-content:center;padding:40px 20px;overflow:auto}
 .cmodal-panel{position:relative;width:min(1000px,100%);background:var(--surface);border:1px solid var(--line2);border-radius:18px;box-shadow:0 30px 80px rgba(36,29,19,.34);max-height:calc(100vh - 80px);display:flex;flex-direction:column;overflow:hidden;animation:cmodal-in .16s ease}
 @keyframes cmodal-in{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
-.cmodal-bar{display:flex;align-items:center;justify-content:space-between;padding:11px 16px;border-bottom:1px solid var(--line);background:var(--surface);flex:none}
+.cmodal-bar{display:flex;align-items:center;gap:12px;padding:11px 56px 11px 16px;border-bottom:1px solid var(--line);background:var(--surface);flex:none}
 .cmodal-link{font-family:var(--mono);font-size:11px;color:var(--muted)}
 .cmodal-link:hover{color:var(--accent-deep)}
-.cmodal-x{font-family:var(--mono);color:var(--ink-soft);border:1px solid var(--line2);background:var(--page);border-radius:9px;padding:6px 11px;cursor:pointer;display:flex;align-items:center;gap:8px;flex:none}
+/* floated as its own composited layer pinned to the panel — so scrolling content (the hero) can
+   never paint over it (iOS momentum-scroll would otherwise composite the hero above an in-flow bar) */
+.cmodal-x{position:absolute;top:8px;right:12px;z-index:5;transform:translateZ(0);font-family:var(--mono);color:var(--ink-soft);border:1px solid var(--line2);background:var(--surface);border-radius:9px;padding:6px 11px;cursor:pointer;display:flex;align-items:center;gap:8px;flex:none;box-shadow:0 1px 5px rgba(36,29,19,.14)}
 .cmodal-x .esc{font-size:9px;color:var(--faint);border:1px solid var(--line);border-radius:4px;padding:1px 5px}
 .cmodal-x .xg{font-size:16px;line-height:1}
 .cmodal-x:hover{border-color:var(--accent);color:var(--accent-deep)}

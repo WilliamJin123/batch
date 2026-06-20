@@ -22,9 +22,9 @@ export function CardModal({ card, onClose, onNavigate }: {
   return (
     <div className="cmodal" role="dialog" aria-modal="true" aria-label={card.name} onMouseDown={onClose}>
       <div className="cmodal-panel" onMouseDown={(e) => e.stopPropagation()}>
+        <button className="cmodal-x" onClick={onClose} aria-label="Close recipe"><span className="esc">esc</span><span className="xg" aria-hidden="true">✕</span></button>
         <div className="cmodal-bar">
           <a className="cmodal-link" href={`/r/${card.recipeId}`} target="_blank" rel="noreferrer">open full page ↗</a>
-          <button className="cmodal-x" onClick={onClose} aria-label="Close recipe"><span className="esc">esc</span><span className="xg" aria-hidden="true">✕</span></button>
         </div>
         <div className="cmodal-scroll">
           <RecipeHero card={card} />
