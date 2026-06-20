@@ -7,6 +7,16 @@
 .scene{position:absolute;top:0;left:0;transform-origin:0 0;will-change:transform}
 .scene svg{position:absolute;inset:0;z-index:1;pointer-events:none}
 
+/* edge hover-glow: a wide transparent hit-path makes the thin line grabbable (the svg itself stays
+   pointer-events:none, so panning is unaffected); hovering lights the line + its marker with a warm,
+   layered glow and a slight thicken. */
+.edge{pointer-events:none;transition:filter .16s ease}
+.edge .ehit{pointer-events:stroke}
+.edge .evis{transition:stroke .16s ease,stroke-width .16s ease,opacity .16s ease}
+.edge:hover{filter:drop-shadow(0 0 2px rgba(199,154,59,.9)) drop-shadow(0 0 8px rgba(199,154,59,.42))}
+.edge.ederiv:hover .evis{stroke:var(--gold);stroke-width:2.6;opacity:1}
+.edge.ecomp:hover .evis{stroke:var(--accent);stroke-width:2.3;opacity:1}
+
 /* floating control clusters layered over the canvas */
 .tctl{position:absolute;z-index:20;display:flex;align-items:center;gap:8px}
 .tctl.tl{top:16px;left:16px;max-width:calc(100% - 32px);z-index:21}
@@ -98,13 +108,24 @@
 .node.sub{width:184px;border-style:dashed;background:rgba(255,253,250,.7)}
 .node.sub .nname{font-size:13.5px}
 
-/* semantic zoom: past FAR_SCALE the scene gets .far; nodes drop their detail and show only the
-   title. The whole card is counter-scaled by --inv (=min(1/scale, cap)) so it keeps its natural
-   200px proportions on screen — the title wraps inside it like a normal card instead of overflowing. */
-.scene.far .node,.scene.far .node:hover{transform:scale(var(--inv,1));transform-origin:center center;transition:none}
-.scene.far .node{display:flex;align-items:center;justify-content:center;text-align:center;padding:12px;overflow:hidden}
-.scene.far .node .role,.scene.far .node .nmeta,.scene.far .node .nrate,.scene.far .node .nfb,.scene.far .node .tune,.scene.far .node .nname .q{display:none}
-.scene.far .node .nname{font-size:16px;line-height:1.16;font-weight:600;width:100%;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:break-word;word-break:normal;hyphens:none}
+/* the detail block + title size ease as a node enters/leaves far mode (the grid 1fr→0fr collapse
+   is smooth and lag-free; opacity cross-fades the content) */
+.node .ndetailw{display:grid;grid-template-rows:1fr;transition:grid-template-rows .24s ease}
+.node .ndetail{overflow:hidden;transition:opacity .18s ease}
+.node .nname{transition:font-size .2s ease}
+.node .role{transition:opacity .18s ease}
+
+/* semantic zoom: past FAR_SCALE the scene gets .far; nodes morph to a title-only card. The card
+   counter-scales by --inv (ramped in JS so on-screen size is CONTINUOUS at the threshold — no pop),
+   the detail collapses + cross-fades, and the title eases up to a constant, legible size. */
+.scene.far .node{transform:scale(var(--inv,1));transform-origin:center center;transition:none;text-align:center;overflow:hidden;padding:13px 12px}
+.scene.far .node:hover{transform:scale(var(--inv,1))}
+.scene.smooth.far .node{transition:transform .26s cubic-bezier(.22,.61,.36,1)}  /* sync the card morph with button/Fit/undo zooms; gestures stay transition-free */
+.scene.far .node .ndetailw{grid-template-rows:0fr}
+.scene.far .node .ndetail{opacity:0}
+.scene.far .node .role{opacity:0}
+.scene.far .node .nname .q,.scene.far .node .tune{display:none}
+.scene.far .node .nname{font-size:16px;line-height:1.18;font-weight:600;width:100%;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:break-word;word-break:normal;hyphens:none}
 .scene.far .node.sub .nname{font-size:15px}
 
 /* bake-off pill (centres on the bracket midpoint) */

@@ -46,10 +46,20 @@ export function EdgeLayer({ edges, pos, connectors, width, height }: {
         if (e.rel === "derives") {
           // parent → variant: draw base (to=B) → variant (from=A) so the triangle lands on the variant
           const d = `M${B.x},${B.y} C${mid},${B.y} ${mid},${A.y} ${A.x},${A.y}`;
-          return <path key={i} d={d} fill="none" stroke="#B47A37" strokeWidth={1.5} opacity={0.9} markerEnd="url(#m-tri)" />;
+          return (
+            <g key={i} className="edge ederiv">
+              <path className="ehit" d={d} fill="none" stroke="transparent" strokeWidth={14} />
+              <path className="evis" d={d} fill="none" stroke="#B47A37" strokeWidth={1.5} opacity={0.9} markerEnd="url(#m-tri)" />
+            </g>
+          );
         }
         const d = `M${A.x},${A.y} C${mid},${A.y} ${mid},${B.y} ${B.x},${B.y}`;
-        return <path key={i} d={d} fill="none" stroke="#8C8474" strokeWidth={1.4} strokeDasharray="5 4" opacity={0.9} markerStart="url(#m-dia)" />;
+        return (
+          <g key={i} className="edge ecomp">
+            <path className="ehit" d={d} fill="none" stroke="transparent" strokeWidth={14} />
+            <path className="evis" d={d} fill="none" stroke="#8C8474" strokeWidth={1.4} strokeDasharray="5 4" opacity={0.9} markerStart="url(#m-dia)" />
+          </g>
+        );
       })}
     </svg>
   );
