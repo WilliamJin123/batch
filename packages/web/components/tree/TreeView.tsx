@@ -215,7 +215,7 @@ export function TreeView({ graph, pos, width, height, cards }: {
       const el = document.activeElement as HTMLElement | null;
       const tag = el?.tagName ?? "";
       if (el?.isContentEditable || tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || tag === "BUTTON" || tag === "A") return;
-      if (openCardRef.current) return;                  // card open → leave keys to the modal/page
+      if (openCardRef.current) { if (e.code === "Backspace") { e.preventDefault(); setOpenCard(null); } return; } // card open: ⌫ closes it back to the tree; all else goes to the modal
       if (e.ctrlKey || e.metaKey || e.altKey) return;   // never hijack real OS/browser shortcuts (Ctrl+W, Cmd±, …)
       if (e.code === "KeyL") { e.preventDefault(); setLegendOpen((o) => !o); return; }                  // toggle legend
       if (e.code === "Slash" && !e.shiftKey) { e.preventDefault(); setDrawerOpen(true); return; }        // open the recipe finder (focuses its search)

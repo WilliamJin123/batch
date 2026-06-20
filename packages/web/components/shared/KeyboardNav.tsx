@@ -51,6 +51,7 @@ export function KeyboardNav() {
             <Row k="Shift" d="Sprint (hold)" />
             <Row k="Space" d="Slow (hold)" />
             <Row k="Click" d="Open a recipe" />
+            <Row k="⌫" d="Close the card" />
           </div>
         </div>
         <div className="kfoot">Press <kbd>?</kbd> any time · nothing uses Ctrl/Cmd so your browser shortcuts still work</div>
