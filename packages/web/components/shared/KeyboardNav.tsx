@@ -16,6 +16,7 @@ export function KeyboardNav() {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      if (e.code === "Escape") { setHelp(false); return; }                                            // Esc also closes the overlay (when it fires); ? / click / ✕ are the reliable ways
       const el = document.activeElement as HTMLElement | null;
       const tag = el?.tagName ?? "";
       if (el?.isContentEditable || tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return; // typing

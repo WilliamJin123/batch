@@ -70,11 +70,15 @@ export function TreeView({ graph, pos, width, height, cards }: {
   }, [height]);
   useEffect(() => { initialView(); }, [initialView]);
 
+  // +/- buttons: zoom a step around the EXACT centre of the viewport. Applied instantly rather than via
+  // a CSS transform-transition — interpolating the matrix slides the anchor off-centre mid-animation
+  // (zoom-in drifts up, zoom-out drifts down). The keyboard +/- (rAF, re-anchored each frame) is smooth.
   const zoom = (factor: number) => {
     const board = boardRef.current; if (!board) return;
     const cx = board.clientWidth / 2, cy = board.clientHeight / 2, p = tRef.current;
     const ns = clampS(p.scale * factor), k = ns / p.scale;
-    goTo({ scale: ns, ox: cx - k * (cx - p.ox), oy: cy - k * (cy - p.oy) });
+    const v = { scale: ns, ox: cx - k * (cx - p.ox), oy: cy - k * (cy - p.oy) };
+    setSmooth(false); setT(v); pushHist(v);
   };
 
   const undo = useCallback(() => { if (hi.current <= 0) return; hi.current--; setSmooth(true); setT(hist.current[hi.current]); syncNav(); }, []);
@@ -214,13 +218,13 @@ export function TreeView({ graph, pos, width, height, cards }: {
     const onKeyDown = (e: KeyboardEvent) => {
       const el = document.activeElement as HTMLElement | null;
       const tag = el?.tagName ?? "";
-      if (el?.isContentEditable || tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || tag === "BUTTON" || tag === "A") return;
+      if (el?.isContentEditable || tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return; // ONLY text entry blocks canvas keys — a focused button/link must not, else you'd have to click the canvas to pan again after Tab/?
       if (openCardRef.current) { if (e.code === "Backspace") { e.preventDefault(); setOpenCard(null); } return; } // card open: ⌫ closes it back to the tree; all else goes to the modal
       if (e.ctrlKey || e.metaKey || e.altKey) return;   // never hijack real OS/browser shortcuts (Ctrl+W, Cmd±, …)
       if (e.code === "KeyL") { e.preventDefault(); setLegendOpen((o) => !o); return; }                  // toggle legend
       if (e.code === "Slash" && !e.shiftKey) { e.preventDefault(); setDrawerOpen(true); return; }        // open the recipe finder (focuses its search)
       if (e.code === "ShiftLeft" || e.code === "ShiftRight") { down.add("shift"); return; }
-      if (e.code === "Space") { down.add("space"); e.preventDefault(); return; }
+      if (e.code === "Space") { if (tag === "BUTTON") return; down.add("space"); e.preventDefault(); return; } // let Space activate a focused button instead of "slow"
       if (e.code === "KeyF") { e.preventDefault(); fitRef.current(); return; }
       const a = ACT[e.code];
       if (!a) return;
