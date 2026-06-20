@@ -25,7 +25,7 @@ export function RecipeNode({ node, pos, arm, selected, onOpen }: {
       aria-label={`Open ${node.name}`}
       onClick={open}
       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(); } }}
-      style={{ left: pos.x, top: pos.y, width: pos.w }}
+      style={{ left: pos.x, top: pos.y, width: pos.w, ["--nh" as string]: pos.h }}
     >
       <span className="role">{arm ? `${role} · ${arm}` : role}</span>
       <div className="nname">{title} {paren && <span className="q">{paren}</span>}{node.needsTuning && <span className="tune">needs-tuning</span>}</div>

@@ -88,7 +88,10 @@
 .railsum{margin-top:10px;padding:8px 6px 2px;border-top:1px solid var(--line);font-family:var(--mono);font-size:10px;color:var(--muted);line-height:1.85}
 
 /* nodes */
-.node{position:absolute;width:200px;background:var(--panel);border:1px solid var(--line2);border-radius:13px;padding:12px 13px 13px;box-shadow:0 1px 2px rgba(60,44,18,.08);z-index:2;cursor:pointer;transition:box-shadow .12s,border-color .12s,transform .12s}
+/* min-height pins the box to its laid-out height (--nh) and the flex column vertically centres the
+   content — so in far mode the title sits at the box's centre (where edges anchor) and GLIDES there
+   as the detail collapses, and the box never changes size when modes switch (edges stay connected). */
+.node{position:absolute;width:200px;min-height:calc(var(--nh,120)*1px);display:flex;flex-direction:column;justify-content:center;background:var(--panel);border:1px solid var(--line2);border-radius:13px;padding:12px 13px 13px;box-shadow:0 1px 2px rgba(60,44,18,.08);z-index:2;cursor:pointer;transition:box-shadow .12s,border-color .12s,transform .12s}
 .node:hover{border-color:var(--accent);box-shadow:0 6px 18px rgba(60,44,18,.13);transform:translateY(-1px)}
 .node:focus-visible{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
 .node .role{position:absolute;top:-9px;left:13px;font-family:var(--mono);font-size:8.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);background:var(--surface);padding:0 6px}
@@ -108,25 +111,26 @@
 .node.sub{width:184px;border-style:dashed;background:rgba(255,253,250,.7)}
 .node.sub .nname{font-size:13.5px}
 
-/* the detail block + title size ease as a node enters/leaves far mode (the grid 1fr→0fr collapse
-   is smooth and lag-free; opacity cross-fades the content) */
-.node .ndetailw{display:grid;grid-template-rows:1fr;transition:grid-template-rows .24s ease}
-.node .ndetail{overflow:hidden;transition:opacity .18s ease}
-.node .nname{transition:font-size .2s ease}
-.node .role{transition:opacity .18s ease}
+/* the morph between detailed view and title-only: the detail grid collapses (1fr→0fr, lag-free)
+   while it fades + slides up, and the title eases up to its big size. Because the node is a
+   centred flex column, the title smoothly GLIDES to the vertical centre as the detail shrinks —
+   one continuous, clearly-visible transition (no jump, no card-size change). */
+.node .ndetailw{display:grid;grid-template-rows:1fr;transition:grid-template-rows .3s cubic-bezier(.22,.61,.36,1)}
+.node .ndetail{overflow:hidden;transition:opacity .22s ease,transform .3s cubic-bezier(.22,.61,.36,1)}
+.node .nname{transition:font-size .3s cubic-bezier(.22,.61,.36,1)}
+.node .role{transition:opacity .2s ease}
 
-/* semantic zoom: past FAR_SCALE the scene gets .far; nodes morph to a title-only card. The card
-   counter-scales by --inv (ramped in JS so on-screen size is CONTINUOUS at the threshold — no pop),
-   the detail collapses + cross-fades, and the title eases up to a constant, legible size. */
-.scene.far .node{transform:scale(var(--inv,1));transform-origin:center center;transition:none;text-align:center;overflow:hidden;padding:13px 12px}
-.scene.far .node:hover{transform:scale(var(--inv,1))}
-.scene.smooth.far .node{transition:transform .26s cubic-bezier(.22,.61,.36,1)}  /* sync the card morph with button/Fit/undo zooms; gestures stay transition-free */
+/* semantic zoom: past FAR_SCALE the scene gets .far and every node morphs to a title-only card.
+   The card box is UNCHANGED (same width, and same height via min-height:--nh) — only the CONTENT
+   swaps: detail collapses + fades, the title grows to fill. Keeping the box fixed is what makes the
+   edges stay anchored and stops cards from overlapping when zoomed out. */
+.scene.far .node{text-align:center;overflow:hidden;padding:13px 12px}
 .scene.far .node .ndetailw{grid-template-rows:0fr}
-.scene.far .node .ndetail{opacity:0}
+.scene.far .node .ndetail{opacity:0;transform:translateY(-7px)}
 .scene.far .node .role{opacity:0}
 .scene.far .node .nname .q,.scene.far .node .tune{display:none}
-.scene.far .node .nname{font-size:16px;line-height:1.18;font-weight:600;width:100%;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:break-word;word-break:normal;hyphens:none}
-.scene.far .node.sub .nname{font-size:15px}
+.scene.far .node .nname{font-size:23px;line-height:1.16;font-weight:600;width:100%;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:break-word;word-break:normal;hyphens:none}
+.scene.far .node.sub .nname{font-size:20px}
 
 /* bake-off pill (centres on the bracket midpoint) */
 .bopill{position:absolute;z-index:5;font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent-deep);background:var(--accent-soft);border:1px solid rgba(180,122,55,.32);border-radius:20px;padding:3px 10px;cursor:help;display:flex;align-items:center;gap:6px;box-shadow:0 1px 4px rgba(60,44,18,.12)}

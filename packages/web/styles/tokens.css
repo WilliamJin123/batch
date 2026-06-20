@@ -9,8 +9,9 @@
   --sans: var(--font-sans), 'Inter', system-ui, sans-serif;
 }
 *{box-sizing:border-box}
-/* stop iOS from auto-inflating font sizes when the viewport width changes (e.g. on rotate) */
-html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+/* stop iOS/Android from auto-inflating font sizes when the viewport width changes (e.g. on rotate).
+   Set on html AND body — some iOS builds read it off the scrolling element, not just the root. */
+html,body{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 html,body{margin:0}
 body{background:var(--page);color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased;font-size:14px}
 /* links carry no chrome by default — affordance comes from the surface they sit on
