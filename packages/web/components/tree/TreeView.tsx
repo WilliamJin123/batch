@@ -156,6 +156,78 @@ export function TreeView({ graph, pos, width, height, cards }: {
     };
   }, [pushHist]);
 
+  // keyboard pan — hold arrows / WASD to glide the canvas (so traversing isn't endless dragging).
+  // Momentum model: velocity eases toward a target, so a quick tap is a fine nudge and a held key is a
+  // smooth cruise. Speed tiers use ONLY browser-safe keys — Shift = sprint, Space = slow/precise — and
+  // any Ctrl/Cmd/Alt combo is ignored, because the OS/browser steal those: mac Ctrl+←/→ switches Spaces,
+  // Windows Ctrl+W closes the tab, Cmd/Alt+← go back, etc. Shift is the only modifier left untouched.
+  const openCardRef = useRef(openCard); useEffect(() => { openCardRef.current = openCard; }, [openCard]);
+  useEffect(() => {
+    const MOVE = new Set(["arrowleft", "arrowright", "arrowup", "arrowdown", "w", "a", "s", "d"]);
+    const down = new Set<string>();
+    const vel = { x: 0, y: 0 };
+    let raf = 0, last = 0;
+    const BASE = 1150, SPRINT = 2.5, SLOW = 0.3;   // px/sec cruise + modifier multipliers
+    const ACCEL = 11, FRICTION = 14;               // velocity easing rates (per sec)
+
+    const tick = (ts: number) => {
+      const dt = last ? Math.min(0.05, (ts - last) / 1000) : 1 / 60;
+      last = ts;
+      let dx = 0, dy = 0;
+      if (down.has("arrowleft") || down.has("a")) dx += 1;
+      if (down.has("arrowright") || down.has("d")) dx -= 1;
+      if (down.has("arrowup") || down.has("w")) dy += 1;
+      if (down.has("arrowdown") || down.has("s")) dy -= 1;
+      if (dx && dy) { dx *= Math.SQRT1_2; dy *= Math.SQRT1_2; } // even speed on the diagonal
+      const moving = dx !== 0 || dy !== 0;
+      const mult = down.has("shift") ? SPRINT : down.has("space") ? SLOW : 1;
+      const tx = dx * BASE * mult, ty = dy * BASE * mult;
+      const ease = 1 - Math.exp(-(moving ? ACCEL : FRICTION) * dt);
+      vel.x += (tx - vel.x) * ease;
+      vel.y += (ty - vel.y) * ease;
+      if (!moving && Math.abs(vel.x) < 1.5 && Math.abs(vel.y) < 1.5) {
+        vel.x = vel.y = 0; raf = 0; last = 0;
+        pushHist(tRef.current);  // one history entry per glide, just like a drag
+        return;
+      }
+      const vx = vel.x, vy = vel.y;
+      setT((p) => ({ ...p, ox: p.ox + vx * dt, oy: p.oy + vy * dt }));
+      raf = requestAnimationFrame(tick);
+    };
+    const run = () => { if (!raf) { last = 0; raf = requestAnimationFrame(tick); } };
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      const el = document.activeElement as HTMLElement | null;
+      const tag = el?.tagName ?? "";
+      if (el?.isContentEditable || tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || tag === "BUTTON" || tag === "A") return;
+      if (openCardRef.current) return;                  // card open → leave keys to the modal/page
+      if (e.ctrlKey || e.metaKey || e.altKey) return;   // never hijack real OS/browser shortcuts
+      const k = e.key === " " ? "space" : e.key.toLowerCase();
+      if (k === "shift") { down.add("shift"); return; }
+      if (k === "space") { down.add("space"); e.preventDefault(); return; }
+      if (!MOVE.has(k)) return;
+      e.preventDefault();          // stop arrows from scrolling the page
+      down.add(k);
+      setSmooth(false);
+      run();
+    };
+    const onKeyUp = (e: KeyboardEvent) => {
+      const k = e.key === " " ? "space" : e.key.toLowerCase();
+      down.delete(k);              // friction eases it to a stop
+    };
+    const clear = () => down.clear();
+
+    window.addEventListener("keydown", onKeyDown);
+    window.addEventListener("keyup", onKeyUp);
+    window.addEventListener("blur", clear);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("keyup", onKeyUp);
+      window.removeEventListener("blur", clear);
+      if (raf) cancelAnimationFrame(raf);
+    };
+  }, [pushHist]);
+
   const onDown = (e: React.MouseEvent) => {
     const el = e.target as HTMLElement;
     if (el.closest(".node") || el.closest(".bopill")) return; // let node clicks / pill hovers through
@@ -228,7 +300,7 @@ export function TreeView({ graph, pos, width, height, cards }: {
         </div>
       </div>
 
-      <div className="panhint">scroll to zoom · drag to pan · click a node to open its card</div>
+      <div className="panhint">arrows / WASD to move · shift sprint · space slow · scroll to zoom · click a node</div>
 
       <div className={`drawer${drawerOpen ? " open" : ""}`} aria-hidden={!drawerOpen}>
         <TreeOutline graph={graph} focus={focus} onPick={pickFromDrawer} onClose={() => setDrawerOpen(false)} />
