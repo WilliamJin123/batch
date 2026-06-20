@@ -1,15 +1,18 @@
 "use client";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import type { TreeGraphVM, TreeNodeVM } from "../../lib/viewmodel/types";
 import { StateDot } from "../shared/StateDot";
 
 /** The "all recipes" drawer: a live filter over every recipe, grouped by family.
  *  Picking a row centres that node in the canvas and opens its card. */
-export function TreeOutline({ graph, focus, onPick, onClose }: {
-  graph: TreeGraphVM; focus: string | null; onPick: (id: string) => void; onClose: () => void;
+export function TreeOutline({ graph, focus, open, onPick, onClose }: {
+  graph: TreeGraphVM; focus: string | null; open: boolean; onPick: (id: string) => void; onClose: () => void;
 }) {
   const [q, setQ] = useState("");
   const [closed, setClosed] = useState<Record<string, boolean>>({});
+  const inputRef = useRef<HTMLInputElement>(null);
+  // when the drawer opens (e.g. via the "/" hotkey) drop the cursor straight into search
+  useEffect(() => { if (open) { const id = setTimeout(() => inputRef.current?.focus(), 60); return () => clearTimeout(id); } }, [open]);
   const ql = q.trim().toLowerCase();
   const searching = ql.length > 0;
   const match = (n: TreeNodeVM) =>
@@ -26,6 +29,7 @@ export function TreeOutline({ graph, focus, onPick, onClose }: {
     (families.get(n.family) ?? families.set(n.family, []).get(n.family)!).push(n);
   }
   const isOpen = (f: string) => searching || !closed[f];
+  const flat = [...families.values()].flat();   // top match for Enter-to-open
 
   return (
     <div className="drawer-inner">
@@ -33,7 +37,9 @@ export function TreeOutline({ graph, focus, onPick, onClose }: {
         <span className="dt">All recipes</span>
         <button className="dx" onClick={onClose} aria-label="Close recipes">✕</button>
       </div>
-      <input className="dq" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search name, family, or tag…" aria-label="Search recipes" />
+      <input ref={inputRef} className="dq" value={q} onChange={(e) => setQ(e.target.value)}
+        onKeyDown={(e) => { if (e.key === "Enter" && flat[0]) { e.preventDefault(); onPick(flat[0].recipeId); } else if (e.key === "Escape") { e.preventDefault(); onClose(); } }}
+        placeholder="Search name, family, or tag…" aria-label="Search recipes" />
       <div className="dct">{total} of {graph.nodes.length}</div>
       <div className="dlist">
         {[...families.entries()].map(([fam, nodes]) => (

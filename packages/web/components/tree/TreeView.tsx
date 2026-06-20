@@ -217,6 +217,8 @@ export function TreeView({ graph, pos, width, height, cards }: {
       if (el?.isContentEditable || tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || tag === "BUTTON" || tag === "A") return;
       if (openCardRef.current) return;                  // card open → leave keys to the modal/page
       if (e.ctrlKey || e.metaKey || e.altKey) return;   // never hijack real OS/browser shortcuts (Ctrl+W, Cmd±, …)
+      if (e.code === "KeyL") { e.preventDefault(); setLegendOpen((o) => !o); return; }                  // toggle legend
+      if (e.code === "Slash" && !e.shiftKey) { e.preventDefault(); setDrawerOpen(true); return; }        // open the recipe finder (focuses its search)
       if (e.code === "ShiftLeft" || e.code === "ShiftRight") { down.add("shift"); return; }
       if (e.code === "Space") { down.add("space"); e.preventDefault(); return; }
       if (e.code === "KeyF") { e.preventDefault(); fitRef.current(); return; }
@@ -287,8 +289,6 @@ export function TreeView({ graph, pos, width, height, cards }: {
     return { note: b.note as BakeoffNote, ax, ay, bx, by, mx, my };
   }).filter((c): c is NonNullable<typeof c> => c !== null);
 
-  const composes = graph.edges.filter((e) => e.rel === "composes").length;
-
   return (
     <div className="treepage">
       <div className="board" ref={boardRef} onMouseDown={onDown}>
@@ -301,7 +301,6 @@ export function TreeView({ graph, pos, width, height, cards }: {
 
       <div className="tctl tl">
         <button className={`fbtn${drawerOpen ? " on" : ""}`} onClick={() => setDrawerOpen((o) => !o)} aria-label="Toggle recipes">☰ Recipes</button>
-        <div className="ttitle">Recipe Tree <span>{graph.nodes.length} recipes · {composes} compositions · {graph.bakeoffs.length} bake-off{graph.bakeoffs.length === 1 ? "" : "s"}</span></div>
       </div>
 
       <div className="tctl tr">
@@ -318,10 +317,10 @@ export function TreeView({ graph, pos, width, height, cards }: {
         </div>
       </div>
 
-      <div className="panhint">arrows / WASD move · +/− zoom · F fit · shift sprint · space slow</div>
+      <div className="panhint">WASD / arrows move · +/− zoom · F fit · L legend · / find · ? shortcuts</div>
 
       <div className={`drawer${drawerOpen ? " open" : ""}`} aria-hidden={!drawerOpen}>
-        <TreeOutline graph={graph} focus={focus} onPick={pickFromDrawer} onClose={() => setDrawerOpen(false)} />
+        <TreeOutline graph={graph} focus={focus} open={drawerOpen} onPick={pickFromDrawer} onClose={() => setDrawerOpen(false)} />
       </div>
 
       {openCard && cards[openCard] && <CardModal card={cards[openCard]} onClose={() => setOpenCard(null)} onNavigate={navInCard} />}
