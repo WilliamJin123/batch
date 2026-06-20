@@ -18,21 +18,31 @@ const CookieIcon = () => (
   </svg>
 );
 
+/** Brand mark: a warm stack of layers — a "batch" (and a nod to stacked bakes / versions).
+ *  Distinct from the single-cookie Recipes tab. */
+const BatchMark = () => (
+  <svg className="mark" viewBox="0 0 24 24" aria-hidden="true">
+    <ellipse cx="12" cy="17" rx="8.6" ry="3" fill="#8f5e20" />
+    <ellipse cx="12" cy="12" rx="8.6" ry="3" fill="#b47a37" />
+    <ellipse cx="12" cy="7" rx="8.6" ry="3" fill="#cf9f3f" />
+  </svg>
+);
+
 export function TopBar() {
   const path = usePathname() ?? "/";
   const onRecipes = path.startsWith("/recipes");
   return (
     <div className="topbar">
       <div className="brand">
-        <div className="mark"></div>
+        <BatchMark />
         <b>Batch</b>
-        <span className="branch">main</span>
       </div>
       <nav className="nav">
         <Link className={onRecipes ? undefined : "on"} href="/"><TreeIcon />Tree</Link>
         <Link className={onRecipes ? "on" : undefined} href="/recipes"><CookieIcon />Recipes</Link>
       </nav>
       <div className="spacer"></div>
+      <span className="branch" title="current branch">main</span>
     </div>
   );
 }

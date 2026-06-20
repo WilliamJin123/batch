@@ -222,7 +222,7 @@ export function TreeView({ graph, pos, width, height, cards }: {
       if (openCardRef.current) { if (e.code === "Backspace") { e.preventDefault(); setOpenCard(null); } return; } // card open: ⌫ closes it back to the tree; all else goes to the modal
       if (e.ctrlKey || e.metaKey || e.altKey) return;   // never hijack real OS/browser shortcuts (Ctrl+W, Cmd±, …)
       if (e.code === "KeyL") { e.preventDefault(); setLegendOpen((o) => !o); return; }                  // toggle legend
-      if (e.code === "Slash" && !e.shiftKey) { e.preventDefault(); setDrawerOpen(true); return; }        // open the recipe finder (focuses its search)
+      if (e.key === "/") { e.preventDefault(); setDrawerOpen(true); return; }                            // open the recipe finder (focuses its search); by character so it's layout-proof and never the "?" key
       if (e.code === "ShiftLeft" || e.code === "ShiftRight") { down.add("shift"); return; }
       if (e.code === "Space") { if (tag === "BUTTON") return; down.add("space"); e.preventDefault(); return; } // let Space activate a focused button instead of "slow"
       if (e.code === "KeyF") { e.preventDefault(); fitRef.current(); return; }

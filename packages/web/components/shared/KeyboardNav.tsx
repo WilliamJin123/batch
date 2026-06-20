@@ -1,11 +1,11 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 /** Site-wide keyboard navigation (lives in the layout, so it works on every page):
- *  T → tree, R → recipes, ? → this shortcuts overlay. Tree-canvas keys (move/zoom/L/find)
- *  live in TreeView. Everything is toggle/letter based — nothing depends on Esc (flaky on some Macs),
- *  and any Ctrl/Cmd/Alt combo is ignored so real browser/OS shortcuts pass straight through. */
+ *  T → tree, R → recipes, ? → toggle a shortcuts overlay. Tree-canvas keys (move/zoom/L/find) live
+ *  in TreeView. The overlay closes on ANY key (and ? / click-away / ✕) — never on Esc alone, which is
+ *  unreliable on some Macs. Any Ctrl/Cmd/Alt combo is ignored so real browser/OS shortcuts pass through. */
 function Row({ k, d }: { k: string; d: string }) {
   return <div className="krow"><kbd>{k}</kbd><span>{d}</span></div>;
 }
@@ -13,18 +13,20 @@ function Row({ k, d }: { k: string; d: string }) {
 export function KeyboardNav() {
   const router = useRouter();
   const [help, setHelp] = useState(false);
+  const helpRef = useRef(false);
+  const set = (v: boolean) => { helpRef.current = v; setHelp(v); };
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.code === "Escape") { setHelp(false); return; }                                            // Esc also closes the overlay (when it fires); ? / click / ✕ are the reliable ways
       const el = document.activeElement as HTMLElement | null;
       const tag = el?.tagName ?? "";
-      if (el?.isContentEditable || tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return; // typing
-      if (e.ctrlKey || e.metaKey || e.altKey) return;                                                 // leave OS/browser combos
-      if (e.code === "Slash" && e.shiftKey) { e.preventDefault(); setHelp((h) => !h); return; }       // ? toggles help
-      if (e.shiftKey) return;                                                                         // (Shift is "sprint" on the canvas)
-      if (e.code === "KeyT") { e.preventDefault(); setHelp(false); router.push("/"); return; }
-      if (e.code === "KeyR") { e.preventDefault(); setHelp(false); router.push("/recipes"); return; }
+      const typing = !!(el?.isContentEditable || tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT");
+      if (e.ctrlKey || e.metaKey || e.altKey) return;                                    // leave OS/browser combos alone
+      if (!typing && e.key === "?") { e.preventDefault(); set(!helpRef.current); return; } // ? opens AND closes (by character, so it's layout-proof)
+      if (helpRef.current) set(false);                                                   // ANY other key dismisses it — closing never needs Esc
+      if (typing || e.shiftKey) return;                                                  // (Shift is "sprint" on the canvas)
+      if (e.code === "KeyT") { e.preventDefault(); router.push("/"); return; }
+      if (e.code === "KeyR") { e.preventDefault(); router.push("/recipes"); return; }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -32,9 +34,9 @@ export function KeyboardNav() {
 
   if (!help) return null;
   return (
-    <div className="kmodal" role="dialog" aria-modal="true" aria-label="Keyboard shortcuts" onMouseDown={() => setHelp(false)}>
+    <div className="kmodal" role="dialog" aria-modal="true" aria-label="Keyboard shortcuts" onMouseDown={() => set(false)}>
       <div className="kpanel" onMouseDown={(e) => e.stopPropagation()}>
-        <div className="khead"><b>Keyboard shortcuts</b><button className="kx" onClick={() => setHelp(false)} aria-label="Close shortcuts">✕</button></div>
+        <div className="khead"><b>Keyboard shortcuts</b><button className="kx" onClick={() => set(false)} aria-label="Close shortcuts">✕</button></div>
         <div className="kcols">
           <div className="kgrp">
             <div className="kgt">Navigate</div>
@@ -42,7 +44,7 @@ export function KeyboardNav() {
             <Row k="R" d="Recipes" />
             <Row k="/" d="Find a recipe" />
             <Row k="L" d="Toggle legend" />
-            <Row k="?" d="This help" />
+            <Row k="?" d="Show / hide this" />
           </div>
           <div className="kgrp">
             <div className="kgt">Tree canvas</div>
@@ -55,7 +57,7 @@ export function KeyboardNav() {
             <Row k="⌫" d="Close the card" />
           </div>
         </div>
-        <div className="kfoot">Press <kbd>?</kbd> any time · nothing uses Ctrl/Cmd so your browser shortcuts still work</div>
+        <div className="kfoot">Press <kbd>?</kbd>, <kbd>any key</kbd>, or click to close · nothing uses Ctrl/Cmd, so your browser shortcuts still work</div>
       </div>
     </div>
   );
