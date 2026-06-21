@@ -14,11 +14,38 @@ function statusOf(node: TreeNodeVM): Status | null {
   return null; // untried and not queued (e.g. an idle base) — left plain
 }
 
+// Greedy word-wrap line count for a title at `cpl` chars/line (a word longer than the line breaks).
+function wrapLines(words: string[], cpl: number): number {
+  let lines = 1, cur = 0;
+  for (const w of words) {
+    const wl = w.length;
+    if (cur > 0 && cur + 1 + wl <= cpl) { cur += 1 + wl; continue; }
+    if (cur > 0) lines++;
+    if (wl <= cpl) cur = wl;
+    else { lines += Math.ceil(wl / cpl) - 1; cur = wl % cpl || cpl; } // word wider than the line breaks across lines
+  }
+  return lines;
+}
+// Largest serif px (scene units) at which the FULL title wraps into ≤3 lines of the card's content
+// width — so a zoomed-out title is as large as possible but never truncates. Deterministic (a slightly
+// conservative 0.53em char width, so the real text fits even when the estimate is a hair off).
+function fitTitlePx(name: string, width: number, maxF: number): number {
+  const words = name.split(/\s+/).filter(Boolean);
+  for (let F = maxF; F > 11; F--) {
+    const cpl = Math.max(4, Math.floor(width / (0.56 * F)));
+    if (wrapLines(words, cpl) <= 3) return F;
+  }
+  return 11;
+}
+
 export function RecipeNode({ node, pos, arm, selected, onOpen }: {
   node: TreeNodeVM; pos: Pos; arm?: "A" | "B"; selected?: boolean; onOpen?: (recipeId: string) => void;
 }) {
   const { title, paren } = splitName(node.name);
-  const role = node.kind === "sub-recipe" ? "sub-recipe" : node.kind === "base" ? "base" : node.kind === "root" ? "root" : "variant";
+  const isSub = node.kind === "sub-recipe";
+  const role = isSub ? "sub-recipe" : node.kind === "base" ? "base" : node.kind === "root" ? "root" : "variant";
+  // max zoomed-out title size that still shows the whole title (content width ≈ card minus padding)
+  const titleFit = fitTitlePx(title, isSub ? 158 : 174, isSub ? 17 : 26);
   const status = statusOf(node);
   const cls = ["node", node.kind === "sub-recipe" ? "sub" : "", node.kind === "base" ? "base" : "",
     status ? `s-${status.cls}` : "", selected ? "cur" : ""].filter(Boolean).join(" ");
@@ -31,7 +58,7 @@ export function RecipeNode({ node, pos, arm, selected, onOpen }: {
       aria-label={`Open ${node.name}${status ? ` — ${status.label}` : ""}`}
       onClick={open}
       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(); } }}
-      style={{ left: pos.x, top: pos.y, width: pos.w, ["--nh" as string]: pos.h }}
+      style={{ left: pos.x, top: pos.y, width: pos.w, ["--nh" as string]: pos.h, ["--tf" as string]: titleFit }}
     >
       <span className="role">{arm ? `${role} · ${arm}` : role}</span>
       <div className="nname">{title} {paren && <span className="q">{paren}</span>}{node.needsTuning && <span className="tune">needs-tuning</span>}</div>
