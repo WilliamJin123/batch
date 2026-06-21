@@ -11,8 +11,8 @@ const ASPECT = 1.35;     // target width:height of the packed block (>1 = slight
  *  cards overlap their neighbours (e.g. Lemon's glaze note over Lucky Charms).
  *  Deterministic — no measurement, no Math.random/Date. */
 function nodeDims(n: Pick<TreeNodeVM, "kind" | "name" | "feedbackNote" | "needsTuning" | "servings">): { w: number; h: number } {
-  if (n.kind === "sub-recipe") return { w: SUB_W, h: 90 };
-  let h = 120; // role chip + 1-line name + 2-line meta + rating row
+  if (n.kind === "sub-recipe") return { w: SUB_W, h: 110 };
+  let h = 140; // role chip + 1-line name + 2-line meta + rating row (+ headroom for the larger zoomed-out type)
   if ((n.servings ?? 1) > 1) h += 16; // extra whole-batch "total" macro line
   if ((n.name ?? "").length > 22) h += 17; // long names wrap to a second line
   if (n.needsTuning) h += 8;
