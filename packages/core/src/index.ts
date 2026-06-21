@@ -21,3 +21,5 @@ export { RecipeService } from "./recipe-service.js";
 export type { RebaseResult, RebaseVariantItem } from "./recipe-service.js";
 export { buildRebasePlan } from "./rebase.js";
 export type { RebasePlan, RebaseConflict } from "./rebase.js";
+export { ingestMarkdown, parseMarkdownRecipe, parseIngredientLine, matchIngredient, draftFromParsed } from "./ingest.js";
+export type { IngestResult, IngestDraft, IngestReport, IngestLine, ParsedRecipe, ParsedIngredient, ParsedStep } from "./ingest.js";

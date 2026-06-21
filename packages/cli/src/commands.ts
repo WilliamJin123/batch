@@ -1,6 +1,6 @@
-import { scale as scaleContent, currentVerdicts, renderCard, classifyKinds, diffContent } from "@batch/core";
+import { scale as scaleContent, currentVerdicts, renderCard, classifyKinds, diffContent, ingestMarkdown } from "@batch/core";
 import type {
-  Author, CompareView, CurrentVerdicts, FeedbackEntry, FeedbackKind, FlattenSource, IngredientSlot, LibraryIngredient,
+  Author, CompareView, CurrentVerdicts, FeedbackEntry, FeedbackKind, FlattenSource, IngestResult, IngredientSlot, LibraryIngredient,
   Macros, MacroSnapshot, OverrideEntry, Rating, RebaseResult, RebaseVariantItem, Recipe, RecipeContent, RecipeKind,
   RecipeService, RecipeVersion, VersionStatus, Yield,
 } from "@batch/core";
@@ -103,6 +103,10 @@ export function ingredientList(svc: RecipeService): Promise<LibraryIngredient[]>
 }
 export function ingredientShow(svc: RecipeService, ref: string): Promise<LibraryIngredient> {
   return svc.getIngredientRef(ref);
+}
+/** Parse a recipe markdown document into a draft `create` payload, matched against the live library. */
+export async function ingest(svc: RecipeService, markdown: string): Promise<IngestResult> {
+  return ingestMarkdown(markdown, await svc.listIngredients());
 }
 export async function macros(svc: RecipeService, ref: string): Promise<MacroSnapshot | undefined> {
   return (await svc.getVersion(await svc.resolveRef(ref))).macros;

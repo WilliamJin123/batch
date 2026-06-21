@@ -206,6 +206,31 @@ export async function run(argv: string[]): Promise<void> {
       out({ out: opts.out, files: result.files.length, recipes: result.recipes, ingredients: result.ingredients, feedback: result.feedback });
     });
 
+  program.command("ingest <path>")
+    .description("parse a recipe markdown file into a draft `create` JSON via best-effort library matching (foreign → draft → create); --dir for a folder")
+    .option("--dir", "treat <path> as a directory and ingest every .md inside")
+    .option("--out <path>", "write the draft JSON to this file (or directory, with --dir) instead of stdout")
+    .option("--format <fmt>", "input format: md (default)", "md")
+    .action(async (path, opts) => {
+      if (opts.format && opts.format !== "md") throw new Error(`unsupported --format "${opts.format}" — only "md" so far (Cooklang next)`);
+      const svc = makeService();
+      if (opts.dir) {
+        const names = (await readdir(path)).filter((n) => n.toLowerCase().endsWith(".md")).sort();
+        if (opts.out) await mkdir(opts.out, { recursive: true });
+        const reports = [];
+        for (const n of names) {
+          const { draft, report } = await cmd.ingest(svc, await readFile(join(path, n), "utf8"));
+          if (opts.out) await writeFile(join(opts.out, n.replace(/\.md$/i, ".draft.json")), JSON.stringify(draft, null, 2) + "\n");
+          reports.push(report);
+        }
+        out({ ingested: reports.length, ...(opts.out ? { out: opts.out } : {}), reports });
+        return;
+      }
+      const { draft, report } = await cmd.ingest(svc, await readFile(path, "utf8"));
+      if (opts.out) { await writeFile(opts.out, JSON.stringify(draft, null, 2) + "\n"); out({ out: opts.out, report }); return; }
+      out({ draft, report });
+    });
+
   program.command("import <dir>")
     .description("rebuild the store from a dumped sources directory (ingredients → recipes in dependency order → feedback)")
     .action(async (dir) => {
