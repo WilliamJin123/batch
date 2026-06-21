@@ -322,7 +322,7 @@ export function TreeView({ graph, pos, width, height, cards }: {
   return (
     <div className="treepage">
       <div className="board" ref={boardRef} tabIndex={-1} onMouseDown={onDown}>
-        <div className={`scene${t.scale < FAR_SCALE ? " far" : ""}${smooth ? " smooth" : ""}`} style={{ transform: `translate(${t.ox}px,${t.oy}px) scale(${t.scale})`, width, height, transition: smooth ? "transform .26s cubic-bezier(.22,.61,.36,1)" : "none" }}>
+        <div className={`scene${t.scale < FAR_SCALE ? " far" : ""}${smooth ? " smooth" : ""}`} style={{ transform: `translate(${t.ox}px,${t.oy}px) scale(${t.scale})`, ["--z" as string]: t.scale, width, height, transition: smooth ? "transform .26s cubic-bezier(.22,.61,.36,1)" : "none" }}>
           <EdgeLayer edges={graph.edges} pos={posMap} connectors={connectors} width={width} height={height} />
           {graph.nodes.map((n) => <RecipeNode key={n.recipeId} node={n} pos={posMap.get(n.recipeId)!} arm={arm.get(n.recipeId)} selected={focus === n.recipeId} onOpen={openFromNode} />)}
           {connectors.map((c, i) => <BakeoffPill key={i} note={c.note} pos={{ x: c.mx, y: c.my }} />)}
