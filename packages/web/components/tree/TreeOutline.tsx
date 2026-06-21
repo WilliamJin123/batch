@@ -35,7 +35,7 @@ export function TreeOutline({ graph, focus, open, onPick, onClose }: {
     <div className="drawer-inner">
       <div className="dhead">
         <span className="dt">All recipes</span>
-        <button className="dx" onClick={onClose} aria-label="Close recipes">✕</button>
+        {/* no ✕ here — the floating "✕ Recipes" toggle that sits over this row already closes it */}
       </div>
       <input ref={inputRef} className="dq" value={q} onChange={(e) => setQ(e.target.value)}
         onKeyDown={(e) => { if (e.key === "Enter" && flat[0]) { e.preventDefault(); onPick(flat[0].recipeId); } else if (e.key === "Escape" || e.key === "/") { e.preventDefault(); onClose(); } }}

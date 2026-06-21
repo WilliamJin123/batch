@@ -63,8 +63,6 @@
 .dhead{display:flex;align-items:center;justify-content:space-between;margin:2px 4px 11px}
 .dt{font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint)}
 .drawer.open .dt{visibility:hidden}/* the floating ✕ Recipes toggle sits over this spot when open */
-.dx{border:none;background:none;color:var(--muted);cursor:pointer;font-size:13px;line-height:1;padding:3px 7px;border-radius:6px}
-.dx:hover{background:var(--page);color:var(--ink)}
 .dq{font-family:var(--sans);font-size:13px;color:var(--ink);border:1px solid var(--line2);background:var(--page);border-radius:9px;padding:8px 11px;margin:0 2px}
 .dq:focus{outline:none;border-color:var(--accent)}
 .dct{font-family:var(--mono);font-size:9.5px;color:var(--faint);margin:9px 6px 6px}
