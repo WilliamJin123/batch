@@ -8,6 +8,7 @@ import { BakeoffPill } from "./BakeoffPill";
 import { CardModal } from "./CardModal";
 import type { BakeCardVM, BakeoffNote, TreeGraphVM } from "../../lib/viewmodel/types";
 import type { Pos } from "../../lib/layout/graphLayout";
+import { loadView, saveView } from "../../lib/viewState";
 
 const MIN_SCALE = 0.2, MAX_SCALE = 2.6, INIT_SCALE = 0.95;
 const FAR_SCALE = 0.55;  // below this, nodes collapse to a title-only card (semantic zoom)
@@ -71,15 +72,27 @@ export function TreeView({ graph, pos, width, height, cards }: {
     goTo({ scale, ox: (bw - width * scale) / 2, oy: (bh - height * scale) / 2 });
   }, [width, height, goTo]);
 
-  // first paint: start zoomed in at the top-left of the tree (roots/bases) — seeds history[0]
+  // first paint: restore the last view from localStorage if we have one (so a reload keeps your zoom),
+  // else start zoomed in at the top-left of the tree (roots/bases). Either way seeds history[0].
   const initialView = useCallback(() => {
     const board = boardRef.current; if (!board) return;
     const bh = board.clientHeight, sh = height * INIT_SCALE;
-    const v = { scale: INIT_SCALE, ox: 40, oy: sh <= bh - 48 ? (bh - sh) / 2 : 28 };
+    const saved = loadView();
+    const v = saved
+      ? { ox: saved.ox, oy: saved.oy, scale: clampS(saved.scale) }
+      : { scale: INIT_SCALE, ox: 40, oy: sh <= bh - 48 ? (bh - sh) / 2 : 28 };
     setSmooth(false); setT(v);
     hist.current = [v]; hi.current = 0; syncNav();
   }, [height]);
   useEffect(() => { initialView(); }, [initialView]);
+
+  // persist the view (debounced) so the next entry restores it instead of snapping to the default
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(() => saveView(t), 200);
+    return () => { if (saveTimer.current) clearTimeout(saveTimer.current); };
+  }, [t]);
 
   // +/- buttons: zoom a step around the EXACT centre of the viewport. Applied instantly rather than via
   // a CSS transform-transition — interpolating the matrix slides the anchor off-centre mid-animation
