@@ -11,7 +11,7 @@ const node: any = {
 it("RecipeNode renders name, macro line, and a rating", () => {
   render(<RecipeNode node={node} pos={{ x: 0, y: 0, w: 200, h: 96 }} />);
   expect(screen.getByText(/Red Velvet/)).toBeTruthy();
-  expect(screen.getAllByText(/205 cal/).length).toBeGreaterThan(0); // full meta + compact (zoomed-out) macro line
+  expect(screen.getByText(/205 cal/)).toBeTruthy();
   expect(screen.getByText(/to make/)).toBeTruthy();
 });
 

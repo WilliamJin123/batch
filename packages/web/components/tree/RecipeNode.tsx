@@ -37,8 +37,6 @@ export function RecipeNode({ node, pos, arm, selected, onOpen }: {
       <div className="nname">{title} {paren && <span className="q">{paren}</span>}{node.needsTuning && <span className="tune">needs-tuning</span>}</div>
       {/* status line: always visible (both zoom modes), enlarged when zoomed out */}
       {status && <div className={`nrate ${status.cls}`}><span className="rglyph">{status.glyph}</span> {status.label}</div>}
-      {/* compact macro line: shown only when zoomed out, so the numbers stay readable at a glance */}
-      <div className="nmini">{r0(node.cal)} cal · {r1(node.protein)} P · {node.calPerGramProtein != null ? `${r1(node.calPerGramProtein)}/g` : "—"}</div>
       <div className="ndetailw"><div className="ndetail">
         <div className="nmeta">
           {r0(node.cal)} cal · {r1(node.protein)} P <span className="munit">/ serving</span><br />
