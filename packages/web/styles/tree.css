@@ -19,7 +19,7 @@
 
 /* floating control clusters layered over the canvas */
 .tctl{position:absolute;z-index:20;display:flex;align-items:center;gap:8px}
-.tctl.tl{top:16px;left:16px;max-width:calc(100% - 32px);z-index:21}
+.tctl.tl{top:16px;left:16px;max-width:calc(100% - 32px);z-index:26}/* above the drawer (z25) so its ✕/☰ toggle stays clickable while the drawer is open */
 .tctl.tr{top:16px;right:16px}
 .tctl.bl{bottom:14px;left:16px;max-width:min(620px,62vw)}
 .fbtn{font-family:var(--mono);font-size:11px;color:var(--ink-soft);border:1px solid var(--line2);background:rgba(255,253,250,.92);backdrop-filter:blur(6px);border-radius:9px;padding:7px 11px;cursor:pointer;display:flex;align-items:center;gap:7px;box-shadow:0 1px 3px rgba(60,44,18,.08);transition:border-color .12s,color .12s,background .12s,box-shadow .12s,transform .09s cubic-bezier(.34,1.56,.64,1)}
@@ -61,6 +61,7 @@
 .drawer-inner{display:flex;flex-direction:column;height:100%;padding:14px 12px}
 .dhead{display:flex;align-items:center;justify-content:space-between;margin:2px 4px 11px}
 .dt{font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint)}
+.drawer.open .dt{visibility:hidden}/* the floating ✕ Recipes toggle sits over this spot when open */
 .dx{border:none;background:none;color:var(--muted);cursor:pointer;font-size:13px;line-height:1;padding:3px 7px;border-radius:6px}
 .dx:hover{background:var(--page);color:var(--ink)}
 .dq{font-family:var(--sans);font-size:13px;color:var(--ink);border:1px solid var(--line2);background:var(--page);border-radius:9px;padding:8px 11px;margin:0 2px}

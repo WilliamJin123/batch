@@ -37,6 +37,7 @@ export function TreeView({ graph, pos, width, height, cards }: {
 
   // ----- view + navigation history (undo/redo) -----
   const tRef = useRef(t); useEffect(() => { tRef.current = t; }, [t]);
+  const drawerOpenRef = useRef(drawerOpen); useEffect(() => { drawerOpenRef.current = drawerOpen; }, [drawerOpen]); // for the touch handler (its effect closure is stale)
   const hist = useRef<View[]>([]);
   const hi = useRef(-1);
   const syncNav = () => setNav({ canUndo: hi.current > 0, canRedo: hi.current < hist.current.length - 1 });
@@ -120,6 +121,7 @@ export function TreeView({ graph, pos, width, height, cards }: {
     const onStart = (e: TouchEvent) => {
       const el = e.target as HTMLElement;
       if (el.closest(".node") || el.closest(".bopill")) return; // let node taps / pill hovers through
+      if (drawerOpenRef.current) { setDrawerOpen(false); e.preventDefault(); return; } // tap the canvas to dismiss the recipe drawer
       if (e.touches.length === 1) {
         setSmooth(false); moved = false; pinch = null;
         tpan = { sx: e.touches[0].clientX - tRef.current.ox, sy: e.touches[0].clientY - tRef.current.oy };
@@ -255,6 +257,7 @@ export function TreeView({ graph, pos, width, height, cards }: {
   const onDown = (e: React.MouseEvent) => {
     const el = e.target as HTMLElement;
     if (el.closest(".node") || el.closest(".bopill")) return; // let node clicks / pill hovers through
+    if (drawerOpen) { setDrawerOpen(false); return; }         // click the canvas to dismiss the recipe drawer
     setSmooth(false);
     pan.current = { sx: e.clientX - t.ox, sy: e.clientY - t.oy };
     panMoved.current = false;
@@ -268,7 +271,7 @@ export function TreeView({ graph, pos, width, height, cards }: {
     goTo({ scale: prev.scale, ox: board.clientWidth / 2 - (p.x + p.w / 2) * prev.scale, oy: board.clientHeight / 2 - (p.y + p.h / 2) * prev.scale });
   }, [posMap, goTo]);
 
-  const openFromNode = (id: string) => { setFocus(id); setOpenCard(id); };
+  const openFromNode = (id: string) => { setDrawerOpen(false); setFocus(id); setOpenCard(id); };
   const pickFromDrawer = (id: string) => { setDrawerOpen(false); centerOn(id); setOpenCard(id); };
   const navInCard = (id: string) => { if (cards[id]) { centerOn(id); setOpenCard(id); } };
 
@@ -304,7 +307,7 @@ export function TreeView({ graph, pos, width, height, cards }: {
       </div>
 
       <div className="tctl tl">
-        <button className={`fbtn${drawerOpen ? " on" : ""}`} onClick={() => setDrawerOpen((o) => !o)} aria-label="Toggle recipes">☰ Recipes</button>
+        <button className={`fbtn${drawerOpen ? " on" : ""}`} onClick={() => setDrawerOpen((o) => !o)} aria-label={drawerOpen ? "Close recipes" : "Open recipes"}>{drawerOpen ? "✕ Recipes" : "☰ Recipes"}</button>
       </div>
 
       <div className="tctl tr">
