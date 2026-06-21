@@ -39,7 +39,7 @@ function fitTitlePx(name: string, width: number, maxF: number): number {
 }
 
 export function RecipeNode({ node, pos, arm, selected, onOpen }: {
-  node: TreeNodeVM; pos: Pos; arm?: "A" | "B"; selected?: boolean; onOpen?: (recipeId: string) => void;
+  node: TreeNodeVM; pos: Pos; arm?: string; selected?: boolean; onOpen?: (recipeId: string) => void;
 }) {
   const { title, paren } = splitName(node.name);
   const isSub = node.kind === "sub-recipe";

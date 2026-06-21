@@ -6,8 +6,9 @@ import { TreeOutline } from "./TreeOutline";
 import { Legend } from "./Legend";
 import { BakeoffPill } from "./BakeoffPill";
 import { CardModal } from "./CardModal";
-import type { BakeCardVM, BakeoffNote, TreeGraphVM } from "../../lib/viewmodel/types";
+import type { BakeCardVM, TreeGraphVM } from "../../lib/viewmodel/types";
 import type { Pos } from "../../lib/layout/graphLayout";
+import { buildConnectors } from "../../lib/layout/bakeoffConnectors";
 import { loadView, saveView } from "../../lib/viewState";
 
 const MIN_SCALE = 0.2, MAX_SCALE = 2.6, INIT_SCALE = 0.95;
@@ -307,26 +308,12 @@ export function TreeView({ graph, pos, width, height, cards }: {
   const pickFromDrawer = (id: string) => { cameFromDrawerRef.current = true; setCameFromDrawer(true); setDrawerOpen(false); centerOn(id); setOpenCard(id); focusBoard(); }; // remember the origin so closing the card (esc / ⌫ / click-away / ← Results) drops you back on your search
   const navInCard = (id: string) => { if (cards[id]) { centerOn(id); setOpenCard(id); } };
 
-  const arm = new Map<string, "A" | "B">();
-  for (const b of graph.bakeoffs) { arm.set(b.a, "A"); arm.set(b.b, "B"); }
+  // arm labels (A/B/C…) come straight from the bake-off note, so the node badge and the pill agree
+  const arm = new Map<string, string>();
+  for (const b of graph.bakeoffs) for (const a of b.note.arms) arm.set(a.recipeId, a.label);
 
-  // bake-off brackets: connect the two arms along whichever axis they're separated on
-  // (side-by-side → facing vertical edges; stacked → facing horizontal edges), pill at the midpoint
-  const connectors = graph.bakeoffs.map((b) => {
-    const a = posMap.get(b.a), bb = posMap.get(b.b);
-    if (!a || !bb) return null;
-    const dx = Math.abs((a.x + a.w / 2) - (bb.x + bb.w / 2)), dy = Math.abs((a.y + a.h / 2) - (bb.y + bb.h / 2));
-    let ax, ay, bx, by;
-    if (dx >= dy) { // side by side: right edge of the left box ↔ left edge of the right box
-      const [L, R] = a.x <= bb.x ? [a, bb] : [bb, a];
-      ax = L.x + L.w; ay = L.y + L.h / 2; bx = R.x; by = R.y + R.h / 2;
-    } else { // stacked: bottom of the upper box ↔ top of the lower box
-      const [U, D] = a.y <= bb.y ? [a, bb] : [bb, a];
-      ax = U.x + U.w / 2; ay = U.y + U.h; bx = D.x + D.w / 2; by = D.y;
-    }
-    const mx = (ax + bx) / 2, my = (ay + by) / 2;
-    return { note: b.note as BakeoffNote, ax, ay, bx, by, mx, my };
-  }).filter((c): c is NonNullable<typeof c> => c !== null);
+  // bake-off brackets (2-arm curve or N-arm comb) — geometry lives in buildConnectors
+  const connectors = buildConnectors(graph.bakeoffs, posMap);
 
   return (
     <div className="treepage">

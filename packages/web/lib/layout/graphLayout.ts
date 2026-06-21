@@ -5,6 +5,7 @@ export interface Pos { x: number; y: number; w: number; h: number; }
 const NODE_W = 200, SUB_W = 184;
 const COMP_GAP = 64;     // space between packed clusters
 const ASPECT = 1.35;     // target width:height of the packed block (>1 = slightly wide, for widescreen)
+const BRACKET_BAND = 58; // reserved whitespace above an N≥3 bake-off cluster for the comb bracket + pill
 
 /** Estimate a node's rendered height so dagre reserves enough vertical room.
  *  Nodes render content-tall (feedback notes wrap), so a fixed height made tall
@@ -46,16 +47,23 @@ function layoutCluster(
     return dg;
   };
 
-  // two-pass only matters when this cluster owns a bake-off (else affinity is empty)
+  // two-pass only matters when this cluster owns a bake-off (else affinity is empty). Chain the arms
+  // left→right (consecutive high-weight edges) so 2..N arms pack into one tight row in arm order.
   let dg = build([]);
   const affinity: Array<[string, string]> = [];
   for (const bo of bakeoffs ?? []) {
-    if (!ids.has(bo.a) || !ids.has(bo.b)) continue;
-    affinity.push(dg.node(bo.a).x <= dg.node(bo.b).x ? [bo.a, bo.b] : [bo.b, bo.a]);
+    const present = bo.arms.filter((id) => ids.has(id));
+    if (present.length < 2) continue;
+    present.sort((u, v) => dg.node(u).x - dg.node(v).x);
+    for (let i = 1; i < present.length; i++) affinity.push([present[i - 1], present[i]]);
   }
   if (affinity.length) dg = build(affinity);
 
-  // collect raw positions, then shift so the cluster starts at (0,0)
+  // an N≥3 bake-off draws a comb bracket above its row of arms — reserve a top band so the shelf-pack
+  // leaves room for it and it never collides with the cluster above.
+  const reserveTop = (bakeoffs ?? []).some((bo) => bo.arms.length >= 3 && bo.arms.every((id) => ids.has(id))) ? BRACKET_BAND : 0;
+
+  // collect raw positions, then shift so the cluster starts at (0,0) (+ the reserved band on top)
   const raw = new Map<string, Pos>();
   let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
   for (const id of dg.nodes()) {
@@ -66,8 +74,8 @@ function layoutCluster(
     maxX = Math.max(maxX, x + d.w); maxY = Math.max(maxY, y + d.h);
   }
   const pos = new Map<string, Pos>();
-  for (const [id, p] of raw) pos.set(id, { ...p, x: p.x - minX, y: p.y - minY });
-  return { pos, w: maxX - minX, h: maxY - minY };
+  for (const [id, p] of raw) pos.set(id, { ...p, x: p.x - minX, y: p.y - minY + reserveTop });
+  return { pos, w: maxX - minX, h: (maxY - minY) + reserveTop };
 }
 
 /** Build the forest, then SHELF-PACK clusters into a square-ish block. Every base + every
@@ -84,7 +92,7 @@ export function layoutGraph(g: Pick<TreeGraphVM, "nodes" | "edges"> & { bakeoffs
   const find = (x: string): string => { while (parent.get(x) !== x) { parent.set(x, parent.get(parent.get(x)!)!); x = parent.get(x)!; } return x; };
   const union = (a: string, b: string) => { const ra = find(a), rb = find(b); if (ra !== rb) parent.set(ra, rb); };
   for (const e of g.edges) if (ids.has(e.from) && ids.has(e.to)) union(e.from, e.to);
-  for (const bo of g.bakeoffs ?? []) if (ids.has(bo.a) && ids.has(bo.b)) union(bo.a, bo.b);
+  for (const bo of g.bakeoffs ?? []) { const present = bo.arms.filter((id) => ids.has(id)); for (let i = 1; i < present.length; i++) union(present[0], present[i]); }
 
   const clusters = new Map<string, TreeNodeVM[]>();
   for (const n of g.nodes) { const r = find(n.recipeId); (clusters.get(r) ?? clusters.set(r, []).get(r)!).push(n); }

@@ -21,10 +21,14 @@ export interface BakeCardVM {
 }
 export interface TreeNodeVM extends RecipeSummary { feedbackNote?: string; needsTuning: boolean; }
 export interface TreeEdgeVM { from: string; to: string; rel: "derives" | "composes"; }
-export interface BakeoffVM { a: string; b: string; note: BakeoffNote; }
+// A bake-off is N arms (≥2) competing for one slot. `arms` are recipeIds, ordered; the parallel
+// `note.arms` carries each arm's display label (A/B/C…) + macro summary, and `differingIngredients`
+// lists the ingredients whose per-serving grams aren't identical across all arms (values aligned to
+// `note.arms` order). Two arms is the common case (Red Velvet); three+ is an explicit tagged group.
+export interface BakeoffArmNote { recipeId: string; name: string; cal: number; calPerGramProtein: number | null; servings: number; label: string; }
+export interface BakeoffVM { arms: string[]; note: BakeoffNote; }
 export interface BakeoffNote {
-  a: { name: string; cal: number; calPerGramProtein: number | null; servings: number };
-  b: { name: string; cal: number; calPerGramProtein: number | null; servings: number };
-  differingIngredients: Array<{ name: string; a: number | "present" | null; b: number | "present" | null }>;
+  arms: BakeoffArmNote[];
+  differingIngredients: Array<{ name: string; values: Array<number | "present" | null> }>;
 }
 export interface TreeGraphVM { nodes: TreeNodeVM[]; edges: TreeEdgeVM[]; bakeoffs: BakeoffVM[]; }

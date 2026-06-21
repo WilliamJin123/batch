@@ -21,6 +21,28 @@ export function familyOf(v: RecipeVersion): string {
 }
 function nameStem(name: string): string { return name.replace(/\s*\([^)]*\)\s*$/, "").trim(); }
 
+const ARM_LABELS = "ABCDEFGHIJKL";
+/** Assemble one bake-off (2..N arms) from a group of head nodes: label them A/B/C…, pull a
+ *  per-serving macro summary onto each, and diff their ingredient grams via `compare` (a row is
+ *  kept only when the arms don't all agree). Works for any arm count — `compare` aligns ≥2 versions. */
+async function makeBakeoff(svc: RecipeService, group: TreeNodeVM[]): Promise<BakeoffVM> {
+  const cmp = await svc.compare(group.map((n) => n.versionId));
+  const differingIngredients = cmp.ingredients
+    .filter((r) => new Set(group.map((n) => JSON.stringify(r.perServingGrams[n.versionId] ?? null))).size > 1)
+    .map((r) => ({ name: r.name, values: group.map((n) => r.perServingGrams[n.versionId] ?? null) }))
+    .slice(0, 8);
+  return {
+    arms: group.map((n) => n.recipeId),
+    note: {
+      arms: group.map((n, i) => ({
+        recipeId: n.recipeId, name: n.name, cal: n.cal,
+        calPerGramProtein: n.calPerGramProtein, servings: n.servings, label: ARM_LABELS[i] ?? "·",
+      })),
+      differingIngredients,
+    },
+  };
+}
+
 async function summarize(svc: RecipeService): Promise<{ heads: RecipeVersion[]; nodes: TreeNodeVM[] }> {
   const recipes = await svc.listRecipes();
   const fb = await svc.feedbackSummary();
@@ -75,24 +97,32 @@ export async function buildTreeGraph(svc: RecipeService): Promise<TreeGraphVM> {
     }
   }
 
-  // bake-off: a stem family that is EXACTLY two untried siblings awaiting a head-to-head
-  // verdict. Strictest, lowest-false-positive rule — flags Red Velvet (Oat vs Crumbl) and
-  // refuses to guess on larger families (e.g. Browned-Butter's 50g/60g *ablation sweep*).
-  const byStem = new Map<string, TreeNodeVM[]>();
-  for (const n of nodes) { const k = nameStem(n.name); (byStem.get(k) ?? byStem.set(k, []).get(k)!).push(n); }
   const bakeoffs: BakeoffVM[] = [];
-  for (const group of byStem.values()) {
-    if (group.length === 2 && group.every((n) => !n.made)) {
-      const [a, b] = group;
-      const cmp = await svc.compare([a.versionId, b.versionId]);
-      const differing = cmp.ingredients.filter((r) => r.perServingGrams[a.versionId] !== r.perServingGrams[b.versionId])
-        .map((r) => ({ name: r.name, a: r.perServingGrams[a.versionId] ?? null, b: r.perServingGrams[b.versionId] ?? null }));
-      bakeoffs.push({ a: a.recipeId, b: b.recipeId, note: {
-        a: { name: a.name, cal: a.cal, calPerGramProtein: a.calPerGramProtein, servings: a.servings },
-        b: { name: b.name, cal: b.cal, calPerGramProtein: b.calPerGramProtein, servings: b.servings },
-        differingIngredients: differing.slice(0, 8),
-      }});
-    }
+  const claimed = new Set<string>();
+
+  // 1. EXPLICIT N-way: every head sharing a `bakeoff:<slug>` tag is one arm of that bake-off — any
+  // arm count, regardless of name or family (e.g. the carrot 3-way: a loaf, a cake, and bars, three
+  // independent roots competing for one base). The user declared the group, so we trust it verbatim.
+  const tagGroups = new Map<string, TreeNodeVM[]>();
+  for (const n of nodes) {
+    const tag = n.tags.find((t) => t.startsWith("bakeoff:"));
+    if (tag) (tagGroups.get(tag) ?? tagGroups.set(tag, []).get(tag)!).push(n);
   }
+  for (const group of tagGroups.values()) {
+    if (group.length >= 2) { group.forEach((n) => claimed.add(n.recipeId)); bakeoffs.push(await makeBakeoff(svc, group)); }
+  }
+
+  // 2. IMPLICIT 2-way (back-compat): a stem family that is EXACTLY two untried siblings awaiting a
+  // head-to-head verdict, not already part of an explicit group. Strictest, lowest-false-positive
+  // rule — flags Red Velvet (Oat vs Crumbl), refuses to guess on larger families (e.g. an ablation sweep).
+  const byStem = new Map<string, TreeNodeVM[]>();
+  for (const n of nodes) {
+    if (claimed.has(n.recipeId)) continue;
+    const k = nameStem(n.name); (byStem.get(k) ?? byStem.set(k, []).get(k)!).push(n);
+  }
+  for (const group of byStem.values()) {
+    if (group.length === 2 && group.every((n) => !n.made)) bakeoffs.push(await makeBakeoff(svc, group));
+  }
+
   return { nodes, edges, bakeoffs };
 }
