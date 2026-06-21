@@ -1,13 +1,18 @@
 import type { RecipeService, RecipeVersion, RecipeFeedbackSummary } from "@batch/core";
 import type { RecipeSummary, TreeEdgeVM, TreeGraphVM, TreeNodeVM, BakeoffVM } from "./types";
 
-const FAMILY_TAGS = ["cheesecake", "crumbl", "browned-butter", "brownie", "frosting", "crust", "bars", "cake"];
-function familyOf(v: RecipeVersion): string {
+// A recipe joins the family of the FIRST of its tags that appears here, so a recipe that is both
+// (say) "carrot-cake" and "bars" should list the specific family tag first to land in it.
+const FAMILY_TAGS = ["cheesecake", "crumbl", "browned-butter", "brownie", "carrot-cake", "apple-fritter", "tiramisu", "frosting", "crust", "bars", "cake"];
+export function familyOf(v: RecipeVersion): string {
   const t = v.tags.find((x) => FAMILY_TAGS.includes(x));
   if (t === "crumbl") return "Crumbl Cookies";
   if (t === "cheesecake") return "Cheesecake";
   if (t === "browned-butter") return "Browned-Butter";
   if (t === "brownie") return "Brownies";
+  if (t === "carrot-cake") return "Carrot Cake";
+  if (t === "apple-fritter") return "Apple Fritter";
+  if (t === "tiramisu") return "Tiramisu";
   if (t === "frosting") return "Frostings";
   if (t === "crust") return "Crusts";
   if (t === "bars") return "Protein Bars";

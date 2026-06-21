@@ -1,7 +1,22 @@
 import { describe, it, expect } from "vitest";
 import fixture from "../../test/fixtures/db.fixture.json";
 import { buildRepository, serviceFrom } from "../source/db";
-import { buildTreeGraph } from "./treeGraph";
+import { buildTreeGraph, familyOf } from "./treeGraph";
+
+describe("familyOf", () => {
+  const fam = (tags: string[]) => familyOf({ tags } as any);
+  it("groups the new dessert families by their lead family tag", () => {
+    expect(fam(["carrot-cake", "cake", "protein"])).toBe("Carrot Cake");
+    expect(fam(["carrot-cake", "bars", "protein"])).toBe("Carrot Cake"); // carrot bars join carrot, not Protein Bars
+    expect(fam(["tiramisu", "protein", "no-bake"])).toBe("Tiramisu");
+    expect(fam(["apple-fritter", "protein", "baked"])).toBe("Apple Fritter");
+  });
+  it("still maps existing families and falls back to the catch-all", () => {
+    expect(fam(["bars", "protein"])).toBe("Protein Bars");
+    expect(fam(["cheesecake"])).toBe("Cheesecake");
+    expect(fam(["protein", "no-bake"])).toBe("Singles & No-bake");
+  });
+});
 
 describe("buildTreeGraph", () => {
   it("emits a derive edge from the Crumbl-base red velvet to the Crumbl base", async () => {
