@@ -43,6 +43,7 @@ export function KeyboardNav() {
             <Row k="T" d="Recipe tree" />
             <Row k="R" d="Recipes" />
             <Row k="/" d="Find a recipe" />
+            <Row k="Q" d="Cooking queue" />
             <Row k="L" d="Toggle legend" />
             <Row k="?" d="Show / hide this" />
           </div>

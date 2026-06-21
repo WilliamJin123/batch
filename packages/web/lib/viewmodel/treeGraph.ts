@@ -1,23 +1,25 @@
 import type { RecipeService, RecipeVersion, RecipeFeedbackSummary } from "@batch/core";
 import type { RecipeSummary, TreeEdgeVM, TreeGraphVM, TreeNodeVM, BakeoffVM } from "./types";
 
-// A recipe joins the family of the FIRST of its tags that appears here, so a recipe that is both
-// (say) "carrot-cake" and "bars" should list the specific family tag first to land in it.
-const FAMILY_TAGS = ["cheesecake", "crumbl", "browned-butter", "brownie", "carrot-cake", "apple-fritter", "tiramisu", "frosting", "crust", "bars", "cake"];
+// Family assignment has three tiers of precedence:
+//   1. a SPECIFIC dessert family (a no-bake cheesecake is still a Cheesecake) — among these, the
+//      recipe's own tag order breaks ties, preserving the original behaviour;
+//   2. else `no-bake` — its own first-class category, so it outranks the generic bars/cake tags
+//      (a plain no-bake bar groups under No-Bake, not Protein Bars);
+//   3. else the GENERIC bars/cake; else a true standalone is a "Single".
+// (This split retires the old "Singles & No-bake" catch-all, which conflated the two.)
+const SPECIFIC_FAMILIES: Record<string, string> = {
+  crumbl: "Crumbl Cookies", cheesecake: "Cheesecake", "browned-butter": "Browned-Butter",
+  brownie: "Brownies", "carrot-cake": "Carrot Cake", "apple-fritter": "Apple Fritter",
+  tiramisu: "Tiramisu", frosting: "Frostings", crust: "Crusts",
+};
 export function familyOf(v: RecipeVersion): string {
-  const t = v.tags.find((x) => FAMILY_TAGS.includes(x));
-  if (t === "crumbl") return "Crumbl Cookies";
-  if (t === "cheesecake") return "Cheesecake";
-  if (t === "browned-butter") return "Browned-Butter";
-  if (t === "brownie") return "Brownies";
-  if (t === "carrot-cake") return "Carrot Cake";
-  if (t === "apple-fritter") return "Apple Fritter";
-  if (t === "tiramisu") return "Tiramisu";
-  if (t === "frosting") return "Frostings";
-  if (t === "crust") return "Crusts";
-  if (t === "bars") return "Protein Bars";
-  if (t === "cake") return "Cakes";
-  return "Singles & No-bake";
+  const specific = v.tags.find((x) => x in SPECIFIC_FAMILIES);   // recipe-tag order wins among specifics
+  if (specific) return SPECIFIC_FAMILIES[specific];
+  if (v.tags.includes("no-bake")) return "No-Bake";
+  if (v.tags.includes("bars")) return "Protein Bars";
+  if (v.tags.includes("cake")) return "Cakes";
+  return "Singles";
 }
 function nameStem(name: string): string { return name.replace(/\s*\([^)]*\)\s*$/, "").trim(); }
 

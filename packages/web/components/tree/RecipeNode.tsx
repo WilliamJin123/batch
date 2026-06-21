@@ -61,7 +61,7 @@ export function RecipeNode({ node, pos, arm, selected, onOpen }: {
       style={{ left: pos.x, top: pos.y, width: pos.w, ["--nh" as string]: pos.h, ["--tf" as string]: titleFit }}
     >
       <span className="role">{arm ? `${role} · ${arm}` : role}</span>
-      <div className="nname">{title} {paren && <span className="q">{paren}</span>}{node.needsTuning && <span className="tune">needs-tuning</span>}</div>
+      <div className="nname">{title} {paren && <span className="q">{paren}</span>}{node.tags.includes("no-bake") && <span className="nobake" title="no oven — sets in the fridge/freezer">no-bake</span>}{node.needsTuning && <span className="tune">needs-tuning</span>}</div>
       {/* status line: always visible (both zoom modes), enlarged when zoomed out */}
       {status && <div className={`nrate ${status.cls}`}><span className="rglyph">{status.glyph}</span> {status.label}</div>}
       <div className="ndetailw"><div className="ndetail">

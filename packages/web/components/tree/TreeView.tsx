@@ -6,6 +6,7 @@ import { TreeOutline } from "./TreeOutline";
 import { Legend } from "./Legend";
 import { BakeoffPill } from "./BakeoffPill";
 import { CardModal } from "./CardModal";
+import { QueuePanel } from "./QueuePanel";
 import type { BakeCardVM, TreeGraphVM } from "../../lib/viewmodel/types";
 import type { Pos } from "../../lib/layout/graphLayout";
 import { buildConnectors } from "../../lib/layout/bakeoffConnectors";
@@ -29,6 +30,7 @@ export function TreeView({ graph, pos, width, height, cards }: {
   const [t, setT] = useState<View>({ ox: 24, oy: 8, scale: 1 });
   const [smooth, setSmooth] = useState(false);          // animate the scene transform (buttons / undo-redo)
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [queueOpen, setQueueOpen] = useState(false);
   const [legendOpen, setLegendOpen] = useState(false);
   const [focus, setFocus] = useState<string | null>(null);
   const [openCard, setOpenCard] = useState<string | null>(null);
@@ -46,6 +48,9 @@ export function TreeView({ graph, pos, width, height, cards }: {
     requestAnimationFrame(() => boardRef.current?.focus({ preventScroll: true }));
   }, []);
   const closeDrawer = useCallback(() => { setDrawerOpen(false); focusBoard(); }, [focusBoard]);
+  // the cooking queue is a right-side drawer, mutually exclusive with the left recipes drawer
+  const closeQueue = useCallback(() => { setQueueOpen(false); focusBoard(); }, [focusBoard]);
+  const openQueue = useCallback(() => { setDrawerOpen(false); setQueueOpen(true); }, []);
   // when the card was reached from the search drawer, dismissing it returns you to your results (the
   // query + list survive — the drawer only slides off-screen); otherwise just hand keys back to the canvas
   const cameFromDrawerRef = useRef(false);
@@ -59,6 +64,7 @@ export function TreeView({ graph, pos, width, height, cards }: {
   // ----- view + navigation history (undo/redo) -----
   const tRef = useRef(t); useEffect(() => { tRef.current = t; }, [t]);
   const drawerOpenRef = useRef(drawerOpen); useEffect(() => { drawerOpenRef.current = drawerOpen; }, [drawerOpen]); // for the touch handler (its effect closure is stale)
+  const queueOpenRef = useRef(queueOpen); useEffect(() => { queueOpenRef.current = queueOpen; }, [queueOpen]);
   const hist = useRef<View[]>([]);
   const hi = useRef(-1);
   const syncNav = () => setNav({ canUndo: hi.current > 0, canRedo: hi.current < hist.current.length - 1 });
@@ -257,7 +263,8 @@ export function TreeView({ graph, pos, width, height, cards }: {
       if (openCardRef.current) { if (e.code === "Backspace") { e.preventDefault(); closeCard(); } return; } // card open: ⌫ closes it back to the tree (and refocuses the canvas); all else goes to the modal
       if (e.ctrlKey || e.metaKey || e.altKey) return;   // never hijack real OS/browser shortcuts (Ctrl+W, Cmd±, …)
       if (e.code === "KeyL") { e.preventDefault(); setLegendOpen((o) => !o); return; }                  // toggle legend
-      if (e.key === "/") { e.preventDefault(); if (drawerOpenRef.current) closeDrawer(); else setDrawerOpen(true); return; } // toggle the recipe finder (open focuses its search, close refocuses the canvas); by character so it's layout-proof and never the "?" key
+      if (e.code === "KeyQ") { e.preventDefault(); if (queueOpenRef.current) closeQueue(); else openQueue(); return; } // toggle the cooking queue (right drawer)
+      if (e.key === "/") { e.preventDefault(); if (drawerOpenRef.current) closeDrawer(); else { setQueueOpen(false); setDrawerOpen(true); } return; } // toggle the recipe finder (open focuses its search, close refocuses the canvas); by character so it's layout-proof and never the "?" key
       if (e.code === "ShiftLeft" || e.code === "ShiftRight") { down.add("shift"); return; }
       if (e.code === "Space") { if (tag === "BUTTON") return; down.add("space"); e.preventDefault(); return; } // let Space activate a focused button instead of "slow"
       if (e.code === "KeyF") { e.preventDefault(); fitRef.current(); return; }
@@ -291,6 +298,7 @@ export function TreeView({ graph, pos, width, height, cards }: {
     const el = e.target as HTMLElement;
     if (el.closest(".node") || el.closest(".bopill")) return; // let node clicks / pill hovers through
     if (drawerOpen) { closeDrawer(); return; }                // click the canvas to dismiss the recipe drawer (and refocus it for WASD)
+    if (queueOpen) { closeQueue(); return; }                  // …or the cooking queue
     setSmooth(false);
     pan.current = { sx: e.clientX - t.ox, sy: e.clientY - t.oy };
     panMoved.current = false;
@@ -304,8 +312,9 @@ export function TreeView({ graph, pos, width, height, cards }: {
     goTo({ scale: prev.scale, ox: board.clientWidth / 2 - (p.x + p.w / 2) * prev.scale, oy: board.clientHeight / 2 - (p.y + p.h / 2) * prev.scale });
   }, [posMap, goTo]);
 
-  const openFromNode = (id: string) => { cameFromDrawerRef.current = false; setCameFromDrawer(false); setDrawerOpen(false); setFocus(id); setOpenCard(id); focusBoard(); };
+  const openFromNode = (id: string) => { cameFromDrawerRef.current = false; setCameFromDrawer(false); setDrawerOpen(false); setQueueOpen(false); setFocus(id); setOpenCard(id); focusBoard(); };
   const pickFromDrawer = (id: string) => { cameFromDrawerRef.current = true; setCameFromDrawer(true); setDrawerOpen(false); centerOn(id); setOpenCard(id); focusBoard(); }; // remember the origin so closing the card (esc / ⌫ / click-away / ← Results) drops you back on your search
+  const pickFromQueue = (id: string) => { cameFromDrawerRef.current = false; setCameFromDrawer(false); setQueueOpen(false); centerOn(id); setOpenCard(id); focusBoard(); }; // queue picks centre + open the card; closing it returns to the canvas, not a panel
   const navInCard = (id: string) => { if (cards[id]) { centerOn(id); setOpenCard(id); } };
 
   // arm labels (A/B/C…) come straight from the bake-off note, so the node badge and the pill agree
@@ -326,7 +335,8 @@ export function TreeView({ graph, pos, width, height, cards }: {
       </div>
 
       <div className="tctl tl">
-        <button className={`fbtn${drawerOpen ? " on" : ""}`} onClick={() => { if (drawerOpen) closeDrawer(); else setDrawerOpen(true); }} aria-label={drawerOpen ? "Close recipes" : "Open recipes"}>{drawerOpen ? "✕ Recipes" : "☰ Recipes"}</button>
+        <button className={`fbtn${drawerOpen ? " on" : ""}`} onClick={() => { if (drawerOpen) closeDrawer(); else { setQueueOpen(false); setDrawerOpen(true); } }} aria-label={drawerOpen ? "Close recipes" : "Open recipes"}>{drawerOpen ? "✕ Recipes" : "☰ Recipes"}</button>
+        <button className={`fbtn${queueOpen ? " on" : ""}`} onClick={() => { if (queueOpen) closeQueue(); else openQueue(); }} aria-label={queueOpen ? "Close queue" : "Open cooking queue"}>{queueOpen ? "✕ Queue" : "◷ Queue"}</button>
       </div>
 
       <div className="tctl tr">
@@ -343,10 +353,14 @@ export function TreeView({ graph, pos, width, height, cards }: {
         </div>
       </div>
 
-      <div className="panhint">WASD / arrows move · +/− zoom · F fit · L legend · / find · ? shortcuts</div>
+      <div className="panhint">WASD / arrows move · +/− zoom · F fit · L legend · Q queue · / find · ? shortcuts</div>
 
       <div className={`drawer${drawerOpen ? " open" : ""}`} aria-hidden={!drawerOpen}>
         <TreeOutline graph={graph} focus={focus} open={drawerOpen} onPick={pickFromDrawer} onClose={closeDrawer} />
+      </div>
+
+      <div className={`qdrawer${queueOpen ? " open" : ""}`} aria-hidden={!queueOpen}>
+        <QueuePanel graph={graph} open={queueOpen} onPick={pickFromQueue} onClose={closeQueue} />
       </div>
 
       {openCard && cards[openCard] && <CardModal card={cards[openCard]} onClose={closeCard} onNavigate={navInCard} onBack={cameFromDrawer ? backToResults : undefined} />}

@@ -15,6 +15,13 @@ it("RecipeNode renders name, macro line, and a rating", () => {
   expect(screen.getByText(/to make/)).toBeTruthy();
 });
 
+it("RecipeNode marks a no-bake recipe, and leaves a baked one unmarked", () => {
+  const { rerender } = render(<RecipeNode node={{ ...node, tags: ["no-bake"] }} pos={{ x: 0, y: 0, w: 200, h: 96 }} />);
+  expect(screen.getByText(/no-bake/i)).toBeTruthy();
+  rerender(<RecipeNode node={{ ...node, tags: ["bars"] }} pos={{ x: 0, y: 0, w: 200, h: 96 }} />);
+  expect(screen.queryByText(/no-bake/i)).toBe(null);
+});
+
 it("RecipeNode opens the card (fires onOpen with the recipeId) when clicked", () => {
   const onOpen = vi.fn();
   render(<RecipeNode node={node} pos={{ x: 0, y: 0, w: 200, h: 96 }} onOpen={onOpen} />);

@@ -31,10 +31,19 @@ describe("familyOf", () => {
     expect(fam(["tiramisu", "protein", "no-bake"])).toBe("Tiramisu");
     expect(fam(["apple-fritter", "protein", "baked"])).toBe("Apple Fritter");
   });
-  it("still maps existing families and falls back to the catch-all", () => {
+  it("maps existing families, gives no-bake its own category, and falls back to Singles", () => {
     expect(fam(["bars", "protein"])).toBe("Protein Bars");
     expect(fam(["cheesecake"])).toBe("Cheesecake");
-    expect(fam(["protein", "no-bake"])).toBe("Singles & No-bake");
+    // no-bake is now its own family — the old "Singles & No-bake" catch-all is split apart
+    expect(fam(["protein", "no-bake"])).toBe("No-Bake");
+    // no-bake outranks the GENERIC bars/cake tags even when they're listed first on the recipe…
+    expect(fam(["bars", "no-bake", "protein"])).toBe("No-Bake");
+    expect(fam(["cake", "no-bake"])).toBe("No-Bake");
+    // …but a SPECIFIC dessert family still wins (a no-bake cheesecake is still a Cheesecake)
+    expect(fam(["cheesecake", "no-bake", "bars"])).toBe("Cheesecake");
+    expect(fam(["brownie", "no-bake", "bars"])).toBe("Brownies");
+    // a true standalone with no family tag is a Single — no longer lumped in with the no-bakes
+    expect(fam(["cookie", "protein"])).toBe("Singles");
   });
 });
 
