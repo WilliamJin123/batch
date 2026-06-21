@@ -211,19 +211,33 @@ const RULES: [RegExp, string][] = [
   [/(all[-\s]?purpose|plain|\bap\b)\s+flour/, "ing-ap-flour"],
   [/\bflour\b/, "ing-ap-flour"],
   [/whey\s*isolate|\bisolate\b/, "ing-whey-isolate"],
-  [/chocolate protein/, "ing-protein-chocolate"],
+  [/chocolate.*protein/, "ing-protein-chocolate"],
+  [/casein/, "ing-casein"],
   [/protein powder|\bprotein\b/, "ing-protein-vanilla"],
   [/collagen/, "ing-collagen"],
   [/almond milk/, "ing-almond-milk-unsweetened"],
   [/fairlife/, "ing-milk-fairlife-skim"],
   [/\bmilk\b/, "ing-skim-milk"],
-  [/cocoa/, "ing-cocoa-powder"],
+  [/cocoa|cac[ao]o/, "ing-cocoa-powder"],
   [/baking powder/, "ing-baking-powder"],
   [/baking soda|bicarb/, "ing-baking-soda"],
   [/corn\s*starch/, "ing-cornstarch"],
   [/cinnamon/, "ing-cinnamon-ground"],
   [/nutmeg/, "ing-nutmeg"],
   [/ginger/, "ing-ginger-ground"],
+  [/cream of tartar/, "ing-cream-of-tartar"],
+  [/coconut extract/, "ing-extract-coconut"],
+  [/banana/, "ing-banana"],
+  [/(no[-\s]?added[-\s]?sugar\s+)?choc(olate)?\s*sauce/, "ing-syrup-chocolate-zero"],
+  [/chocolate\s*chunks?/, "ing-chocolate-chips-semisweet"],
+  [/(chocolate|hazelnut)\s*spread|nutella/, "ing-chocolate-spread"],
+  [/kinder/, "ing-kinder-chocolate"],
+  [/marshmallow\s*fluff|\bfluff\b/, "ing-marshmallow-fluff"],
+  [/marshmallow/, "ing-marshmallow"],
+  [/caramel syrup/, "ing-syrup-caramel-sf"],
+  [/xanthan/, "ing-xanthan-gum"],
+  [/sugar[-\s]?free syrup|\bsf syrup\b/, "ing-syrup-maple-sf"],
+  [/confetti/, "ing-sprinkles"],
   [/butterscotch.*pudding/, "ing-pudding-butterscotch-sf"],
   [/pudding/, "ing-pudding-vanilla-sf"],
   [/(cake[-\s]?batter|birthday[-\s]?cake)\s*extract/, "ing-extract-cake-batter"],
@@ -239,6 +253,7 @@ const RULES: [RegExp, string][] = [
   [/lemon juice/, "ing-lemon-juice"],
   [/lemon zest|\bzest\b/, "ing-lemon-zest"],
   [/walnut/, "ing-walnuts"],
+  [/\bnuts?\b/, "ing-walnuts"], // generic "chopped nuts" → the house default nut (review can swap)
   [/coconut oil/, "ing-coconut-oil"],
   [/rice cake/, "ing-rice-cake"],
   [/lady\s*finger|savoiardi/, "ing-ladyfinger"],
@@ -309,7 +324,9 @@ export function draftFromParsed(parsed: ParsedRecipe, library: LibraryIngredient
   const usages: StepUsage[] = [];
   const lines: IngestLine[] = [];
   parsed.ingredients.forEach((ing, i) => {
-    const m = matchIngredient(ing.name, library);
+    // fall back to the "or <alt>" the splitter peeled into note — recovers "Plain or Vanilla Greek Yogurt"
+    // (name "Plain" is an adjective; the real ingredient is the alternative).
+    const m = matchIngredient(ing.name, library) ?? (ing.note ? matchIngredient(ing.note, library) : null);
     const id = m ? m.id : slug(ing.name);
     let unit = ing.unit;
     if (m && EGG_IDS.has(m.id) && (unit === undefined || EGG_SIZE.has(unit))) unit = "each";

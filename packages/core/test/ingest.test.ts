@@ -74,6 +74,11 @@ const LIB: LibraryIngredient[] = [
   { id: "ing-ap-flour", name: "all-purpose flour", macrosPer100g: { calories: 364, protein: 10, carbs: 76, fat: 1, fiber: 2.7 } },
   { id: "ing-splenda-granulated", name: "granulated Splenda", macrosPer100g: { calories: 400, protein: 0, carbs: 100, fat: 0, fiber: 0 } },
   { id: "ing-monk-fruit-powdered", name: "powdered monk fruit sweetener", macrosPer100g: { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 } },
+  { id: "ing-banana", name: "ripe banana", macrosPer100g: { calories: 89, protein: 1.1, carbs: 23, fat: 0.3, fiber: 2.6 } },
+  { id: "ing-cocoa-powder", name: "unsweetened cocoa powder", macrosPer100g: { calories: 228, protein: 19.6, carbs: 58, fat: 13.7, fiber: 37 } },
+  { id: "ing-chocolate-chips-semisweet", name: "semi-sweet chocolate chips", macrosPer100g: { calories: 479, protein: 4.2, carbs: 63.9, fat: 30, fiber: 5.9 } },
+  { id: "ing-sprinkles", name: "rainbow sprinkles", macrosPer100g: { calories: 389, protein: 0, carbs: 90, fat: 4, fiber: 0 } },
+  { id: "ing-walnuts", name: "chopped walnuts", macrosPer100g: { calories: 654, protein: 15.2, carbs: 13.7, fat: 65.2, fiber: 6.7 } },
 ];
 
 describe("matchIngredient", () => {
@@ -89,6 +94,26 @@ describe("matchIngredient", () => {
     expect(matchIngredient("Granular Sugar Substitute (Swerve)", LIB)).toBeNull();
     expect(matchIngredient("granulated sweetener", LIB)).toBeNull(); // must NOT grab ing-monk-fruit-powdered
     expect(matchIngredient("powdered monk fruit", LIB)).toBeNull();
+  });
+  it("catches existing-ingredient phrasings the token fallback missed", () => {
+    expect(matchIngredient("whole ripe bananas", LIB)?.id).toBe("ing-banana");
+    expect(matchIngredient("cacao", LIB)?.id).toBe("ing-cocoa-powder");
+    expect(matchIngredient("chocolate chunks", LIB)?.id).toBe("ing-chocolate-chips-semisweet");
+    expect(matchIngredient("Confetti", LIB)?.id).toBe("ing-sprinkles");
+    expect(matchIngredient("chopped nuts", LIB)?.id).toBe("ing-walnuts");
+  });
+});
+
+describe("ingestMarkdown note-fallback", () => {
+  it("recovers when the name is an adjective and the real ingredient is after 'or'", () => {
+    const md = `# X
+- **Servings** 2
+## Ingredients
+- 113 g Plain or Vanilla Nonfat Greek Yogurt
+## Directions
+**1.** Mix.`;
+    const { draft } = ingestMarkdown(md, LIB);
+    expect((draft.content.slots[0]!.resolution as { libraryIngredientId: string }).libraryIngredientId).toBe("ing-greek-yogurt-nonfat");
   });
 });
 
