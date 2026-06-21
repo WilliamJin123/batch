@@ -1,7 +1,7 @@
 import type { RecipeService, RecipeVersion, RecipeFeedbackSummary } from "@batch/core";
 import type { RecipeSummary, TreeEdgeVM, TreeGraphVM, TreeNodeVM, BakeoffVM } from "./types";
 
-const FAMILY_TAGS = ["cheesecake", "crumbl", "browned-butter", "brownie", "frosting", "crust", "bars"];
+const FAMILY_TAGS = ["cheesecake", "crumbl", "browned-butter", "brownie", "frosting", "crust", "bars", "cake"];
 function familyOf(v: RecipeVersion): string {
   const t = v.tags.find((x) => FAMILY_TAGS.includes(x));
   if (t === "crumbl") return "Crumbl Cookies";
@@ -11,6 +11,7 @@ function familyOf(v: RecipeVersion): string {
   if (t === "frosting") return "Frostings";
   if (t === "crust") return "Crusts";
   if (t === "bars") return "Protein Bars";
+  if (t === "cake") return "Cakes";
   return "Singles & No-bake";
 }
 function nameStem(name: string): string { return name.replace(/\s*\([^)]*\)\s*$/, "").trim(); }
