@@ -1,8 +1,8 @@
-import { scale as scaleContent, currentVerdicts, renderCard } from "@batch/core";
+import { scale as scaleContent, currentVerdicts, renderCard, classifyKinds, diffContent } from "@batch/core";
 import type {
-  Author, CompareView, CurrentVerdicts, FeedbackEntry, FeedbackKind, FlattenSource, LibraryIngredient, Macros,
-  MacroSnapshot, OverrideEntry, Rating, RebaseResult, RebaseVariantItem, Recipe, RecipeContent, RecipeService,
-  RecipeVersion, VersionStatus, Yield,
+  Author, CompareView, CurrentVerdicts, FeedbackEntry, FeedbackKind, FlattenSource, IngredientSlot, LibraryIngredient,
+  Macros, MacroSnapshot, OverrideEntry, Rating, RebaseResult, RebaseVariantItem, Recipe, RecipeContent, RecipeKind,
+  RecipeService, RecipeVersion, VersionStatus, Yield,
 } from "@batch/core";
 
 export interface CreateInput {
@@ -127,24 +127,26 @@ export async function exportRecipe(
 
 export interface ListRow {
   recipeId: string; headVersionId: string; name: string;
-  status: VersionStatus; tags: string[]; isVariant: boolean;
+  status: VersionStatus; tags: string[]; isVariant: boolean; kind: RecipeKind;
   kcalPerServing?: number; macroBasis?: "complete" | "partial";
   tried: boolean; queued: boolean; verdict?: Rating;
 }
-export interface ListOpts { toMake?: boolean; tag?: string; name?: string }
+export interface ListOpts { toMake?: boolean; tag?: string; name?: string; kind?: RecipeKind }
 export async function list(svc: RecipeService, opts: ListOpts = {}): Promise<ListRow[]> {
   const recipes = await svc.listRecipes();
   const summary = await svc.feedbackSummary();
-  const rows = await Promise.all(recipes.map(async (r): Promise<ListRow> => {
-    const v = await svc.getVersion(r.headVersionId);
-    const fb = summary[r.id] ?? { tried: false, queued: false };
+  const heads = await Promise.all(recipes.map((r) => svc.getVersion(r.headVersionId)));
+  const recipeIdOf = new Map((await svc.listVersions()).map((v) => [v.id, v.recipeId]));
+  const kinds = classifyKinds(heads, recipeIdOf); // "is this a base?" needs the whole forest — compute once
+  const rows: ListRow[] = heads.map((v) => {
+    const fb = summary[v.recipeId] ?? { tried: false, queued: false };
     return {
-      recipeId: r.id, headVersionId: v.id, name: v.name,
-      status: v.status, tags: v.tags, isVariant: v.derivesFromVersionId !== undefined,
+      recipeId: v.recipeId, headVersionId: v.id, name: v.name,
+      status: v.status, tags: v.tags, isVariant: v.derivesFromVersionId !== undefined, kind: kinds.get(v.recipeId)!,
       kcalPerServing: v.macros?.perServing.calories, macroBasis: v.macros?.basis,
       tried: fb.tried, queued: fb.queued, ...(fb.verdict ? { verdict: fb.verdict } : {}),
     };
-  }));
+  });
   let filtered = opts.toMake ? rows.filter((row) => row.queued) : rows;
   if (opts.tag) {
     const t = opts.tag.toLowerCase();
@@ -154,7 +156,151 @@ export async function list(svc: RecipeService, opts: ListOpts = {}): Promise<Lis
     const n = opts.name.toLowerCase();
     filtered = filtered.filter((row) => row.name.toLowerCase().includes(n));
   }
+  if (opts.kind) filtered = filtered.filter((row) => row.kind === opts.kind);
   return filtered.sort((a, b) => a.name.localeCompare(b.name));
+}
+
+// ----- dump / import: regenerate declarative sources FROM the live store, and replay them back -----
+
+export interface DumpFile { path: string; json: unknown }
+export interface DumpResult { files: DumpFile[]; recipes: number; ingredients: number; feedback: number }
+
+function recipeSlug(name: string, used: Set<string>): string {
+  const base = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "recipe";
+  let s = base, i = 2;
+  while (used.has(s)) s = `${base}-${i++}`;
+  used.add(s);
+  return s;
+}
+
+/** Dependency-ordered recipe names: a base before its variants, a sub-recipe before any composer. */
+function buildOrder(heads: RecipeVersion[], recipeIdOf: Map<string, string>, nameOf: Map<string, string>): string[] {
+  const ids = new Set(heads.map((v) => v.recipeId));
+  const deps = new Map<string, Set<string>>();
+  for (const v of heads) {
+    const d = new Set<string>();
+    if (v.derivesFromVersionId) { const b = recipeIdOf.get(v.derivesFromVersionId); if (b && ids.has(b)) d.add(b); }
+    for (const sl of v.content.slots) if (sl.resolution.kind === "sub_recipe") {
+      const c = recipeIdOf.get(sl.resolution.subRecipeVersionId); if (c && ids.has(c) && c !== v.recipeId) d.add(c);
+    }
+    deps.set(v.recipeId, d);
+  }
+  const order: string[] = [], done = new Set<string>(), remaining = new Set(ids);
+  const byName = (a: string, b: string) => nameOf.get(a)!.localeCompare(nameOf.get(b)!);
+  while (remaining.size) {
+    const ready = [...remaining].filter((id) => [...deps.get(id)!].every((x) => done.has(x))).sort(byName);
+    const batch = ready.length ? ready : [...remaining].sort(byName); // cycle guard (unreachable: forest + acyclic pins)
+    for (const id of batch) { order.push(nameOf.get(id)!); done.add(id); remaining.delete(id); }
+  }
+  return order;
+}
+
+/**
+ * Regenerate the declarative `sources/` set FROM the live store: the full ingredient library, one
+ * file per recipe (a `create` payload for a root, a `derive`+auto-diffed-`overrides` manifest for a
+ * variant), the tasting log, and a dependency-ordered manifest. Sub-recipe pins are rewritten to
+ * by-NAME refs so they re-resolve against a freshly rebuilt store. The inverse of `importDump`; it
+ * keeps `sources/` from drifting (it's derived, never hand-maintained). Pure read — no file I/O here.
+ */
+export async function dump(svc: RecipeService): Promise<DumpResult> {
+  const recipes = await svc.listRecipes();
+  const versions = await svc.listVersions();
+  const recipeIdOf = new Map(versions.map((v) => [v.id, v.recipeId]));
+  const heads = await Promise.all(recipes.map((r) => svc.getVersion(r.headVersionId)));
+  const headByRecipe = new Map(heads.map((v) => [v.recipeId, v]));
+  const nameOf = new Map(heads.map((v) => [v.recipeId, v.name]));
+
+  // a sub_recipe pin → the child recipe's current name, so the ref re-resolves after a rebuild
+  const refOf = (vid: string): string | undefined => nameOf.get(recipeIdOf.get(vid) ?? "");
+  const portableSlot = (sl: IngredientSlot): unknown =>
+    sl.resolution.kind === "sub_recipe"
+      ? { ...sl, resolution: { kind: "sub_recipe", subRecipeRef: refOf(sl.resolution.subRecipeVersionId) ?? sl.resolution.subRecipeVersionId } }
+      : sl;
+  const portableContent = (c: RecipeContent): unknown => ({ ...c, slots: c.slots.map(portableSlot) });
+  const portableEntry = (e: OverrideEntry): unknown =>
+    (e.op === "add" || e.op === "replace") && e.kind === "slot" ? { ...e, payload: portableSlot(e.payload) } : e;
+
+  const ingredients = await svc.listIngredients();
+  const used = new Set<string>();
+  const files: DumpFile[] = [{ path: "ingredients.json", json: ingredients }];
+
+  for (const v of [...heads].sort((a, b) => a.name.localeCompare(b.name))) {
+    const meta: Record<string, unknown> = { name: v.name, ...(v.description ? { description: v.description } : {}), tags: v.tags, yield: v.yield };
+    if (v.derivesFromVersionId) {
+      const baseHead = headByRecipe.get(recipeIdOf.get(v.derivesFromVersionId) ?? "");
+      const overrides = baseHead ? diffContent(baseHead.content, v.content).map(portableEntry) : [];
+      files.push({ path: recipeSlug(v.name, used) + ".variant.json", json: { ...meta, deriveFromRecipe: baseHead?.name, overrides } });
+    } else {
+      files.push({ path: recipeSlug(v.name, used) + ".json", json: { ...meta, content: portableContent(v.content) } });
+    }
+  }
+
+  const feedback: unknown[] = [];
+  for (const r of recipes) {
+    for (const e of await svc.feedbackForRecipe(r.id)) {
+      feedback.push({
+        recipe: nameOf.get(r.id), kind: e.kind,
+        ...(e.kind === "made" && e.rating ? { rating: e.rating } : {}),
+        ...(e.componentKey ? { component: e.componentKey } : {}),
+        ...(e.notes ? { notes: e.notes } : {}),
+        date: e.date,
+      });
+    }
+  }
+  files.push({ path: "feedback.json", json: feedback });
+  files.push({ path: "manifest.json", json: {
+    generatedFrom: "db", recipeCount: heads.length, ingredientCount: ingredients.length,
+    buildOrder: buildOrder(heads, recipeIdOf, nameOf),
+  } });
+
+  return { files, recipes: heads.length, ingredients: ingredients.length, feedback: feedback.length };
+}
+
+async function resolveSlotRefs(svc: RecipeService, slot: any): Promise<IngredientSlot> {
+  if (slot?.resolution?.kind === "sub_recipe" && slot.resolution.subRecipeRef) {
+    return { ...slot, resolution: { kind: "sub_recipe", subRecipeVersionId: await svc.resolveRef(slot.resolution.subRecipeRef) } };
+  }
+  return slot;
+}
+
+/**
+ * Replay a `dump` into a store: ingredients → recipes in dependency order (create a root, derive +
+ * replay overrides + set metadata for a variant) → the tasting log. By-name sub-recipe refs resolve
+ * to the freshly built child's head. The inverse of `dump`; together they are a full store round-trip
+ * (and the manual core of the AI-import pipeline). Replaying into an EMPTY store is a clean rebuild.
+ */
+export async function importDump(svc: RecipeService, files: DumpFile[]): Promise<{ recipes: number; ingredients: number; feedback: number }> {
+  const byPath = new Map(files.map((f) => [f.path, f.json]));
+  const ingredients = (byPath.get("ingredients.json") as LibraryIngredient[]) ?? [];
+  for (const ing of ingredients) await svc.addIngredient(ing);
+
+  const recipeFiles = files.filter((f) => f.path.endsWith(".json") && !["ingredients.json", "feedback.json", "manifest.json"].includes(f.path));
+  const byName = new Map<string, any>(recipeFiles.map((f) => [(f.json as any).name, f.json]));
+  const manifest = byPath.get("manifest.json") as any;
+  const order: string[] = manifest?.buildOrder?.length ? manifest.buildOrder : [...byName.keys()];
+
+  for (const name of order) {
+    const rec = byName.get(name); if (!rec) continue;
+    if (rec.deriveFromRecipe) {
+      const { version } = await svc.deriveVariant({ baseVersionId: await svc.resolveRef(rec.deriveFromRecipe), name: rec.name });
+      let head = version.id;
+      for (const entry of rec.overrides ?? []) {
+        const resolved = (entry.op === "add" || entry.op === "replace") && entry.kind === "slot"
+          ? { ...entry, payload: await resolveSlotRefs(svc, entry.payload) } : entry;
+        head = (await svc.applyOverride({ versionId: head, entry: resolved })).version.id;
+      }
+      await svc.editMetadata({ versionId: head, patch: { description: rec.description, tags: rec.tags, yield: rec.yield } });
+    } else {
+      const slots = await Promise.all((rec.content.slots ?? []).map((s: any) => resolveSlotRefs(svc, s)));
+      await svc.createRecipe({ name: rec.name, description: rec.description, tags: rec.tags, yield: rec.yield, content: { ...rec.content, slots } });
+    }
+  }
+
+  const feedback = (byPath.get("feedback.json") as any[]) ?? [];
+  for (const f of feedback) {
+    await svc.addFeedback({ versionId: await svc.resolveRef(f.recipe), kind: f.kind, rating: f.rating, componentKey: f.component, notes: f.notes, date: f.date });
+  }
+  return { recipes: byName.size, ingredients: ingredients.length, feedback: feedback.length };
 }
 
 export interface TreeNode {

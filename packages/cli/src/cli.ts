@@ -1,4 +1,5 @@
-import { readFile } from "node:fs/promises";
+import { readFile, writeFile, mkdir, readdir } from "node:fs/promises";
+import { join } from "node:path";
 import { Command } from "commander";
 import { RecipeService, realDeps } from "@batch/core";
 import type { OverrideEntry } from "@batch/core";
@@ -132,7 +133,8 @@ export async function run(argv: string[]): Promise<void> {
     .option("--to-make", "only recipes queued to make (untried experiments)")
     .option("--tag <tag>", "only recipes carrying this tag")
     .option("--name <substr>", "only recipes whose name contains this substring (case-insensitive)")
-    .action(async (opts) => out(await cmd.list(makeService(), { toMake: opts.toMake, tag: opts.tag, name: opts.name })));
+    .option("--kind <kind>", "only recipes of this kind: root | base | variant | sub-recipe")
+    .action(async (opts) => out(await cmd.list(makeService(), { toMake: opts.toMake, tag: opts.tag, name: opts.name, kind: opts.kind })));
 
   program.command("tree")
     .description("list all versions with their derivation/history edges")
@@ -192,6 +194,25 @@ export async function run(argv: string[]): Promise<void> {
   program.command("recompute <ref>")
     .description("recompute macros against the current library → new version (author=system)")
     .action(async (ref) => out(await cmd.recompute(makeService(), ref)));
+
+  program.command("dump")
+    .description("regenerate declarative sources FROM the store (roots, variant manifests, ingredients, feedback, manifest)")
+    .option("--out <dir>", "write the files into this directory (default: print the whole file set as JSON)")
+    .action(async (opts) => {
+      const result = await cmd.dump(makeService());
+      if (!opts.out) { out({ files: result.files }); return; }
+      await mkdir(opts.out, { recursive: true });
+      for (const f of result.files) await writeFile(join(opts.out, f.path), JSON.stringify(f.json, null, 2) + "\n");
+      out({ out: opts.out, files: result.files.length, recipes: result.recipes, ingredients: result.ingredients, feedback: result.feedback });
+    });
+
+  program.command("import <dir>")
+    .description("rebuild the store from a dumped sources directory (ingredients → recipes in dependency order → feedback)")
+    .action(async (dir) => {
+      const names = (await readdir(dir)).filter((n) => n.endsWith(".json"));
+      const files = await Promise.all(names.map(async (path) => ({ path, json: JSON.parse(await readFile(join(dir, path), "utf8")) })));
+      out(await cmd.importDump(makeService(), files));
+    });
 
   const feedback = program.command("feedback")
     .description("record and inspect tasting feedback (to-make intent, made outcomes)");

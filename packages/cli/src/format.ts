@@ -35,10 +35,11 @@ function renderList(rows: any[]): string {
   return rows
     .map((r) => {
       const id = String(r.headVersionId).slice(0, 8);
+      const kind = r.kind ? r.kind.padEnd(7) : "";
       const kcal = r.kcalPerServing != null ? `${Math.round(r.kcalPerServing)} cal/srv` : "";
       const tags = (r.tags ?? []).length ? `[${r.tags.join(",")}]` : "";
       const marks = [r.queued ? "☐ to-make" : "", r.tried ? `✓ ${r.verdict ?? "made"}` : ""].filter(Boolean).join(" ");
-      return `${String(r.name).padEnd(nameW)}  ${id}  ${kcal.padStart(10)}  ${tags} ${marks}`.trimEnd();
+      return `${String(r.name).padEnd(nameW)}  ${id}  ${kind}  ${kcal.padStart(10)}  ${tags} ${marks}`.trimEnd();
     })
     .join("\n");
 }
