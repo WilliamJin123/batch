@@ -6,6 +6,7 @@ export function Legend() {
       <span><span className="lk dot" /> bake-off</span>
       <span><span className="star">★</span> excellent</span>
       <span><span className="dotg" /> good</span>
+      <span><span className="trib">▲</span> needs work</span>
       <span><span className="ringa" /> to-make</span>
     </div>
   );
