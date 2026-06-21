@@ -80,6 +80,11 @@
 .tol-row.on .tol-nm{color:var(--accent-deep)}
 .tol-ct{font-family:var(--mono);font-size:9.5px;color:var(--faint)}
 .ind1{padding-left:18px}
+/* hover macro preview — position:fixed (set from the row's rect) so it escapes the drawer's scroll clip */
+.tol-pop{position:fixed;z-index:40;width:228px;background:var(--panel);border:1px solid var(--line2);border-radius:11px;box-shadow:0 12px 30px rgba(60,44,18,.18);padding:10px 13px;pointer-events:none}
+.tol-pop b{font-family:var(--serif);font-size:13px;font-weight:600;color:var(--ink)}
+.tol-pop .tp-mac{font-family:var(--mono);font-size:11px;color:var(--ink-soft);margin-top:6px;letter-spacing:.01em}
+.tol-pop .tp-sub{font-family:var(--mono);font-size:9.5px;color:var(--muted);margin-top:4px}
 .basel{font-family:var(--mono);font-size:8px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);margin-left:5px}
 .flag{font-family:var(--mono);font-size:8px;color:var(--warn);border:1px solid rgba(154,82,48,.32);border-radius:3px;padding:0 3px;margin-left:5px}
 .railsum{margin-top:10px;padding:8px 6px 2px;border-top:1px solid var(--line);font-family:var(--mono);font-size:10px;color:var(--muted);line-height:1.85}

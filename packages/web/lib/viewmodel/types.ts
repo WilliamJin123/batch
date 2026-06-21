@@ -2,7 +2,7 @@ export interface MacroVM { calories: number; protein: number; carbs: number; fat
 export interface RecipeSummary {
   recipeId: string; versionId: string; name: string; tags: string[];
   kind: "base" | "variant" | "root" | "sub-recipe"; family: string;
-  cal: number; protein: number; wholeCal: number; wholeProtein: number; calPerGramProtein: number | null; servings: number; servingUnit: string;
+  cal: number; protein: number; carbs: number; fat: number; wholeCal: number; wholeProtein: number; calPerGramProtein: number | null; servings: number; servingUnit: string;
   made: boolean; rating?: "bad" | "okay" | "good" | "excellent"; queued: boolean;
 }
 export interface IngredientRowVM { qtyNatural: string; grams?: number; name: string; }

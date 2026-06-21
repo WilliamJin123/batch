@@ -38,4 +38,13 @@ describe("buildTreeGraph", () => {
     const g = await buildTreeGraph(svc);
     expect(g.bakeoffs.some((b) => b.note.a.name.includes("Red Velvet") && b.note.b.name.includes("Red Velvet"))).toBe(true);
   });
+  it("carries per-serving carbs and fat on each node (for the hover preview)", async () => {
+    const svc = serviceFrom(await buildRepository(fixture as any));
+    const g = await buildTreeGraph(svc);
+    const cookie = g.nodes.find((n) => n.name === "Crumbl Base Protein Cookie")!;
+    expect(typeof cookie.carbs).toBe("number");
+    expect(typeof cookie.fat).toBe("number");
+    expect(cookie.carbs).toBeGreaterThan(0);
+    expect(cookie.fat).toBeGreaterThan(0);
+  });
 });

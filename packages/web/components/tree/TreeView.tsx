@@ -31,6 +31,7 @@ export function TreeView({ graph, pos, width, height, cards }: {
   const [legendOpen, setLegendOpen] = useState(false);
   const [focus, setFocus] = useState<string | null>(null);
   const [openCard, setOpenCard] = useState<string | null>(null);
+  const [cameFromDrawer, setCameFromDrawer] = useState(false); // card opened from the search drawer → offer "← Results"
   const [nav, setNav] = useState({ canUndo: false, canRedo: false });
   const pan = useRef<{ sx: number; sy: number } | null>(null);
   const panMoved = useRef(false);
@@ -44,7 +45,15 @@ export function TreeView({ graph, pos, width, height, cards }: {
     requestAnimationFrame(() => boardRef.current?.focus({ preventScroll: true }));
   }, []);
   const closeDrawer = useCallback(() => { setDrawerOpen(false); focusBoard(); }, [focusBoard]);
-  const closeCard = useCallback(() => { setOpenCard(null); focusBoard(); }, [focusBoard]);
+  // when the card was reached from the search drawer, dismissing it returns you to your results (the
+  // query + list survive — the drawer only slides off-screen); otherwise just hand keys back to the canvas
+  const cameFromDrawerRef = useRef(false);
+  const closeCard = useCallback(() => {
+    setOpenCard(null);
+    if (cameFromDrawerRef.current) { cameFromDrawerRef.current = false; setCameFromDrawer(false); setDrawerOpen(true); }
+    else focusBoard();
+  }, [focusBoard]);
+  const backToResults = useCallback(() => { setOpenCard(null); cameFromDrawerRef.current = false; setCameFromDrawer(false); setDrawerOpen(true); }, []);
 
   // ----- view + navigation history (undo/redo) -----
   const tRef = useRef(t); useEffect(() => { tRef.current = t; }, [t]);
@@ -294,8 +303,8 @@ export function TreeView({ graph, pos, width, height, cards }: {
     goTo({ scale: prev.scale, ox: board.clientWidth / 2 - (p.x + p.w / 2) * prev.scale, oy: board.clientHeight / 2 - (p.y + p.h / 2) * prev.scale });
   }, [posMap, goTo]);
 
-  const openFromNode = (id: string) => { setDrawerOpen(false); setFocus(id); setOpenCard(id); focusBoard(); };
-  const pickFromDrawer = (id: string) => { setDrawerOpen(false); centerOn(id); setOpenCard(id); focusBoard(); }; // focusBoard so the drawer's search input lets go — ⌫ then closes the card and WASD works at once
+  const openFromNode = (id: string) => { cameFromDrawerRef.current = false; setCameFromDrawer(false); setDrawerOpen(false); setFocus(id); setOpenCard(id); focusBoard(); };
+  const pickFromDrawer = (id: string) => { cameFromDrawerRef.current = true; setCameFromDrawer(true); setDrawerOpen(false); centerOn(id); setOpenCard(id); focusBoard(); }; // remember the origin so closing the card (esc / ⌫ / click-away / ← Results) drops you back on your search
   const navInCard = (id: string) => { if (cards[id]) { centerOn(id); setOpenCard(id); } };
 
   const arm = new Map<string, "A" | "B">();
@@ -353,7 +362,7 @@ export function TreeView({ graph, pos, width, height, cards }: {
         <TreeOutline graph={graph} focus={focus} open={drawerOpen} onPick={pickFromDrawer} onClose={closeDrawer} />
       </div>
 
-      {openCard && cards[openCard] && <CardModal card={cards[openCard]} onClose={closeCard} onNavigate={navInCard} />}
+      {openCard && cards[openCard] && <CardModal card={cards[openCard]} onClose={closeCard} onNavigate={navInCard} onBack={cameFromDrawer ? backToResults : undefined} />}
     </div>
   );
 }

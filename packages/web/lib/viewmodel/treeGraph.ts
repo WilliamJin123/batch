@@ -41,6 +41,7 @@ async function summarize(svc: RecipeService): Promise<{ heads: RecipeVersion[]; 
     return {
       recipeId: v.recipeId, versionId: v.id, name: v.name, tags: v.tags, kind, family: familyOf(v),
       cal: Math.round(m.perServing.calories), protein: Math.round(m.perServing.protein * 10) / 10,
+      carbs: Math.round(m.perServing.carbs * 10) / 10, fat: Math.round(m.perServing.fat * 10) / 10,
       wholeCal: Math.round(m.total.calories), wholeProtein: Math.round(m.total.protein),
       calPerGramProtein: m.caloriesPerGramProtein ?? null,
       servings: v.yield.amount, servingUnit: v.yield.unit,

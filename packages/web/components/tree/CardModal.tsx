@@ -10,8 +10,8 @@ import { Method } from "../card/Method";
 
 /** The bake card as an overlay viewer over the tree. Esc / click-away / ✕ dismisses
  *  back to the exact canvas state — no route change, the tree never unmounts. */
-export function CardModal({ card, onClose, onNavigate }: {
-  card: BakeCardVM; onClose: () => void; onNavigate?: (recipeId: string) => void;
+export function CardModal({ card, onClose, onNavigate, onBack }: {
+  card: BakeCardVM; onClose: () => void; onNavigate?: (recipeId: string) => void; onBack?: () => void;
 }) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
@@ -23,6 +23,7 @@ export function CardModal({ card, onClose, onNavigate }: {
     <div className="cmodal" role="dialog" aria-modal="true" aria-label={card.name} onMouseDown={onClose}>
       <div className="cmodal-panel" onMouseDown={(e) => e.stopPropagation()}>
         <div className="cmodal-bar">
+          {onBack && <button className="cmodal-back" onClick={onBack} aria-label="Back to results">← Results</button>}
           <a className="cmodal-full" href={`/r/${card.recipeId}`} target="_blank" rel="noreferrer">open full page ↗</a>
           <button className="cmodal-x" onClick={onClose} aria-label="Close recipe"><span className="esc">esc</span><span className="xg" aria-hidden="true">✕</span></button>
         </div>

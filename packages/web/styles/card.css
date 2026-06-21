@@ -50,6 +50,10 @@
 .cmodal-bar{flex:none;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 16px 11px 20px;border-bottom:1px solid var(--line)}
 .cmodal-full{font-family:var(--mono);font-size:11.5px;color:var(--accent-deep);border-bottom:1px solid rgba(180,122,55,.32);padding-bottom:1px}
 .cmodal-full:hover{border-bottom-color:var(--accent)}
+/* shown only when the card was opened from the search drawer: dismiss the card → back to your results.
+   margin-right:auto parks it at the far left and keeps "open full page" + ✕ grouped on the right. */
+.cmodal-back{font-family:var(--mono);font-size:11.5px;color:var(--ink-soft);border:1px solid var(--line2);background:var(--page);border-radius:9px;padding:6px 11px;cursor:pointer;margin-right:auto}
+.cmodal-back:hover{border-color:var(--accent);color:var(--accent-deep)}
 .cmodal-x{font-family:var(--mono);color:var(--ink-soft);border:1px solid var(--line2);background:var(--surface);border-radius:9px;padding:6px 11px;cursor:pointer;display:flex;align-items:center;gap:8px;flex:none}
 .cmodal-x .esc{font-size:9px;color:var(--faint);border:1px solid var(--line);border-radius:4px;padding:1px 5px}
 .cmodal-x .xg{font-size:16px;line-height:1}
