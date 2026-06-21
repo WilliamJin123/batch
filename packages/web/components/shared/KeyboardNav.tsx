@@ -27,6 +27,7 @@ export function KeyboardNav() {
       if (typing || e.shiftKey) return;                                                  // (Shift is "sprint" on the canvas)
       if (e.code === "KeyT") { e.preventDefault(); router.push("/"); return; }
       if (e.code === "KeyR") { e.preventDefault(); router.push("/recipes"); return; }
+      if (e.code === "KeyQ") { e.preventDefault(); router.push("/queue"); return; }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);

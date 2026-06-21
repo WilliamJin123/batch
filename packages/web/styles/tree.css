@@ -89,31 +89,38 @@
 .flag{font-family:var(--mono);font-size:8px;color:var(--warn);border:1px solid rgba(154,82,48,.32);border-radius:3px;padding:0 3px;margin-left:5px}
 .railsum{margin-top:10px;padding:8px 6px 2px;border-top:1px solid var(--line);font-family:var(--mono);font-size:10px;color:var(--muted);line-height:1.85}
 
-/* cooking queue = right-side drawer (mutually exclusive with the left recipes drawer) */
-.qdrawer{position:absolute;top:0;right:0;bottom:0;width:330px;max-width:86vw;z-index:25;background:var(--surface);border-left:1px solid var(--line2);box-shadow:-6px 0 26px rgba(60,44,18,.12);transform:translateX(100%);transition:transform .22s ease}
-.qdrawer.open{transform:translateX(0)}
-.q-inner{display:flex;flex-direction:column;height:100%;padding:14px 12px}
-.q-head{display:flex;align-items:center;justify-content:space-between;margin:2px 4px 7px}
-.q-head .dt{font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint)}
-.q-x{font-family:var(--mono);font-size:12px;color:var(--muted);border:1px solid var(--line2);background:var(--page);border-radius:7px;width:24px;height:24px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex:none}
-.q-x:hover{border-color:var(--accent);color:var(--accent-deep)}
-.q-sub{font-family:var(--mono);font-size:9.5px;line-height:1.62;color:var(--faint);margin:0 4px 11px}
-.q-scroll{flex:1;overflow-y:auto;padding:0 2px;min-height:0}
-.q-lane{margin-bottom:15px}
-.q-lh{display:flex;align-items:baseline;gap:7px;margin:0 4px}
-.q-lt{font-family:var(--serif);font-size:15.5px;font-weight:600;color:var(--ink)}
-.q-lct{font-family:var(--mono);font-size:9.5px;color:var(--faint)}
-.q-lsub{font-family:var(--mono);font-size:9px;color:var(--muted);margin:1px 4px 8px}
-.q-grp{margin-bottom:7px;padding-left:7px;border-left:2px solid var(--line)}
-.q-grp.nb{border-left-color:rgba(180,122,55,.4)}
-.q-gt{display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);margin:5px 4px 3px}
-.q-row{display:flex;flex-direction:column;gap:2px;padding:6px 9px;border-radius:8px;cursor:pointer;border:1px solid transparent}
+/* cooking queue = a dedicated /queue page (top-bar tab + Q hotkey), wide so bake & no-bake sit side
+   by side. NOT a canvas overlay, so it never covers the tree controls — incl. undo/redo on mobile. */
+.qb{padding-top:22px}
+.qb-head{margin:0 0 22px}
+.qb-title{font-family:var(--serif);font-size:25px;font-weight:600;letter-spacing:-.01em;color:var(--ink);margin:0 0 6px}
+.qb-sub{font-family:var(--sans);font-size:12.5px;line-height:1.55;color:var(--muted);max-width:640px;margin:0}
+.qb-lane{margin-bottom:30px}
+.qb-lh{display:flex;align-items:baseline;gap:9px;margin:0 0 13px;padding-bottom:8px;border-bottom:1px solid var(--line)}
+.q-lt{font-family:var(--serif);font-size:18px;font-weight:600;color:var(--ink);margin:0}
+.q-lct{font-family:var(--mono);font-size:10px;color:var(--faint)}
+.q-lsub{font-family:var(--mono);font-size:10px;color:var(--muted);margin-left:auto}
+.qb-cols{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start}
+.qb-col{border:1px solid var(--line);border-radius:12px;background:var(--surface);padding:5px 7px 9px}
+.qb-col.nb{border-color:rgba(180,122,55,.28)}
+.q-gt{display:flex;align-items:center;gap:7px;font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);margin:5px 7px;padding-bottom:6px;border-bottom:1px solid var(--line)}
+.qb-col.nb .q-gt{color:var(--accent-deep);border-bottom-color:rgba(180,122,55,.26)}
+.q-gt .q-ct{color:var(--faint)}
+.q-row{display:flex;flex-direction:column;gap:2px;padding:7px 9px;border-radius:8px;cursor:pointer;border:1px solid transparent;color:inherit}
 .q-row:hover{background:var(--page);border-color:var(--line2)}
-.q-nm{font-family:var(--serif);font-size:13.5px;font-weight:500;color:var(--ink);display:flex;align-items:center;gap:6px;line-height:1.2}
+.q-nm{font-family:var(--serif);font-size:14px;font-weight:500;color:var(--ink);display:flex;align-items:center;gap:6px;line-height:1.2}
 .q-mac{font-family:var(--mono);font-size:10px;color:var(--muted)}
 .q-prod{font-family:var(--mono);font-size:8px;letter-spacing:.05em;text-transform:uppercase;color:var(--accent-deep);background:var(--accent-soft);border:1px solid rgba(180,122,55,.28);border-radius:4px;padding:0 4px;flex:none}
 .q-row .star{color:var(--gold);font-size:11px;line-height:1}
-.q-empty{font-family:var(--mono);font-size:10px;color:var(--faint);padding:5px 8px}
+.q-empty{font-family:var(--mono);font-size:10px;color:var(--faint);padding:8px 9px}
+/* mobile: stack the two columns so rows stay full-width + legible (less important to see them at once
+   on a small screen than to read them) */
+@media(max-width:680px){
+  .qb-cols{grid-template-columns:1fr;gap:10px}
+  .q-lsub{display:none}
+  .qb-title{font-size:21px}
+  .qb{padding-top:16px}
+}
 
 /* nodes */
 /* min-height pins the box to its laid-out height (--nh) and the flex column vertically centres the

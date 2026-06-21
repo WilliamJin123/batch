@@ -17,6 +17,14 @@ const CookieIcon = () => (
     <circle cx="7.6" cy="10.4" r=".95" fill="currentColor" stroke="none" />
   </svg>
 );
+const QueueIcon = () => (
+  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M6.5 4h7M6.5 8h7M6.5 12h7" />
+    <path d="M2 3.7l1 1 1.6-2" />
+    <circle cx="3" cy="8" r=".7" fill="currentColor" stroke="none" />
+    <circle cx="3" cy="12" r=".7" fill="currentColor" stroke="none" />
+  </svg>
+);
 
 /** Brand mark: a warm stack of layers — a "batch" (and a nod to stacked bakes / versions).
  *  Distinct from the single-cookie Recipes tab. */
@@ -31,6 +39,8 @@ const BatchMark = () => (
 export function TopBar() {
   const path = usePathname() ?? "/";
   const onRecipes = path.startsWith("/recipes");
+  const onQueue = path.startsWith("/queue");
+  const onTree = !onRecipes && !onQueue;
   return (
     <div className="topbar">
       <div className="brand">
@@ -38,8 +48,9 @@ export function TopBar() {
         <b>Batch</b>
       </div>
       <nav className="nav">
-        <Link className={onRecipes ? undefined : "on"} href="/"><TreeIcon />Tree</Link>
+        <Link className={onTree ? "on" : undefined} href="/"><TreeIcon />Tree</Link>
         <Link className={onRecipes ? "on" : undefined} href="/recipes"><CookieIcon />Recipes</Link>
+        <Link className={onQueue ? "on" : undefined} href="/queue"><QueueIcon />Queue</Link>
       </nav>
       <div className="spacer"></div>
       <span className="branch" title="current branch">main</span>
