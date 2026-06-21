@@ -38,7 +38,7 @@ export function TreeOutline({ graph, focus, open, onPick, onClose }: {
         <button className="dx" onClick={onClose} aria-label="Close recipes">✕</button>
       </div>
       <input ref={inputRef} className="dq" value={q} onChange={(e) => setQ(e.target.value)}
-        onKeyDown={(e) => { if (e.key === "Enter" && flat[0]) { e.preventDefault(); onPick(flat[0].recipeId); } else if (e.key === "Escape" || (e.key === "/" && q === "")) { e.preventDefault(); onClose(); } }}
+        onKeyDown={(e) => { if (e.key === "Enter" && flat[0]) { e.preventDefault(); onPick(flat[0].recipeId); } else if (e.key === "Escape" || e.key === "/") { e.preventDefault(); onClose(); } }}
         placeholder="Search name, family, or tag…" aria-label="Search recipes" />
       <div className="dct">{total} of {graph.nodes.length}</div>
       <div className="dlist">

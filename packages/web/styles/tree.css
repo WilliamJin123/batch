@@ -4,6 +4,7 @@
 /* board = pannable + zoomable viewport; the dot grid is the static canvas backdrop */
 .board{position:absolute;inset:0;overflow:hidden;cursor:grab;touch-action:none;background-image:radial-gradient(rgba(60,44,18,.085) 1.1px,transparent 1.1px);background-size:26px 26px;background-position:6px 6px}
 .board.grabbing{cursor:grabbing}
+.board:focus{outline:none}/* focused programmatically to recapture WASD/arrows; no ring */
 .scene{position:absolute;top:0;left:0;transform-origin:0 0;will-change:transform}
 .scene svg{position:absolute;inset:0;z-index:1;pointer-events:none}
 

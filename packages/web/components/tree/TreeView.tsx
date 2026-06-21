@@ -35,6 +35,16 @@ export function TreeView({ graph, pos, width, height, cards }: {
   const panMoved = useRef(false);
   const wheelEnd = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Hand keyboard control back to the canvas. The drawer only slides off-screen (translateX), so its
+  // search input keeps DOM focus even when "closed" — and the canvas key handler bails on any focused
+  // INPUT, so WASD/arrows would do nothing until you clicked. Re-focusing the (tabIndex=-1) board after
+  // every open/close fixes that with no extra click. rAF so it lands after the close-triggered re-render.
+  const focusBoard = useCallback(() => {
+    requestAnimationFrame(() => boardRef.current?.focus({ preventScroll: true }));
+  }, []);
+  const closeDrawer = useCallback(() => { setDrawerOpen(false); focusBoard(); }, [focusBoard]);
+  const closeCard = useCallback(() => { setOpenCard(null); focusBoard(); }, [focusBoard]);
+
   // ----- view + navigation history (undo/redo) -----
   const tRef = useRef(t); useEffect(() => { tRef.current = t; }, [t]);
   const drawerOpenRef = useRef(drawerOpen); useEffect(() => { drawerOpenRef.current = drawerOpen; }, [drawerOpen]); // for the touch handler (its effect closure is stale)
@@ -221,10 +231,10 @@ export function TreeView({ graph, pos, width, height, cards }: {
       const el = document.activeElement as HTMLElement | null;
       const tag = el?.tagName ?? "";
       if (el?.isContentEditable || tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return; // ONLY text entry blocks canvas keys — a focused button/link must not, else you'd have to click the canvas to pan again after Tab/?
-      if (openCardRef.current) { if (e.code === "Backspace") { e.preventDefault(); setOpenCard(null); } return; } // card open: ⌫ closes it back to the tree; all else goes to the modal
+      if (openCardRef.current) { if (e.code === "Backspace") { e.preventDefault(); closeCard(); } return; } // card open: ⌫ closes it back to the tree (and refocuses the canvas); all else goes to the modal
       if (e.ctrlKey || e.metaKey || e.altKey) return;   // never hijack real OS/browser shortcuts (Ctrl+W, Cmd±, …)
       if (e.code === "KeyL") { e.preventDefault(); setLegendOpen((o) => !o); return; }                  // toggle legend
-      if (e.key === "/") { e.preventDefault(); setDrawerOpen(true); return; }                            // open the recipe finder (focuses its search); by character so it's layout-proof and never the "?" key
+      if (e.key === "/") { e.preventDefault(); if (drawerOpenRef.current) closeDrawer(); else setDrawerOpen(true); return; } // toggle the recipe finder (open focuses its search, close refocuses the canvas); by character so it's layout-proof and never the "?" key
       if (e.code === "ShiftLeft" || e.code === "ShiftRight") { down.add("shift"); return; }
       if (e.code === "Space") { if (tag === "BUTTON") return; down.add("space"); e.preventDefault(); return; } // let Space activate a focused button instead of "slow"
       if (e.code === "KeyF") { e.preventDefault(); fitRef.current(); return; }
@@ -257,7 +267,7 @@ export function TreeView({ graph, pos, width, height, cards }: {
   const onDown = (e: React.MouseEvent) => {
     const el = e.target as HTMLElement;
     if (el.closest(".node") || el.closest(".bopill")) return; // let node clicks / pill hovers through
-    if (drawerOpen) { setDrawerOpen(false); return; }         // click the canvas to dismiss the recipe drawer
+    if (drawerOpen) { closeDrawer(); return; }                // click the canvas to dismiss the recipe drawer (and refocus it for WASD)
     setSmooth(false);
     pan.current = { sx: e.clientX - t.ox, sy: e.clientY - t.oy };
     panMoved.current = false;
@@ -271,8 +281,8 @@ export function TreeView({ graph, pos, width, height, cards }: {
     goTo({ scale: prev.scale, ox: board.clientWidth / 2 - (p.x + p.w / 2) * prev.scale, oy: board.clientHeight / 2 - (p.y + p.h / 2) * prev.scale });
   }, [posMap, goTo]);
 
-  const openFromNode = (id: string) => { setDrawerOpen(false); setFocus(id); setOpenCard(id); };
-  const pickFromDrawer = (id: string) => { setDrawerOpen(false); centerOn(id); setOpenCard(id); };
+  const openFromNode = (id: string) => { setDrawerOpen(false); setFocus(id); setOpenCard(id); focusBoard(); };
+  const pickFromDrawer = (id: string) => { setDrawerOpen(false); centerOn(id); setOpenCard(id); focusBoard(); }; // focusBoard so the drawer's search input lets go — ⌫ then closes the card and WASD works at once
   const navInCard = (id: string) => { if (cards[id]) { centerOn(id); setOpenCard(id); } };
 
   const arm = new Map<string, "A" | "B">();
@@ -298,7 +308,7 @@ export function TreeView({ graph, pos, width, height, cards }: {
 
   return (
     <div className="treepage">
-      <div className="board" ref={boardRef} onMouseDown={onDown}>
+      <div className="board" ref={boardRef} tabIndex={-1} onMouseDown={onDown}>
         <div className={`scene${t.scale < FAR_SCALE ? " far" : ""}${smooth ? " smooth" : ""}`} style={{ transform: `translate(${t.ox}px,${t.oy}px) scale(${t.scale})`, width, height, transition: smooth ? "transform .26s cubic-bezier(.22,.61,.36,1)" : "none" }}>
           <EdgeLayer edges={graph.edges} pos={posMap} connectors={connectors} width={width} height={height} />
           {graph.nodes.map((n) => <RecipeNode key={n.recipeId} node={n} pos={posMap.get(n.recipeId)!} arm={arm.get(n.recipeId)} selected={focus === n.recipeId} onOpen={openFromNode} />)}
@@ -307,7 +317,7 @@ export function TreeView({ graph, pos, width, height, cards }: {
       </div>
 
       <div className="tctl tl">
-        <button className={`fbtn${drawerOpen ? " on" : ""}`} onClick={() => setDrawerOpen((o) => !o)} aria-label={drawerOpen ? "Close recipes" : "Open recipes"}>{drawerOpen ? "✕ Recipes" : "☰ Recipes"}</button>
+        <button className={`fbtn${drawerOpen ? " on" : ""}`} onClick={() => { if (drawerOpen) closeDrawer(); else setDrawerOpen(true); }} aria-label={drawerOpen ? "Close recipes" : "Open recipes"}>{drawerOpen ? "✕ Recipes" : "☰ Recipes"}</button>
       </div>
 
       <div className="tctl tr">
@@ -327,10 +337,10 @@ export function TreeView({ graph, pos, width, height, cards }: {
       <div className="panhint">WASD / arrows move · +/− zoom · F fit · L legend · / find · ? shortcuts</div>
 
       <div className={`drawer${drawerOpen ? " open" : ""}`} aria-hidden={!drawerOpen}>
-        <TreeOutline graph={graph} focus={focus} open={drawerOpen} onPick={pickFromDrawer} onClose={() => setDrawerOpen(false)} />
+        <TreeOutline graph={graph} focus={focus} open={drawerOpen} onPick={pickFromDrawer} onClose={closeDrawer} />
       </div>
 
-      {openCard && cards[openCard] && <CardModal card={cards[openCard]} onClose={() => setOpenCard(null)} onNavigate={navInCard} />}
+      {openCard && cards[openCard] && <CardModal card={cards[openCard]} onClose={closeCard} onNavigate={navInCard} />}
     </div>
   );
 }
