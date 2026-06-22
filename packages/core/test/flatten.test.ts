@@ -43,4 +43,16 @@ describe("flattenContent", () => {
     const flat = flattenContent(half, subs);
     expect(flat.usages.find((u) => u.slotKey === "frosting/cc")?.quantityValue).toBe(75);
   });
+
+  it("carries notes through, prefixing sub-recipe note keys + anchors and keeping parent notes", () => {
+    const c: RecipeContent = { ...cookie(), notes: [{ componentKey: "n1", kind: "pitfall", text: "don't overmix", stepKey: "mix" }] };
+    const fr: RecipeContent = { ...frosting, notes: [{ componentKey: "nf", kind: "technique", text: "beat cold", stepKey: "beat" }] };
+    const subWithNote = new Map([["v-frost", {
+      content: fr, yield: { amount: 1, unit: "batch" } as Yield, totalGrams: 150, name: "Cream Cheese Frosting",
+    }]]);
+    const flat = flattenContent(c, subWithNote);
+    expect(flat.notes?.find((nt) => nt.componentKey === "n1")?.text).toBe("don't overmix"); // parent note kept
+    const childNote = flat.notes?.find((nt) => nt.componentKey === "frosting/nf");
+    expect(childNote?.stepKey).toBe("frosting/beat"); // child note key + anchor prefixed
+  });
 });

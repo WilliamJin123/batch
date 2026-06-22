@@ -39,22 +39,38 @@ export interface StepUsage {
   prepState?: string;
 }
 
+/**
+ * A cooking note pinned to a recipe: a `pitfall` to avoid, a `technique` worth doing, or a plain
+ * `note`. Macro-inert and join-free — it rides the materialized snapshot + the derivation edge like
+ * any component (variants inherit it and can override), but never touches nutrition. `stepKey`
+ * optionally anchors it to a step (rendered inline there); unanchored notes read at the recipe level.
+ */
+export interface Note {
+  componentKey: ComponentKey;
+  kind: "pitfall" | "technique" | "note";
+  text: string;
+  stepKey?: ComponentKey;
+}
+
 export interface RecipeContent {
   steps: Step[];
   slots: IngredientSlot[];
   usages: StepUsage[];
+  notes?: Note[]; // optional: versions predating notes have none; readers normalize to []
 }
 
-export type ComponentKind = "step" | "slot" | "usage";
+export type ComponentKind = "step" | "slot" | "usage" | "note";
 
 export type OverrideEntry =
   | { op: "remove"; kind: ComponentKind; target: ComponentKey }
   | { op: "replace"; kind: "step"; target: ComponentKey; payload: Step }
   | { op: "replace"; kind: "slot"; target: ComponentKey; payload: IngredientSlot }
   | { op: "replace"; kind: "usage"; target: ComponentKey; payload: StepUsage }
+  | { op: "replace"; kind: "note"; target: ComponentKey; payload: Note }
   | { op: "add"; kind: "step"; payload: Step }
   | { op: "add"; kind: "slot"; payload: IngredientSlot }
-  | { op: "add"; kind: "usage"; payload: StepUsage };
+  | { op: "add"; kind: "usage"; payload: StepUsage }
+  | { op: "add"; kind: "note"; payload: Note };
 
 export interface OverrideSet {
   entries: OverrideEntry[];

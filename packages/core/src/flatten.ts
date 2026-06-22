@@ -1,4 +1,4 @@
-import type { IngredientSlot, RecipeContent, Step, StepUsage, Yield } from "./types.js";
+import type { IngredientSlot, Note, RecipeContent, Step, StepUsage, Yield } from "./types.js";
 import { subRecipeFraction } from "./sub-recipe.js";
 
 export interface SubContent {
@@ -26,9 +26,13 @@ export function flattenContent(
   const steps: Step[] = [];
   const slots: IngredientSlot[] = [];
   const usages: StepUsage[] = [];
+  const notes: Note[] = [];
 
   for (const step of content.steps) {
     steps.push({ ...step, componentKey: prefix + step.componentKey });
+  }
+  for (const note of content.notes ?? []) {
+    notes.push({ ...note, componentKey: prefix + note.componentKey, ...(note.stepKey ? { stepKey: prefix + note.stepKey } : {}) });
   }
   for (const slot of content.slots) {
     if (slot.resolution.kind === "raw") slots.push({ ...slot, componentKey: prefix + slot.componentKey });
@@ -56,6 +60,7 @@ export function flattenContent(
     for (const s of flat.steps) steps.push({ ...s, section: s.section ?? child.name });
     for (const s of flat.slots) slots.push(s);
     for (const u of flat.usages) usages.push(u);
+    for (const nt of flat.notes ?? []) notes.push(nt);
   }
-  return { steps, slots, usages };
+  return { steps, slots, usages, notes };
 }

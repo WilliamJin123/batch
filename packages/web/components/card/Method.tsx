@@ -1,5 +1,7 @@
 import type { BakeCardVM } from "../../lib/viewmodel/types";
 
+const glyph = (k: string): string => (k === "pitfall" ? "⚠" : k === "technique" ? "◆" : "•");
+
 export function Method({ sections }: { sections: BakeCardVM["method"] }) {
   return (
     <div className="method">
@@ -16,6 +18,13 @@ export function Method({ sections }: { sections: BakeCardVM["method"] }) {
                   <span className="sing">
                     {st.ingredients.map((g, j) => (
                       <span className="schip" key={j}><b>{g.qtyNatural}</b>{g.name}</span>
+                    ))}
+                  </span>
+                )}
+                {st.notes && st.notes.length > 0 && (
+                  <span className="snotes">
+                    {st.notes.map((n, j) => (
+                      <span className={`snote ${n.kind}`} key={j}><span className="sg" aria-hidden="true">{glyph(n.kind)}</span>{n.text}</span>
                     ))}
                   </span>
                 )}

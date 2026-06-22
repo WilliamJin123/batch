@@ -25,6 +25,23 @@ describe("renderHuman", () => {
     expect(txt).toMatch(/to-make/);
   });
 
+  it("renders a version's notes (pitfalls/techniques) under a notes heading", () => {
+    const txt = renderHuman({
+      name: "Cheesecake", id: "abcdef120000", status: "approved", yield: { amount: 8, unit: "slices" },
+      content: {
+        steps: [{ componentKey: "s1", order: 1, instructionText: "Bake" }],
+        slots: [], usages: [],
+        notes: [
+          { componentKey: "n1", kind: "pitfall", text: "don't overbake", stepKey: "s1" },
+          { componentKey: "n2", kind: "technique", text: "room-temp the cream cheese" },
+        ],
+      },
+    });
+    expect(txt).toMatch(/notes:/);
+    expect(txt).toMatch(/pitfall \[s1\]: don't overbake/);
+    expect(txt).toMatch(/technique: room-temp the cream cheese/);
+  });
+
   it("prints strings (export cards) verbatim", () => {
     expect(renderHuman("# Card\n\n1. step")).toBe("# Card\n\n1. step");
   });

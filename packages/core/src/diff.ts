@@ -1,20 +1,22 @@
-import type { ComponentKind, IngredientSlot, OverrideEntry, RecipeContent, Step, StepUsage } from "./types.js";
+import type { ComponentKind, IngredientSlot, Note, OverrideEntry, RecipeContent, Step, StepUsage } from "./types.js";
 
-type Component = Step | IngredientSlot | StepUsage;
+type Component = Step | IngredientSlot | StepUsage | Note;
 
 function indexOf(c: RecipeContent, kind: ComponentKind): Map<string, Component> {
-  const arr: Component[] = kind === "step" ? c.steps : kind === "slot" ? c.slots : c.usages;
+  const arr: Component[] = kind === "step" ? c.steps : kind === "slot" ? c.slots : kind === "usage" ? c.usages : (c.notes ?? []);
   return new Map(arr.map((x) => [x.componentKey, x]));
 }
 function addEntry(kind: ComponentKind, payload: Component): OverrideEntry {
   if (kind === "step") return { op: "add", kind: "step", payload: payload as Step };
   if (kind === "slot") return { op: "add", kind: "slot", payload: payload as IngredientSlot };
-  return { op: "add", kind: "usage", payload: payload as StepUsage };
+  if (kind === "usage") return { op: "add", kind: "usage", payload: payload as StepUsage };
+  return { op: "add", kind: "note", payload: payload as Note };
 }
 function replaceEntry(kind: ComponentKind, target: string, payload: Component): OverrideEntry {
   if (kind === "step") return { op: "replace", kind: "step", target, payload: payload as Step };
   if (kind === "slot") return { op: "replace", kind: "slot", target, payload: payload as IngredientSlot };
-  return { op: "replace", kind: "usage", target, payload: payload as StepUsage };
+  if (kind === "usage") return { op: "replace", kind: "usage", target, payload: payload as StepUsage };
+  return { op: "replace", kind: "note", target, payload: payload as Note };
 }
 
 /**
@@ -28,17 +30,17 @@ export function diffContent(base: RecipeContent, variant: RecipeContent): Overri
   const entries: OverrideEntry[] = [];
   const same = (a: Component | undefined, b: Component | undefined) => JSON.stringify(a) === JSON.stringify(b);
   // adds: slots + steps before usages (a usage references a slot + step)
-  for (const kind of ["slot", "step", "usage"] as const) {
+  for (const kind of ["slot", "step", "usage", "note"] as const) {
     const b = indexOf(base, kind), v = indexOf(variant, kind);
     for (const [k, comp] of v) if (!b.has(k)) entries.push(addEntry(kind, comp));
   }
   // replaces: a shared key whose value changed
-  for (const kind of ["step", "slot", "usage"] as const) {
+  for (const kind of ["step", "slot", "usage", "note"] as const) {
     const b = indexOf(base, kind), v = indexOf(variant, kind);
     for (const [k, comp] of v) if (b.has(k) && !same(b.get(k), comp)) entries.push(replaceEntry(kind, k, comp));
   }
   // removes: usages before the slots/steps they reference
-  for (const kind of ["usage", "slot", "step"] as const) {
+  for (const kind of ["usage", "slot", "step", "note"] as const) {
     const b = indexOf(base, kind), v = indexOf(variant, kind);
     for (const k of b.keys()) if (!v.has(k)) entries.push({ op: "remove", kind, target: k });
   }

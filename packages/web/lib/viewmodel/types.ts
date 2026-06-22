@@ -6,6 +6,7 @@ export interface RecipeSummary {
   made: boolean; rating?: "bad" | "okay" | "good" | "excellent"; queued: boolean;
 }
 export interface IngredientRowVM { qtyNatural: string; grams?: number; name: string; }
+export interface NoteVM { kind: "pitfall" | "technique" | "note"; text: string; }
 export interface IngredientGroupVM { title: string; subRecipe: boolean; calories: number; items: IngredientRowVM[]; }
 export interface BakeCardVM {
   recipeId: string; versionId: string; shortSha: string;
@@ -16,7 +17,8 @@ export interface BakeCardVM {
   ingredientGroups: IngredientGroupVM[];
   composition: Array<{ name: string; calories: number; protein: number }>;
   lineage: Array<{ name: string; rel: "forked-from" | "composes" | "sibling"; recipeId?: string }>;
-  method: Array<{ section: string; steps: Array<{ text: string; tempF?: number; minutes?: number; ingredients: IngredientRowVM[] }> }>;
+  method: Array<{ section: string; steps: Array<{ text: string; tempF?: number; minutes?: number; ingredients: IngredientRowVM[]; notes?: NoteVM[] }> }>;
+  notes: NoteVM[]; // recipe-level "Watch-outs" panel: every pitfall + any unanchored technique/note
   tastingLog: Array<{ kind: "made" | "to-make"; rating?: string; date: string; note?: string; component?: string }>;
 }
 export interface TreeNodeVM extends RecipeSummary { feedbackNote?: string; needsTuning: boolean; }

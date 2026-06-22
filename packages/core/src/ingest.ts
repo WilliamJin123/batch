@@ -341,7 +341,7 @@ export function draftFromParsed(parsed: ParsedRecipe, library: LibraryIngredient
     ...(parsed.description ? { description: parsed.description } : {}),
     tags: ["imported"],
     yield: { amount: parsed.servings ?? 1, unit: "servings" },
-    content: { steps, slots, usages },
+    content: { steps, slots, usages, notes: [] },
   };
   const matched = lines.filter((l) => l.ingredientId).length;
   return {

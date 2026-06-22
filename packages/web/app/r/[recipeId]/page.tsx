@@ -6,6 +6,7 @@ import { CompositionRollup } from "../../../components/card/CompositionRollup";
 import { Lineage } from "../../../components/card/Lineage";
 import { TastingLog } from "../../../components/card/TastingLog";
 import { Method } from "../../../components/card/Method";
+import { WatchOuts } from "../../../components/card/WatchOuts";
 
 export async function generateStaticParams() {
   const src = await StaticRecipeSource.fromDb(await loadDb());
@@ -18,6 +19,7 @@ export default async function Page({ params }: { params: { recipeId: string } })
   return (
     <main>
       <RecipeHero card={card} />
+      <WatchOuts notes={card.notes} />
       <div className="grid">
         <div className="rail">
           <IngredientList groups={card.ingredientGroups} />

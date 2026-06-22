@@ -73,4 +73,14 @@ describe("diffContent", () => {
     expect(removeUsage).toBeLessThan(removeSlot); // remove the usage before the slot it references
     expect(sortedKeys(materialize(b, { entries }))).toEqual(sortedKeys(v));
   });
+
+  it("round-trips note adds and removes (so variants capture their own tips)", () => {
+    const b = base();
+    const v: RecipeContent = { ...base(), notes: [{ componentKey: "n1", kind: "pitfall", text: "x" }] };
+    const entries = diffContent(b, v);
+    expect(entries).toContainEqual({ op: "add", kind: "note", payload: { componentKey: "n1", kind: "pitfall", text: "x" } });
+    expect(materialize(b, { entries }).notes).toEqual(v.notes);
+    // the reverse diff removes it
+    expect(diffContent(v, b)).toContainEqual({ op: "remove", kind: "note", target: "n1" });
+  });
 });

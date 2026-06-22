@@ -1,9 +1,9 @@
 import type {
-  ComponentKey, ComponentKind, IngredientSlot, OverrideEntry, OverrideSet,
+  ComponentKey, ComponentKind, IngredientSlot, Note, OverrideEntry, OverrideSet,
   RecipeContent, Step, StepUsage,
 } from "./types.js";
 
-type Component = Step | IngredientSlot | StepUsage;
+type Component = Step | IngredientSlot | StepUsage | Note;
 
 export interface RebaseConflict {
   kind: ComponentKind;
@@ -18,11 +18,11 @@ export interface RebasePlan {
   conflicts: RebaseConflict[];
 }
 
-const KINDS: ComponentKind[] = ["step", "slot", "usage"];
+const KINDS: ComponentKind[] = ["step", "slot", "usage", "note"];
 
 function indexFor(c: RecipeContent, kind: ComponentKind): Map<ComponentKey, Component> {
   const arr: Component[] =
-    kind === "step" ? c.steps : kind === "slot" ? c.slots : c.usages;
+    kind === "step" ? c.steps : kind === "slot" ? c.slots : kind === "usage" ? c.usages : (c.notes ?? []);
   return new Map(arr.map((x) => [x.componentKey, x]));
 }
 
@@ -45,7 +45,8 @@ function changedKeys(b0: RecipeContent, b1: RecipeContent): Set<string> {
 function makeAddEntry(kind: ComponentKind, payload: Component): OverrideEntry {
   if (kind === "step") return { op: "add", kind: "step", payload: payload as Step };
   if (kind === "slot") return { op: "add", kind: "slot", payload: payload as IngredientSlot };
-  return { op: "add", kind: "usage", payload: payload as StepUsage };
+  if (kind === "usage") return { op: "add", kind: "usage", payload: payload as StepUsage };
+  return { op: "add", kind: "note", payload: payload as Note };
 }
 
 /**
@@ -62,6 +63,7 @@ export function buildRebasePlan(
     step: indexFor(baseNew, "step"),
     slot: indexFor(baseNew, "slot"),
     usage: indexFor(baseNew, "usage"),
+    note: indexFor(baseNew, "note"),
   };
   const reconciled: OverrideEntry[] = [];
   // All keys the variant explicitly touched in a way that needs conflict-checking:
@@ -107,6 +109,7 @@ export function buildRebasePlan(
     step: indexFor(baseNew, "step"),
     slot: indexFor(baseNew, "slot"),
     usage: indexFor(baseNew, "usage"),
+    note: indexFor(baseNew, "note"),
   };
   const changed = changedKeys(baseOld, baseNew);
   const conflicts: RebaseConflict[] = [];

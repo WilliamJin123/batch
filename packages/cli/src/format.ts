@@ -73,6 +73,12 @@ function renderVersion(v: any): string {
       out.push(`  ${s.order}. ${s.section ? `[${s.section}] ` : ""}${s.instructionText}`);
     }
   }
+  if (v.content?.notes?.length) {
+    out.push("", "notes:");
+    for (const nt of v.content.notes) {
+      out.push(`  ${nt.kind}${nt.stepKey ? ` [${nt.stepKey}]` : ""}: ${nt.text}`);
+    }
+  }
   return out.join("\n");
 }
 

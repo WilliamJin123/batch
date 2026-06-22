@@ -10,6 +10,7 @@ const fmtNum = (n: number): string => String(Math.round(n * 100) / 100);
 const macroLine = (m: Macros): string =>
   `${Math.round(m.calories)} cal · ${fmtNum(m.protein)} g protein · ${fmtNum(m.carbs)} C · ${fmtNum(m.fat)} F · ${fmtNum(m.fiber)} fiber`;
 const singular = (unit: string): string => (unit.endsWith("s") ? unit.slice(0, -1) : unit);
+const noteGlyph = (kind: string): string => (kind === "pitfall" ? "⚠" : kind === "technique" ? "◆" : "•");
 
 /**
  * Render a recipe (already flattened) as a phone-readable markdown bake card:
@@ -33,6 +34,16 @@ export function renderCard(meta: CardMeta, content: RecipeContent, macros: Macro
   if (ratio !== undefined) lines.push(`- **Ratio: ${fmtNum(Math.round(ratio * 10) / 10)} cal/g protein**`);
   if (macros.basis === "partial") lines.push("- _macros partial — some ingredients unresolved_");
   lines.push("");
+
+  // Watch-outs: every pitfall (so the "don't ruin it" set always previews up top) plus any
+  // recipe-level technique/note. Step-anchored notes ALSO render inline under their step, below.
+  const notes = content.notes ?? [];
+  const panel = notes.filter((nt) => nt.kind === "pitfall" || !nt.stepKey);
+  if (panel.length) {
+    lines.push("## Watch-outs", "");
+    for (const nt of panel) lines.push(`- ${noteGlyph(nt.kind)} **${nt.kind}** — ${nt.text}`);
+    lines.push("");
+  }
 
   const slotName = new Map(content.slots.map((s) => [s.componentKey, s.name] as const));
   const stepSection = new Map(content.steps.map((s) => [s.componentKey, s.section ?? "Base"] as const));
@@ -75,6 +86,8 @@ export function renderCard(meta: CardMeta, content: RecipeContent, macros: Macro
     steps.forEach((s, i) => {
       const temp = s.temperature ? ` (${s.temperature}°F)` : "";
       lines.push(`${i + 1}. ${s.instructionText}${temp}`);
+      for (const nt of notes.filter((x) => x.stepKey === s.componentKey))
+        lines.push(`   - ${noteGlyph(nt.kind)} _${nt.text}_`);
     });
     lines.push("");
   }

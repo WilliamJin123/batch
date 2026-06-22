@@ -68,4 +68,31 @@ describe("materialize", () => {
     const out = materialize(baseContent(), set);
     expect(out.steps.find((s) => s.componentKey === "s2")?.temperature).toBe(360);
   });
+
+  it("adds a note via a note override, even when the base has no notes array", () => {
+    const out = materialize(baseContent(), {
+      entries: [
+        { op: "add", kind: "note",
+          payload: { componentKey: "n1", kind: "pitfall", text: "don't overbake", stepKey: "s2" } },
+      ],
+    });
+    expect(out.notes?.map((nt) => nt.componentKey)).toEqual(["n1"]);
+    expect(out.notes?.[0]?.text).toBe("don't overbake");
+  });
+
+  it("replaces and removes a note by componentKey", () => {
+    const withNote: RecipeContent = {
+      ...baseContent(),
+      notes: [{ componentKey: "n1", kind: "note", text: "a" }],
+    };
+    const replaced = materialize(withNote, {
+      entries: [
+        { op: "replace", kind: "note", target: "n1",
+          payload: { componentKey: "n1", kind: "technique", text: "b" } },
+      ],
+    });
+    expect(replaced.notes?.[0]).toMatchObject({ kind: "technique", text: "b" });
+    const removed = materialize(withNote, { entries: [{ op: "remove", kind: "note", target: "n1" }] });
+    expect(removed.notes).toHaveLength(0);
+  });
 });

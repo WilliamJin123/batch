@@ -1,5 +1,5 @@
-import type { RecipeService } from "@batch/core";
-import type { BakeCardVM, IngredientGroupVM, IngredientRowVM, MacroVM } from "./types";
+import type { Note, RecipeService } from "@batch/core";
+import type { BakeCardVM, IngredientGroupVM, IngredientRowVM, MacroVM, NoteVM } from "./types";
 import { qtyNatural, roundGrams } from "./format";
 import { summarizeRecipe } from "@batch/core";
 
@@ -7,11 +7,32 @@ const macroVM = (m: { calories: number; protein: number; carbs: number; fat: num
   calories: m.calories, protein: m.protein, carbs: m.carbs, fat: m.fat, fiber: m.fiber,
 });
 
+/**
+ * Partition a recipe's notes for the card. The "Watch-outs" panel collects every pitfall (so the
+ * "don't ruin it" set always previews up top) plus any recipe-level technique/note; step-anchored
+ * notes also map to their step for inline rendering. Mirrors the markdown card's rule (export-card.ts).
+ */
+export function splitNotes(notes: Note[] | undefined): { panel: NoteVM[]; byStep: Map<string, NoteVM[]> } {
+  const panel: NoteVM[] = [];
+  const byStep = new Map<string, NoteVM[]>();
+  for (const nt of notes ?? []) {
+    const vm: NoteVM = { kind: nt.kind, text: nt.text };
+    if (nt.kind === "pitfall" || !nt.stepKey) panel.push(vm);
+    if (nt.stepKey) {
+      const a = byStep.get(nt.stepKey) ?? [];
+      a.push(vm);
+      byStep.set(nt.stepKey, a);
+    }
+  }
+  return { panel, byStep };
+}
+
 export async function buildBakeCard(svc: RecipeService, recipeId: string): Promise<BakeCardVM> {
   const recipe = await svc.getRecipe(recipeId);
   const headId = recipe.headVersionId;
   const { version, content, macros } = await svc.exportCard(headId);
   const { bySection } = await svc.macrosBySection(headId);
+  const { panel: notesPanel, byStep: notesByStep } = splitNotes(content.notes);
 
   // Ingredient groups (dual units): zip flattened usages[i] <-> macros.lines[i],
   // group by the section of the step each usage belongs to.
@@ -53,7 +74,8 @@ export async function buildBakeCard(svc: RecipeService, recipeId: string): Promi
     ingredientGroups: [...groups.values()],
     composition: Object.entries(bySection).map(([name, m]) => ({ name: name.replace(/ · sub-recipe$/i, ""), calories: Math.round(m.calories), protein: Math.round(m.protein * 10) / 10 })),
     lineage: await buildLineage(svc, version),
-    method: buildMethod(content, stepUses),
+    method: buildMethod(content, stepUses, notesByStep),
+    notes: notesPanel,
     tastingLog: feedback.map((e) => ({ kind: e.kind, rating: e.kind === "made" ? e.rating : undefined, date: e.date.slice(0, 10), note: e.notes, component: e.componentKey })),
   };
 }
@@ -73,12 +95,12 @@ async function buildLineage(svc: RecipeService, version: import("@batch/core").R
   return out;
 }
 
-function buildMethod(content: import("@batch/core").RecipeContent, stepUses: Map<string, IngredientRowVM[]>): BakeCardVM["method"] {
+function buildMethod(content: import("@batch/core").RecipeContent, stepUses: Map<string, IngredientRowVM[]>, notesByStep: Map<string, NoteVM[]>): BakeCardVM["method"] {
   const bySection = new Map<string, BakeCardVM["method"][number]["steps"]>();
   for (const s of [...content.steps].sort((a, b) => a.order - b.order)) {
     const sec = (s.section ?? "Method").replace(/ · sub-recipe$/i, "");
     const arr = bySection.get(sec) ?? [];
-    arr.push({ text: s.instructionText, tempF: s.temperature, minutes: s.timerSeconds ? Math.round(s.timerSeconds / 60) : undefined, ingredients: stepUses.get(s.componentKey) ?? [] });
+    arr.push({ text: s.instructionText, tempF: s.temperature, minutes: s.timerSeconds ? Math.round(s.timerSeconds / 60) : undefined, ingredients: stepUses.get(s.componentKey) ?? [], notes: notesByStep.get(s.componentKey) });
     bySection.set(sec, arr);
   }
   return [...bySection.entries()].map(([section, steps]) => ({ section, steps }));

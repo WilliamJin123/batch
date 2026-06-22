@@ -57,4 +57,21 @@ describe("renderCard", () => {
     const md = renderCard({ name: "X", yield: { amount: 8, unit: "slices" } }, c, macros());
     expect(md).toMatch(/graham crumbs — 5 g/);
   });
+
+  it("renders recipe-level notes under Watch-outs and anchored notes inline at their step", () => {
+    const c = content();
+    c.notes = [
+      { componentKey: "n1", kind: "pitfall", text: "do not overbake — pull while it jiggles", stepKey: "s1" },
+      { componentKey: "n2", kind: "technique", text: "room-temp the cream cheese first" },
+    ];
+    const md = renderCard({ name: "X", yield: { amount: 8, unit: "slices" } }, c, macros());
+    const watch = md.indexOf("## Watch-outs");
+    const method = md.indexOf("## Method");
+    expect(watch).toBeGreaterThan(-1);
+    expect(watch).toBeLessThan(method);               // panel sits above the method
+    expect(md).toMatch(/room-temp the cream cheese/); // unanchored technique → panel
+    expect(md).toMatch(/do not overbake/);            // pitfall → panel
+    // the anchored pitfall also renders inline, somewhere in the method body
+    expect(md.slice(method)).toMatch(/do not overbake/);
+  });
 });
