@@ -9,6 +9,10 @@
 .rate.bad{color:var(--warn)}
 .rate.plan{color:var(--accent-deep)}
 
+/* "lean-light" hint: a small brick-red dot beside a recipe's cal/g-protein when it drifts past
+   RATIO_WARN (see format.ts). A quiet flag, not a loud badge. */
+.rdot{display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--warn);margin-left:4px;vertical-align:baseline;opacity:.85}
+
 /* State dot glyphs */
 .star{color:var(--gold)}
 .dotg{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--green)}

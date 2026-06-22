@@ -1,9 +1,11 @@
 import type { QueueVM, QueueItemVM, QueueLaneVM } from "../../lib/viewmodel/queue";
+import { isRatioWarn } from "../../lib/viewmodel/format";
 
 const r0 = (x: number) => Math.round(x);
 const r1 = (x: number) => Math.round(x * 10) / 10;
 
 function Row({ item }: { item: QueueItemVM }) {
+  const ratioHot = isRatioWarn(item.calPerGramProtein, false);
   return (
     <a className="q-row" href={`/r/${item.recipeId}`}>
       <span className="q-nm">
@@ -12,7 +14,7 @@ function Row({ item }: { item: QueueItemVM }) {
         {item.rating === "excellent" && <span className="star" aria-label="excellent">★</span>}
       </span>
       <span className="q-mac">
-        {r0(item.cal)} cal · {item.calPerGramProtein != null ? `${r1(item.calPerGramProtein)} cal/g` : "—"}
+        {r0(item.cal)} cal · {item.calPerGramProtein != null ? <>{r1(item.calPerGramProtein)}{ratioHot && <span className="rdot" role="img" aria-label="lean-light: high cal per gram protein" title="high cal/g protein — lean-light for a protein recipe" />} cal/g</> : "—"}
       </span>
     </a>
   );
@@ -48,7 +50,7 @@ export function QueueBoard({ queue }: { queue: QueueVM }) {
     <main className="qb">
       <div className="qb-head">
         <h1 className="qb-title">Cooking queue</h1>
-        <p className="qb-sub">Ranked by recommendation — produce first (carrot · lemon · apple · banana · blueberry, to use perishables), then leanest cal/g-protein. Bake and no-bake sit side by side so you can run one of each at once.</p>
+        <p className="qb-sub">Ranked by recommendation — produce first (apple · carrot · lemon · banana · blueberry, to use perishables), then leanest cal/g-protein. Bake and no-bake sit side by side so you can run one of each at once.</p>
       </div>
       <Lane label="Make next" sub="your to-make backlog" lane={queue.makeNext} />
       <Lane label="Make again" sub="proven favourites worth repeating" lane={queue.makeAgain} />

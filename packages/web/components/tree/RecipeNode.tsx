@@ -1,6 +1,6 @@
 import type { TreeNodeVM } from "../../lib/viewmodel/types";
 import type { Pos } from "../../lib/layout/graphLayout";
-import { splitName, r0, r1 } from "../../lib/viewmodel/format";
+import { splitName, r0, r1, isRatioWarn } from "../../lib/viewmodel/format";
 
 // One status per recipe, driving the border + the always-visible status line. Ordered best→plain.
 // Sub-recipes are components (never made/queued) so they carry no status.
@@ -47,6 +47,7 @@ export function RecipeNode({ node, pos, arm, selected, onOpen }: {
   // max zoomed-out title size that still shows the whole title (content width ≈ card minus padding)
   const titleFit = fitTitlePx(title, isSub ? 158 : 174, isSub ? 17 : 26);
   const status = statusOf(node);
+  const ratioHot = isRatioWarn(node.calPerGramProtein, isSub);
   const cls = ["node", node.kind === "sub-recipe" ? "sub" : "", node.kind === "base" ? "base" : "",
     status ? `s-${status.cls}` : "", selected ? "cur" : ""].filter(Boolean).join(" ");
   const open = () => onOpen?.(node.recipeId);
@@ -68,7 +69,7 @@ export function RecipeNode({ node, pos, arm, selected, onOpen }: {
         <div className="nmeta">
           {r0(node.cal)} cal · {r1(node.protein)} P <span className="munit">/ serving</span><br />
           {node.servings > 1 && <>{r0(node.wholeCal).toLocaleString("en-US")} cal · {r0(node.wholeProtein)} P <span className="munit">total</span><br /></>}
-          {node.calPerGramProtein != null ? r1(node.calPerGramProtein) : "—"} cal/g · makes {node.servings} {node.servingUnit}
+          {node.calPerGramProtein != null ? r1(node.calPerGramProtein) : "—"}{ratioHot && <span className="rdot" role="img" aria-label="lean-light: high cal per gram protein" title="high cal/g protein — lean-light for a protein recipe" />} cal/g · makes {node.servings} {node.servingUnit}
         </div>
         {node.feedbackNote && <div className={`nfb${node.needsTuning ? " bad" : ""}`}>{node.feedbackNote}</div>}
       </div></div>

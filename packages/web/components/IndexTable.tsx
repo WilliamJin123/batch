@@ -4,6 +4,7 @@ import Link from "next/link";
 import type { RecipeSummary } from "../lib/viewmodel/types";
 import { MacroLine } from "./shared/MacroLine";
 import { StateDot } from "./shared/StateDot";
+import { isRatioWarn } from "../lib/viewmodel/format";
 
 export function IndexTable({ rows }: { rows: RecipeSummary[] }) {
   const [q, setQ] = useState("");
@@ -23,7 +24,7 @@ export function IndexTable({ rows }: { rows: RecipeSummary[] }) {
           <Link className="idxrow" key={r.recipeId} href={`/r/${r.recipeId}`}>
             <span className="idxnm">{r.name}</span>
             <span className="idxfam">{r.family}</span>
-            <MacroLine cal={r.cal} protein={r.protein} calPerGramProtein={r.calPerGramProtein} servings={r.servings} unit={r.servingUnit} />
+            <MacroLine cal={r.cal} protein={r.protein} calPerGramProtein={r.calPerGramProtein} servings={r.servings} unit={r.servingUnit} warn={isRatioWarn(r.calPerGramProtein, r.tags.includes("sub-recipe"))} />
             <span className="idxst"><StateDot made={r.made} rating={r.rating} /></span>
           </Link>
         ))}
