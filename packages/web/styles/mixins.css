@@ -1,0 +1,13 @@
+.mx{padding:28px 0 0}
+.mx-head{margin:0 0 22px;max-width:680px}
+.mx-title{font-family:var(--serif);font-weight:600;font-size:30px;letter-spacing:-.02em;margin:0 0 8px}
+.mx-sub{color:var(--muted);font-size:14px;line-height:1.6;margin:0}
+.mx-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;align-items:start}
+.mx-card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px 20px}
+.mx-ct{font-family:var(--serif);font-weight:600;font-size:17px;margin:0 0 13px;color:var(--ink)}
+.mx-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:12px}
+.mx-item{display:flex;flex-direction:column;gap:3px}
+.mx-nm{font-weight:600;font-size:13.5px;color:var(--ink);display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.mx-note{font-size:12.5px;color:var(--ink-soft);line-height:1.5}
+.mx-lean{font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:.05em;color:var(--green);border:1px solid rgba(94,154,107,.45);border-radius:5px;padding:1px 5px;font-weight:600}
+@media(max-width:720px){.mx-grid{grid-template-columns:1fr}}

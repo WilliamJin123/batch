@@ -25,6 +25,14 @@ const QueueIcon = () => (
     <circle cx="3" cy="12" r=".7" fill="currentColor" stroke="none" />
   </svg>
 );
+const MixinsIcon = () => (
+  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M2.4 7.5h11.2a5.6 5.6 0 0 1-11.2 0Z" />
+    <circle cx="6" cy="3.6" r=".75" fill="currentColor" stroke="none" />
+    <circle cx="9.2" cy="2.8" r=".75" fill="currentColor" stroke="none" />
+    <circle cx="8" cy="5" r=".75" fill="currentColor" stroke="none" />
+  </svg>
+);
 
 /** Brand mark: a warm stack of layers — a "batch" (and a nod to stacked bakes / versions).
  *  Distinct from the single-cookie Recipes tab. */
@@ -40,7 +48,8 @@ export function TopBar() {
   const path = usePathname() ?? "/";
   const onRecipes = path.startsWith("/recipes");
   const onQueue = path.startsWith("/queue");
-  const onTree = !onRecipes && !onQueue;
+  const onMixins = path.startsWith("/mixins");
+  const onTree = !onRecipes && !onQueue && !onMixins;
   return (
     <div className="topbar">
       <div className="brand">
@@ -48,9 +57,10 @@ export function TopBar() {
         <b>Batch</b>
       </div>
       <nav className="nav">
-        <Link className={onTree ? "on" : undefined} href="/"><TreeIcon />Tree</Link>
-        <Link className={onRecipes ? "on" : undefined} href="/recipes"><CookieIcon />Recipes</Link>
-        <Link className={onQueue ? "on" : undefined} href="/queue"><QueueIcon />Queue</Link>
+        <Link aria-label="Recipe tree" className={onTree ? "on" : undefined} href="/"><TreeIcon /><span>Tree</span></Link>
+        <Link aria-label="Recipes" className={onRecipes ? "on" : undefined} href="/recipes"><CookieIcon /><span>Recipes</span></Link>
+        <Link aria-label="Cooking queue" className={onQueue ? "on" : undefined} href="/queue"><QueueIcon /><span>Queue</span></Link>
+        <Link aria-label="Mix-ins" className={onMixins ? "on" : undefined} href="/mixins"><MixinsIcon /><span>Mix-ins</span></Link>
       </nav>
       <div className="spacer"></div>
       <span className="branch" title="current branch">main</span>

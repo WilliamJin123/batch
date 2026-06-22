@@ -16,8 +16,8 @@ export interface QueueLaneVM { bake: QueueItemVM[]; noBake: QueueItemVM[]; }
 export interface QueueVM { makeNext: QueueLaneVM; makeAgain: QueueLaneVM; }
 
 // Perishable produce to use up first, in the user's stated priority order — the index is the sort
-// rank (carrot before lemon before apple…). Matched as a substring of the recipe name + its tags.
-const PRODUCE = ["carrot", "lemon", "apple", "banana", "blueberr"];
+// rank (apple before carrot before lemon…). Matched as a substring of the recipe name + its tags.
+const PRODUCE = ["apple", "carrot", "lemon", "banana", "blueberr"];
 const PRODUCE_LABEL: Record<string, string> = { carrot: "carrot", lemon: "lemon", apple: "apple", banana: "banana", blueberr: "blueberry" };
 
 function produceOf(n: TreeNodeVM): { key: string | null; rank: number } {

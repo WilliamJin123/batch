@@ -3,9 +3,10 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 /** Site-wide keyboard navigation (lives in the layout, so it works on every page):
- *  T → tree, R → recipes, ? → toggle a shortcuts overlay. Tree-canvas keys (move/zoom/L/find) live
- *  in TreeView. The overlay closes on ANY key (and ? / click-away / ✕) — never on Esc alone, which is
- *  unreliable on some Macs. Any Ctrl/Cmd/Alt combo is ignored so real browser/OS shortcuts pass through. */
+ *  T → tree, R → recipes, Q → queue, M → mix-ins, ? → toggle a shortcuts overlay. Tree-canvas keys
+ *  (move/zoom/L/find) live in TreeView. The overlay closes on ANY key (and ? / click-away / ✕) — never
+ *  on Esc alone, which is unreliable on some Macs. Any Ctrl/Cmd/Alt combo is ignored so real
+ *  browser/OS shortcuts pass through. */
 function Row({ k, d }: { k: string; d: string }) {
   return <div className="krow"><kbd>{k}</kbd><span>{d}</span></div>;
 }
@@ -28,6 +29,7 @@ export function KeyboardNav() {
       if (e.code === "KeyT") { e.preventDefault(); router.push("/"); return; }
       if (e.code === "KeyR") { e.preventDefault(); router.push("/recipes"); return; }
       if (e.code === "KeyQ") { e.preventDefault(); router.push("/queue"); return; }
+      if (e.code === "KeyM") { e.preventDefault(); router.push("/mixins"); return; }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -45,6 +47,7 @@ export function KeyboardNav() {
             <Row k="R" d="Recipes" />
             <Row k="/" d="Find a recipe" />
             <Row k="Q" d="Cooking queue" />
+            <Row k="M" d="Mix-ins guide" />
             <Row k="L" d="Toggle legend" />
             <Row k="?" d="Show / hide this" />
           </div>

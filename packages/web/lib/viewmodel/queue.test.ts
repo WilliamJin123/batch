@@ -21,15 +21,15 @@ describe("buildQueue", () => {
     expect(q.makeNext.noBake.map((i) => i.recipeId)).toEqual(["b"]);
   });
 
-  it("orders each group produce-first (carrot, lemon, apple…) then leanest ratio", () => {
+  it("orders each group produce-first (apple, carrot, lemon…) then leanest ratio", () => {
     const q = buildQueue([
       node({ recipeId: "lean", name: "Lean Thing", tags: ["bars"], queued: true, calPerGramProtein: 5 }),
       node({ recipeId: "apple", name: "Apple Bar", tags: ["bars"], queued: true, calPerGramProtein: 20 }),
       node({ recipeId: "carrot", name: "Carrot Bar", tags: ["bars"], queued: true, calPerGramProtein: 18 }),
       node({ recipeId: "lemon", name: "Lemon Bar", tags: ["bars"], queued: true, calPerGramProtein: 19 }),
     ]);
-    // carrot < lemon < apple (named produce, in the user's stated order), then the leaner non-produce
-    expect(q.makeNext.bake.map((i) => i.recipeId)).toEqual(["carrot", "lemon", "apple", "lean"]);
+    // apple < carrot < lemon (apple pulled to the front per the user), then the leaner non-produce
+    expect(q.makeNext.bake.map((i) => i.recipeId)).toEqual(["apple", "carrot", "lemon", "lean"]);
   });
 
   it("breaks produce ties by leanest ratio (ascending; null ratio last)", () => {

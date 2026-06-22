@@ -5,6 +5,7 @@ import "../styles/card.css";
 import "../styles/tree.css";
 import "../styles/index.css";
 import "../styles/keys.css";
+import "../styles/mixins.css";
 import { Fraunces, Inter, JetBrains_Mono } from "next/font/google";
 import { TopBar } from "../components/shared/TopBar";
 import { KeyboardNav } from "../components/shared/KeyboardNav";
