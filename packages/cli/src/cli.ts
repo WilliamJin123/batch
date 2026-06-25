@@ -2,7 +2,7 @@ import { readFile, writeFile, mkdir, readdir } from "node:fs/promises";
 import { join } from "node:path";
 import { Command } from "commander";
 import { RecipeService, realDeps } from "@batch/core";
-import type { OverrideEntry } from "@batch/core";
+import type { Macros, OverrideEntry } from "@batch/core";
 import { FileRepository } from "./file-repository.js";
 import { resolveDbPath } from "./db-path.js";
 import { renderHuman } from "./format.js";
@@ -28,9 +28,28 @@ function out(value: unknown): void {
 }
 
 async function readJson(file?: string): Promise<any> {
-  const raw = file ? await readFile(file, "utf8") : await readStdin();
+  // `--file -` is the conventional "read stdin" sentinel — treat it like no file rather than
+  // trying to open a file literally named "-" (which throws ENOENT).
+  const raw = file && file !== "-" ? await readFile(file, "utf8") : await readStdin();
   if (!raw.trim()) throw new Error("expected JSON on stdin or via --file");
   return JSON.parse(raw);
+}
+
+/** Collect a repeatable option into an array (commander accumulator). */
+function collect(value: string, acc: string[]): string[] { acc.push(value); return acc; }
+
+/** Parse `key=value` pairs (value numeric) into a record, e.g. `each=50` → { each: 50 }. */
+function kvNumbers(pairs: string[]): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const p of pairs) {
+    const i = p.indexOf("=");
+    if (i === -1) throw new Error(`expected key=value, got "${p}"`);
+    const key = p.slice(0, i).trim();
+    const value = Number(p.slice(i + 1));
+    if (!key || Number.isNaN(value)) throw new Error(`bad key=value pair: "${p}"`);
+    out[key] = value;
+  }
+  return out;
 }
 
 function readStdin(): Promise<string> {
@@ -80,12 +99,15 @@ export async function run(argv: string[]): Promise<void> {
       out(await cmd.derive(makeService(), { baseVersionId, name: opts.name, commitMessage: opts.message })));
 
   program.command("override <versionId>")
-    .description("apply one override entry (JSON on stdin or --file) to a base or variant")
-    .option("-f, --file <path>", "read the override entry JSON from a file")
+    .description("apply an override entry — OR a JSON array of entries applied atomically as ONE commit — (JSON on stdin or --file) to a base or variant")
+    .option("-f, --file <path>", "read the override entry/entries JSON from a file ('-' = stdin)")
     .option("-m, --message <msg>", "commit message")
     .action(async (versionId, opts) => {
-      const entry = (await readJson(opts.file)) as OverrideEntry;
-      out(await cmd.override(makeService(), { versionId, entry, message: opts.message }));
+      const input = await readJson(opts.file);
+      // One entry or an ordered array — the array applies as a single new version (later entries can
+      // target what earlier ones added), removing the need to chain N calls threading head ids.
+      const entries = (Array.isArray(input) ? input : [input]) as OverrideEntry[];
+      out(await cmd.applyOverrides(makeService(), { versionId, entries, message: opts.message }));
     });
 
   program.command("edit <versionId>")
@@ -175,6 +197,26 @@ export async function run(argv: string[]): Promise<void> {
   ingredient.command("list")
     .description("list all library ingredients")
     .action(async () => out(await cmd.ingredientList(makeService())));
+  ingredient.command("set <ref>")
+    .description("patch an existing library ingredient in place (resolved by id/name/alias) — merges macros/units so you can bump one value without re-sending the whole object")
+    .option("-n, --name <name>")
+    .option("--alias <csv>", "comma-separated aliases (replaces the list)")
+    .option("--brand <brand>")
+    .option("--notes <text>")
+    .option("--density <gPerMl>", "grams per ml", parseFloat)
+    .option("--macro <k=v>", "set one per-100g macro, e.g. --macro protein=12 (repeatable)", collect, [])
+    .option("--unit <k=v>", "set one unit-equivalence in grams, e.g. --unit each=50 (repeatable)", collect, [])
+    .action(async (ref, opts) => {
+      const patch: cmd.IngredientPatch = {};
+      if (opts.name !== undefined) patch.name = opts.name;
+      if (opts.alias !== undefined) patch.aliases = String(opts.alias).split(",").map((a) => a.trim()).filter(Boolean);
+      if (opts.brand !== undefined) patch.brand = opts.brand;
+      if (opts.notes !== undefined) patch.notes = opts.notes;
+      if (opts.density !== undefined) patch.densityGPerMl = opts.density;
+      if (opts.macro.length) patch.macrosPer100g = kvNumbers(opts.macro) as Partial<Macros>;
+      if (opts.unit.length) patch.unitEquivalences = kvNumbers(opts.unit);
+      out(await cmd.ingredientSet(makeService(), ref, patch));
+    });
   ingredient.command("show <ref>")
     .description("show one library ingredient by id, name, or alias")
     .action(async (ref) => out(await cmd.ingredientShow(makeService(), ref)));

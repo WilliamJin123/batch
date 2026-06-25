@@ -186,16 +186,41 @@ export class RecipeService {
     return { recipe, version };
   }
 
+  /** Apply a single override entry as a new version. Thin wrapper over {@link applyOverrides}. */
   async applyOverride(input: {
     versionId: VersionId;
     entry: OverrideEntry;
     author?: Author;
     commitMessage?: string;
   }): Promise<{ version: RecipeVersion }> {
+    return this.applyOverrides({
+      versionId: input.versionId,
+      entries: [input.entry],
+      author: input.author,
+      commitMessage: input.commitMessage ?? "apply override",
+    });
+  }
+
+  /**
+   * Apply several override entries as ONE new version — atomic: one commit, one head move,
+   * one macro recompute. Entries fold in order (materialize is sequential), so a later entry
+   * may target a component an earlier one added — exactly the multi-step edit you'd otherwise
+   * chain across N calls. Same base-vs-variant handling as a single override: a variant extends
+   * its delta against the base; a root applies straight into its content.
+   */
+  async applyOverrides(input: {
+    versionId: VersionId;
+    entries: OverrideEntry[];
+    author?: Author;
+    commitMessage?: string;
+  }): Promise<{ version: RecipeVersion }> {
+    if (input.entries.length === 0) throw new Error("applyOverrides: no entries given");
     const current = await this.getVersion(input.versionId);
-    if ((input.entry.op === "add" || input.entry.op === "replace") && input.entry.kind === "slot") {
-      const res = input.entry.payload.resolution;
-      if (res.kind === "sub_recipe") await this.assertAcyclic(current.recipeId, res.subRecipeVersionId);
+    for (const entry of input.entries) {
+      if ((entry.op === "add" || entry.op === "replace") && entry.kind === "slot") {
+        const res = entry.payload.resolution;
+        if (res.kind === "sub_recipe") await this.assertAcyclic(current.recipeId, res.subRecipeVersionId);
+      }
     }
     let overrideSet: OverrideSet | undefined;
     let content: RecipeContent;
@@ -204,14 +229,14 @@ export class RecipeService {
       const base = await this.getVersion(current.derivesFromVersionId);
       overrideSet = {
         ...current.overrideSet,
-        entries: [...current.overrideSet.entries, input.entry],
+        entries: [...current.overrideSet.entries, ...input.entries],
       };
       content = materialize(base.content, overrideSet);
     } else {
-      // Root (base): apply the change straight into its content. It stays a root
+      // Root (base): apply the changes straight into its content. It stays a root
       // (full content, no delta) — this is how you tune a base version in place.
       overrideSet = current.overrideSet; // undefined for a root
-      content = materialize(current.content, { entries: [input.entry] });
+      content = materialize(current.content, { entries: input.entries });
     }
     const macros = await this.macrosFor(content, current.yield);
     const version: RecipeVersion = {
@@ -222,7 +247,9 @@ export class RecipeService {
       content,
       macros,
       author: input.author ?? current.author,
-      commitMessage: input.commitMessage ?? "apply override",
+      commitMessage:
+        input.commitMessage ??
+        (input.entries.length === 1 ? "apply override" : `apply ${input.entries.length} overrides`),
       status: "draft",
       createdAt: this.deps.now(),
     };

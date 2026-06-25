@@ -266,4 +266,42 @@ describe("commands", () => {
     const json = await cmd.exportRecipe(s, "Card Test", { format: "json" });
     expect((json as { macros: { total: { calories: number } } }).macros.total.calories).toBe(774);
   });
+
+  it("applyOverrides applies many entries as ONE atomic version (later entries see earlier ones)", async () => {
+    const s = svc();
+    const { version: base } = await cmd.create(s, { name: "Base", yield: { amount: 16, unit: "squares" }, content: content() });
+    const { version } = await cmd.applyOverrides(s, {
+      versionId: base.id,
+      entries: [
+        { op: "replace", kind: "usage", target: "u1",
+          payload: { componentKey: "u1", stepKey: "s1", slotKey: "sugar", quantityValue: 120, quantityUnit: "g" } },
+        // a second step added in the same commit...
+        { op: "add", kind: "step", payload: { componentKey: "s2", order: 2, instructionText: "Cool" } },
+        // ...and a note targeting that just-added step proves entries fold in order within one call.
+        { op: "add", kind: "note", payload: { componentKey: "n1", kind: "technique", stepKey: "s2", text: "Cool fully" } },
+      ],
+      message: "tune sugar + add cool step",
+    });
+    const shown = await cmd.show(s, version.id);
+    expect(shown.content.usages[0]?.quantityValue).toBe(120);
+    expect(shown.content.steps.map((x) => x.componentKey)).toEqual(["s1", "s2"]);
+    expect(shown.content.notes?.[0]?.text).toBe("Cool fully");
+    expect(version.commitMessage).toBe("tune sugar + add cool step");
+    // Exactly one new version — the whole point of atomic: base → head, no intermediate commits.
+    const hist = await cmd.history(s, version.id);
+    expect(hist).toHaveLength(2);
+  });
+
+  it("ingredientSet merges unit-equivalences and macros, leaving the rest intact", async () => {
+    const s = svc();
+    await cmd.ingredientAdd(s, {
+      id: "ing-egg-whole", name: "egg", macrosPer100g: { calories: 143, protein: 12.6, carbs: 0.7, fat: 9.5, fiber: 0 },
+      unitEquivalences: { each: 44, serving: 44 },
+    });
+    const set = await cmd.ingredientSet(s, "egg", { unitEquivalences: { each: 50, serving: 50 }, macrosPer100g: { protein: 13 } });
+    expect(set.unitEquivalences).toEqual({ each: 50, serving: 50 });
+    expect(set.macrosPer100g.protein).toBe(13);   // patched
+    expect(set.macrosPer100g.calories).toBe(143); // untouched fields survive the merge
+    expect((await cmd.ingredientList(s))).toHaveLength(1); // upsert in place, not a duplicate
+  });
 });

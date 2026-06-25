@@ -28,6 +28,14 @@ export async function override(
   return svc.applyOverride({ versionId, entry: input.entry, commitMessage: input.message });
 }
 
+/** Apply one or many override entries atomically (one commit). A single-element array behaves like {@link override}. */
+export async function applyOverrides(
+  svc: RecipeService, input: { versionId: string; entries: OverrideEntry[]; message?: string },
+): Promise<{ version: RecipeVersion }> {
+  const versionId = await svc.resolveRef(input.versionId);
+  return svc.applyOverrides({ versionId, entries: input.entries, commitMessage: input.message });
+}
+
 export interface EditPatch {
   name?: string; description?: string; tags?: string[]; yield?: Yield; status?: VersionStatus;
 }
@@ -97,6 +105,37 @@ function slugify(name: string): string {
 }
 export function ingredientAdd(svc: RecipeService, input: IngredientInput): Promise<LibraryIngredient> {
   return svc.addIngredient({ ...input, id: input.id ?? slugify(input.name) });
+}
+
+export interface IngredientPatch {
+  name?: string; aliases?: string[]; brand?: string; notes?: string;
+  densityGPerMl?: number;
+  macrosPer100g?: Partial<Macros>;          // merged onto existing macros (set one field without resending all)
+  unitEquivalences?: Record<string, number>; // merged onto existing (e.g. bump `each` 44→50, keep the rest)
+}
+/**
+ * Patch an existing library ingredient in place (resolved by id/name/alias). Scalar fields replace;
+ * `macrosPer100g` and `unitEquivalences` MERGE so you can bump a single value (e.g. `each` 44→50)
+ * without re-sending the whole ingredient JSON. The catalog-edit ergonomic that `ingredient add`
+ * (full-object upsert) lacked.
+ */
+export async function ingredientSet(
+  svc: RecipeService, ref: string, patch: IngredientPatch,
+): Promise<LibraryIngredient> {
+  const cur = await svc.getIngredientRef(ref);
+  const merged: LibraryIngredient = {
+    ...cur,
+    ...(patch.name !== undefined ? { name: patch.name } : {}),
+    ...(patch.aliases !== undefined ? { aliases: patch.aliases } : {}),
+    ...(patch.brand !== undefined ? { brand: patch.brand } : {}),
+    ...(patch.notes !== undefined ? { notes: patch.notes } : {}),
+    ...(patch.densityGPerMl !== undefined ? { densityGPerMl: patch.densityGPerMl } : {}),
+    ...(patch.macrosPer100g ? { macrosPer100g: { ...cur.macrosPer100g, ...patch.macrosPer100g } } : {}),
+    ...(patch.unitEquivalences
+      ? { unitEquivalences: { ...(cur.unitEquivalences ?? {}), ...patch.unitEquivalences } }
+      : {}),
+  };
+  return svc.addIngredient(merged);
 }
 export function ingredientList(svc: RecipeService): Promise<LibraryIngredient[]> {
   return svc.listIngredients();
