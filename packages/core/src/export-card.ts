@@ -1,4 +1,5 @@
-import type { Macros, MacroSnapshot, RecipeContent, Yield } from "./types.js";
+import type { LibraryIngredient, Macros, MacroLine, MacroSnapshot, RecipeContent, StepUsage, Yield } from "./types.js";
+import { cookUnitLabel } from "./display.js";
 
 export interface CardMeta {
   name: string;
@@ -6,7 +7,11 @@ export interface CardMeta {
   yield: Yield;
 }
 
+/** Just the fields the cook-unit derivation needs, keyed by ingredient id. */
+export type UnitInfo = Pick<LibraryIngredient, "densityGPerMl" | "unitEquivalences">;
+
 const fmtNum = (n: number): string => String(Math.round(n * 100) / 100);
+const fmtGrams = (g: number): string => String(g < 10 ? Math.round(g * 10) / 10 : Math.round(g));
 const macroLine = (m: Macros): string =>
   `${Math.round(m.calories)} cal · ${fmtNum(m.protein)} g protein · ${fmtNum(m.carbs)} C · ${fmtNum(m.fat)} F · ${fmtNum(m.fiber)} fiber`;
 const singular = (unit: string): string => (unit.endsWith("s") ? unit.slice(0, -1) : unit);
@@ -20,8 +25,28 @@ const noteGlyph = (kind: string): string => (kind === "pitfall" ? "⚠" : kind =
  * Section order: parent sections by step order first, then sub-recipe sections
  * (whose steps all carry a flatten `/` prefix) alphabetically, as a components appendix.
  */
-export function renderCard(meta: CardMeta, content: RecipeContent, macros: MacroSnapshot): string {
+export function renderCard(
+  meta: CardMeta, content: RecipeContent, macros: MacroSnapshot,
+  ingredients?: Map<string, UnitInfo>,
+): string {
   const lines: string[] = [];
+
+  // Each usage aligns by index with its macro line (the grams basis). The displayed quantity is
+  // canonical: a derived cook unit (cups/spoons/scoops, from grams) PLUS grams — never the raw unit
+  // a quantity happened to be entered in. Falls back to the entered unit only when grams is unknown
+  // (unresolved ingredient) or no ingredient map was supplied.
+  const lineByUsage = new Map<string, MacroLine>();
+  content.usages.forEach((u, i) => { const ln = macros.lines[i]; if (ln) lineByUsage.set(u.componentKey, ln); });
+  const qtyOf = (u: StepUsage): string => {
+    const ln = lineByUsage.get(u.componentKey);
+    const grams = ln?.grams;
+    if (grams != null) {
+      const info = ingredients && ln?.ingredientId ? ingredients.get(ln.ingredientId) : undefined;
+      const cook = info ? cookUnitLabel(grams, info) : undefined;
+      return cook ? `${cook} · ${fmtGrams(grams)} g` : `${fmtGrams(grams)} g`;
+    }
+    return `${fmtNum(u.quantityValue)} ${u.quantityUnit}`;
+  };
   lines.push(`# ${meta.name}`, "");
   if (meta.description) lines.push(`_${meta.description}_`, "");
 
@@ -74,7 +99,7 @@ export function renderCard(meta: CardMeta, content: RecipeContent, macros: Macro
     const us = content.usages.filter((u) => (stepSection.get(u.stepKey) ?? "Base") === sec);
     if (!us.length) continue;
     lines.push(`**${sec}**`);
-    for (const u of us) lines.push(`- ${slotName.get(u.slotKey) ?? u.slotKey} — ${fmtNum(u.quantityValue)} ${u.quantityUnit}`);
+    for (const u of us) lines.push(`- ${slotName.get(u.slotKey) ?? u.slotKey} — ${qtyOf(u)}`);
     lines.push("");
   }
 
