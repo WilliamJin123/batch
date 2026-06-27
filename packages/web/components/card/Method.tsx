@@ -17,7 +17,7 @@ export function Method({ sections }: { sections: BakeCardVM["method"] }) {
                 {st.ingredients.length > 0 && (
                   <span className="sing">
                     {st.ingredients.map((g, j) => (
-                      <span className="schip" key={j}><b>{g.qtyNatural}</b>{g.name}</span>
+                      <span className="schip" key={j}><b>{g.qtyFull}</b>{g.name}</span>
                     ))}
                   </span>
                 )}

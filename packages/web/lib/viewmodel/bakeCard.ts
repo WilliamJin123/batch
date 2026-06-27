@@ -56,7 +56,11 @@ export async function buildBakeCard(svc: RecipeService, recipeId: string): Promi
     const cook = ing && line?.grams != null ? cookUnitLabel(line.grams, ing) : undefined;
     const grams = roundGrams(line?.grams);
     const qtyNat = cook ?? (grams != null ? `${grams} g` : qtyNatural(u.quantityValue, u.quantityUnit));
-    const row: IngredientRowVM = { qtyNatural: qtyNat, grams, name: slot?.name ?? line?.ingredientName ?? u.slotKey };
+    // Inline chips show BOTH measures ("2⅔ tbsp · 4 g") so the method never makes you scroll up to the
+    // ingredient list to convert. When there's no derivable cook unit, qtyNat already IS the grams (or the
+    // entered unit when grams is unknown), so don't double it up.
+    const qtyFull = cook != null && grams != null ? `${cook} · ${grams} g` : qtyNat;
+    const row: IngredientRowVM = { qtyNatural: qtyNat, qtyFull, grams, name: slot?.name ?? line?.ingredientName ?? u.slotKey };
     const g = groups.get(section) ?? { title: section, subRecipe: isSub, calories: 0, items: [] };
     g.subRecipe = g.subRecipe || isSub;
     g.calories += line?.macros?.calories ?? 0;

@@ -5,7 +5,10 @@ export interface RecipeSummary {
   cal: number; protein: number; carbs: number; fat: number; wholeCal: number; wholeProtein: number; calPerGramProtein: number | null; servings: number; servingUnit: string;
   made: boolean; rating?: "bad" | "okay" | "good" | "excellent"; queued: boolean;
 }
-export interface IngredientRowVM { qtyNatural: string; grams?: number; name: string; }
+// qtyNatural = the cook unit alone (cups/spoons/scoops…), for the aligned Ingredients table where grams
+// sits in its own column. qtyFull = the always-both "<cook> · <grams> g" string for inline method chips,
+// so a step reads the quantity both ways without scrolling back up to the ingredient list.
+export interface IngredientRowVM { qtyNatural: string; qtyFull: string; grams?: number; name: string; }
 export interface NoteVM { kind: "pitfall" | "technique" | "note"; text: string; }
 export interface IngredientGroupVM { title: string; subRecipe: boolean; calories: number; items: IngredientRowVM[]; }
 export interface BakeCardVM {
