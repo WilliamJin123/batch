@@ -17,6 +17,8 @@ export type { RecipeFeedbackSummary, CurrentVerdicts } from "./feedback.js";
 export { buildCompareView } from "./compare.js";
 export type { CompareView, CompareColumn, CompareIngredientRow, CompareStepList, CompareInput } from "./compare.js";
 export { toGrams, normalizeUnit, convertWithin, massToGrams } from "./units.js";
+export { naturalCookUnit, formatCookQty, cookUnitLabel } from "./display.js";
+export type { CookQty } from "./display.js";
 export { RecipeService } from "./recipe-service.js";
 export type { RebaseResult, RebaseVariantItem } from "./recipe-service.js";
 export { buildRebasePlan } from "./rebase.js";

@@ -58,6 +58,33 @@ describe("renderCard", () => {
     expect(md).toMatch(/graham crumbs — 5 g/);
   });
 
+  it("displays the canonical cook-unit · grams pair, derived from grams (not the entered unit)", () => {
+    const m = macros();
+    m.lines = [
+      { slotKey: "graham", ingredientId: "ing-g", grams: 57, status: "ok" },
+      { slotKey: "cc", ingredientId: "ing-cc", grams: 113, status: "ok" },
+    ];
+    const unitInfo = new Map([
+      ["ing-g", { densityGPerMl: 0.42, unitEquivalences: { sheet: 14 } }],
+      ["ing-cc", { densityGPerMl: 0.98 }],
+    ]);
+    const md = renderCard({ name: "X", yield: { amount: 8, unit: "slices" } }, content(), m, unitInfo);
+    expect(md).toMatch(/cream cheese — ½ cup · 113 g/);   // 113 g of 0.98 g/ml → ½ cup
+    expect(md).toMatch(/graham crumbs — \S+ (cup|tbsp|tsp) · 57 g/);
+  });
+
+  it("falls back to grams alone when the ingredient has no derivable cook unit", () => {
+    const m = macros();
+    m.lines = [
+      { slotKey: "graham", ingredientId: "ing-g", grams: 57, status: "ok" },
+      { slotKey: "cc", ingredientId: "ing-cc", grams: 113, status: "ok" },
+    ];
+    const unitInfo = new Map([["ing-g", {}], ["ing-cc", {}]]); // no density, no equivalences
+    const md = renderCard({ name: "X", yield: { amount: 8, unit: "slices" } }, content(), m, unitInfo);
+    expect(md).toMatch(/graham crumbs — 57 g/);
+    expect(md).toMatch(/cream cheese — 113 g/);
+  });
+
   it("renders recipe-level notes under Watch-outs and anchored notes inline at their step", () => {
     const c = content();
     c.notes = [

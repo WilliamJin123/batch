@@ -165,7 +165,9 @@ export async function exportRecipe(
 ): Promise<string | { content: RecipeContent; macros: MacroSnapshot }> {
   const { version, content, macros } = await svc.exportCard(await svc.resolveRef(ref));
   if (opts.format === "json") return { content, macros };
-  return renderCard({ name: version.name, description: version.description, yield: version.yield }, content, macros);
+  const ings = await svc.listIngredients();
+  const unitInfo = new Map(ings.map((i) => [i.id, { densityGPerMl: i.densityGPerMl, unitEquivalences: i.unitEquivalences }] as const));
+  return renderCard({ name: version.name, description: version.description, yield: version.yield }, content, macros, unitInfo);
 }
 
 export interface ListRow {

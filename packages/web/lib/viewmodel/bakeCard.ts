@@ -1,7 +1,7 @@
 import type { Note, RecipeService } from "@batch/core";
 import type { BakeCardVM, IngredientGroupVM, IngredientRowVM, MacroVM, NoteVM } from "./types";
 import { qtyNatural, roundGrams } from "./format";
-import { summarizeRecipe } from "@batch/core";
+import { summarizeRecipe, cookUnitLabel } from "@batch/core";
 
 const macroVM = (m: { calories: number; protein: number; carbs: number; fat: number; fiber: number }): MacroVM => ({
   calories: m.calories, protein: m.protein, carbs: m.carbs, fat: m.fat, fiber: m.fiber,
@@ -38,6 +38,7 @@ export async function buildBakeCard(svc: RecipeService, recipeId: string): Promi
   // group by the section of the step each usage belongs to.
   const slotByKey = new Map(content.slots.map((s) => [s.componentKey, s] as const));
   const sectionOfStep = new Map(content.steps.map((s) => [s.componentKey, s.section ?? "Base"] as const));
+  const ingById = new Map((await svc.listIngredients()).map((ig) => [ig.id, ig] as const));
   const groups = new Map<string, IngredientGroupVM>();
   const stepUses = new Map<string, IngredientRowVM[]>();   // step componentKey -> the ingredients that step adds (cook-mode chips)
   content.usages.forEach((u, i) => {
@@ -48,7 +49,14 @@ export async function buildBakeCard(svc: RecipeService, recipeId: string): Promi
     // is the robust structural signal that this ingredient came from a sub-recipe (the step's
     // section is the child recipe's NAME, so a name regex can't detect it).
     const isSub = u.slotKey.includes("/");
-    const row: IngredientRowVM = { qtyNatural: qtyNatural(u.quantityValue, u.quantityUnit), grams: roundGrams(line?.grams), name: slot?.name ?? line?.ingredientName ?? u.slotKey };
+    // The cook unit is DERIVED from grams (cups/spoons/scoops…), never the unit a quantity was typed
+    // in — so the card always reads "<cook unit> · <grams> g" consistently. Grams-only when nothing's
+    // derivable; the entered unit only as a last resort when grams itself is unknown (unresolved).
+    const ing = line?.ingredientId ? ingById.get(line.ingredientId) : undefined;
+    const cook = ing && line?.grams != null ? cookUnitLabel(line.grams, ing) : undefined;
+    const grams = roundGrams(line?.grams);
+    const qtyNat = cook ?? (grams != null ? `${grams} g` : qtyNatural(u.quantityValue, u.quantityUnit));
+    const row: IngredientRowVM = { qtyNatural: qtyNat, grams, name: slot?.name ?? line?.ingredientName ?? u.slotKey };
     const g = groups.get(section) ?? { title: section, subRecipe: isSub, calories: 0, items: [] };
     g.subRecipe = g.subRecipe || isSub;
     g.calories += line?.macros?.calories ?? 0;
