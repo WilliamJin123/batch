@@ -62,6 +62,16 @@ describe("buildQueue", () => {
     expect(q.makeNext.noBake).toHaveLength(0);
   });
 
+  it("excludes rejected (superseded) recipes from both lanes, even if still queued", () => {
+    const q = buildQueue([
+      node({ recipeId: "old", name: "Superseded Bar", tags: ["bars"], queued: true, status: "rejected" }),
+      node({ recipeId: "new", name: "Live Bar", tags: ["bars"], queued: true, status: "draft" }),
+      node({ recipeId: "ex", name: "Rejected Excellent", tags: ["bars"], made: true, rating: "excellent", status: "rejected" }),
+    ]);
+    expect(q.makeNext.bake.map((i) => i.recipeId)).toEqual(["new"]); // the rejected one is gone
+    expect(q.makeAgain.bake).toHaveLength(0);                         // rejected stays out of make-again too
+  });
+
   it("tags each item with its no-bake flag and produce keyword", () => {
     const q = buildQueue([node({ recipeId: "c", name: "Carrot No-Bake", tags: ["bars", "no-bake"], queued: true })]);
     const item = q.makeNext.noBake[0];

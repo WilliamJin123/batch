@@ -60,7 +60,9 @@ function lane(nodes: TreeNodeVM[]): QueueLaneVM {
  *  Each lane is split bake vs no-bake — so you can pair one oven + one no-oven for a concurrent
  *  session — and ordered produce-first then leanest. Sub-recipes (components) are excluded. */
 export function buildQueue(nodes: TreeNodeVM[]): QueueVM {
-  const makeable = nodes.filter((n) => n.kind !== "sub-recipe");
+  // Sub-recipes are components, not standalone makes; a rejected recipe is superseded/retired —
+  // it stays in the store as a record but must never surface in the planning lanes.
+  const makeable = nodes.filter((n) => n.kind !== "sub-recipe" && n.status !== "rejected");
   return {
     makeNext: lane(makeable.filter((n) => n.queued)),
     makeAgain: lane(makeable.filter((n) => n.made && n.rating === "excellent")),

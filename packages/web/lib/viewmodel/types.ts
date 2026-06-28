@@ -4,6 +4,7 @@ export interface RecipeSummary {
   kind: "base" | "variant" | "root" | "sub-recipe"; family: string;
   cal: number; protein: number; carbs: number; fat: number; wholeCal: number; wholeProtein: number; calPerGramProtein: number | null; servings: number; servingUnit: string;
   made: boolean; rating?: "bad" | "okay" | "good" | "excellent"; queued: boolean;
+  status?: "draft" | "approved" | "rejected"; // a rejected (superseded) recipe is kept as a record but dropped from the queue
 }
 // qtyNatural = the cook unit alone (cups/spoons/scoops…), for the aligned Ingredients table where grams
 // sits in its own column. qtyFull = the always-both "<cook> · <grams> g" string for inline method chips,

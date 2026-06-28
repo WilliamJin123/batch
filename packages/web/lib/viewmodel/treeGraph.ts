@@ -69,7 +69,7 @@ async function summarize(svc: RecipeService): Promise<{ heads: RecipeVersion[]; 
       wholeCal: Math.round(m.total.calories), wholeProtein: Math.round(m.total.protein),
       calPerGramProtein: m.caloriesPerGramProtein ?? null,
       servings: v.yield.amount, servingUnit: v.yield.unit,
-      made: sum.tried, rating: sum.verdict, queued: sum.queued,
+      made: sum.tried, rating: sum.verdict, queued: sum.queued, status: v.status,
       feedbackNote: latestMade?.notes, needsTuning: v.tags.includes("needs-tuning"),
     };
   }));
