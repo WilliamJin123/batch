@@ -2,6 +2,7 @@
 import { useState, useRef, useEffect } from "react";
 import type { TreeGraphVM, TreeNodeVM } from "../../lib/viewmodel/types";
 import { StateDot } from "../shared/StateDot";
+import { matchesSearch } from "../../lib/search";
 
 const r0 = (x: number) => Math.round(x);
 const r1 = (x: number) => Math.round(x * 10) / 10;
@@ -17,13 +18,10 @@ export function TreeOutline({ graph, focus, open, onPick, onClose }: {
   const inputRef = useRef<HTMLInputElement>(null);
   // when the drawer opens (e.g. via the "/" hotkey) drop the cursor straight into search
   useEffect(() => { if (open) { const id = setTimeout(() => inputRef.current?.focus(), 60); return () => clearTimeout(id); } }, [open]);
-  const ql = q.trim().toLowerCase();
-  const searching = ql.length > 0;
-  const match = (n: TreeNodeVM) =>
-    !searching ||
-    n.name.toLowerCase().includes(ql) ||
-    n.family.toLowerCase().includes(ql) ||
-    n.tags.some((t) => t.toLowerCase().includes(ql));
+  const searching = q.trim().length > 0;
+  // one shared, punctuation/accent-insensitive substring matcher (see lib/search) so the tree
+  // drawer and the recipes table behave identically — e.g. "smores" finds "Lean S'mores …".
+  const match = (n: TreeNodeVM) => matchesSearch([n.name, n.family, ...n.tags], q);
 
   const families = new Map<string, TreeNodeVM[]>();
   let total = 0;

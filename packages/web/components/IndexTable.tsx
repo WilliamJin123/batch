@@ -5,13 +5,13 @@ import type { RecipeSummary } from "../lib/viewmodel/types";
 import { MacroLine } from "./shared/MacroLine";
 import { StateDot } from "./shared/StateDot";
 import { isRatioWarn } from "../lib/viewmodel/format";
+import { matchesSearch } from "../lib/search";
 
 export function IndexTable({ rows }: { rows: RecipeSummary[] }) {
   const [q, setQ] = useState("");
-  const ql = q.trim().toLowerCase();
-  const filtered = ql
-    ? rows.filter((r) => r.name.toLowerCase().includes(ql) || r.family.toLowerCase().includes(ql) || r.tags.some((t) => t.toLowerCase().includes(ql)))
-    : rows;
+  // shared matcher (lib/search): punctuation/accent-insensitive substring over name/family/tags,
+  // identical to the tree drawer. Empty query matches everything.
+  const filtered = rows.filter((r) => matchesSearch([r.name, r.family, ...r.tags], q));
   return (
     <div className="idx">
       <div className="idxhead">
