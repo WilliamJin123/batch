@@ -8,7 +8,7 @@ export function TastingLog({ entries }: { entries: BakeCardVM["tastingLog"] }) {
         const plan = e.kind === "to-make";
         return (
           <div className={`log${plan ? " plan" : ""}`} key={i}>
-            <div className="top"><span className="dot" /><span className="rate">{plan ? "To make" : (e.rating ?? "Made")}</span><span className="date">{e.date}</span></div>
+            <div className="top"><span className="dot" /><span className="rate">{e.kind === "to-make" ? "To make" : (e.rating ?? "Made")}</span><span className="date">{e.date}</span></div>
             {e.note && <div className="note">{e.note}</div>}
           </div>
         );

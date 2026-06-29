@@ -25,10 +25,11 @@ export function buildConnectors(bakeoffs: BakeoffVM[], pos: Map<string, Pos>): C
       // two arms: connect along whichever axis they're separated on (side-by-side → facing vertical
       // edges; stacked → facing horizontal edges), pill at the midpoint.
       const [a, bb] = ps;
+      if (!a || !bb) continue; // length === 2 guarantees both; this narrows them for noUncheckedIndexedAccess
       const dx = Math.abs((a.x + a.w / 2) - (bb.x + bb.w / 2)), dy = Math.abs((a.y + a.h / 2) - (bb.y + bb.h / 2));
       let ax, ay, bx, by;
-      if (dx >= dy) { const [L, R] = a.x <= bb.x ? [a, bb] : [bb, a]; ax = L.x + L.w; ay = L.y + L.h / 2; bx = R.x; by = R.y + R.h / 2; }
-      else { const [U, D] = a.y <= bb.y ? [a, bb] : [bb, a]; ax = U.x + U.w / 2; ay = U.y + U.h; bx = D.x + D.w / 2; by = D.y; }
+      if (dx >= dy) { const L = a.x <= bb.x ? a : bb, R = a.x <= bb.x ? bb : a; ax = L.x + L.w; ay = L.y + L.h / 2; bx = R.x; by = R.y + R.h / 2; }
+      else { const U = a.y <= bb.y ? a : bb, D = a.y <= bb.y ? bb : a; ax = U.x + U.w / 2; ay = U.y + U.h; bx = D.x + D.w / 2; by = D.y; }
       out.push({ note: b.note, anchors: [{ x: ax, y: ay }, { x: bx, y: by }], mx: (ax + bx) / 2, my: (ay + by) / 2 });
       continue;
     }

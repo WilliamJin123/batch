@@ -5,6 +5,7 @@ import { StateDot } from "../shared/StateDot";
 import { SearchBox } from "../shared/SearchBox";
 import { matchesSearch } from "../../lib/search";
 import { r0, r1 } from "../../lib/viewmodel/format";
+import { recipeState } from "../../lib/viewmodel/state";
 
 /** The "all recipes" drawer: a live filter over every recipe, grouped by family.
  *  Picking a row centres that node in the canvas and opens its card. */
@@ -62,7 +63,7 @@ export function TreeOutline({ graph, focus, open, onPick, onClose }: {
                 onMouseLeave={() => setHover((h) => (h?.n.recipeId === n.recipeId ? null : h))}>
                 <span className="tol-tw" />
                 <span className="tol-nm">{n.name}{n.kind === "base" && <span className="basel">base</span>}{n.needsTuning && <span className="flag">tune</span>}</span>
-                <StateDot made={n.made} rating={n.rating} />
+                <StateDot state={recipeState(n)} />
               </div>
             ))}
           </div>

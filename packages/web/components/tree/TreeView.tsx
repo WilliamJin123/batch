@@ -21,17 +21,21 @@ const clampS = (s: number) => Math.min(MAX_SCALE, Math.max(MIN_SCALE, s));
 type View = { ox: number; oy: number; scale: number };
 const sameView = (a: View, b: View) => a.ox === b.ox && a.oy === b.oy && a.scale === b.scale;
 
-export function TreeView({ graph, pos, width, height, cards }: {
-  graph: TreeGraphVM; pos: Record<string, Pos>; width: number; height: number; cards: Record<string, BakeCardVM>;
+export function TreeView({ graph, pos, width, height }: {
+  graph: TreeGraphVM; pos: Record<string, Pos>; width: number; height: number;
 }) {
   const posMap = useMemo(() => new Map(Object.entries(pos)), [pos]); // stable id→Pos map (the layout never moves)
   const boardRef = useRef<HTMLDivElement>(null);
+  const drawerRef = useRef<HTMLDivElement>(null);
   const [t, setT] = useState<View>({ ox: 24, oy: 8, scale: 1 });
   const [smooth, setSmooth] = useState(false);          // animate the scene transform (buttons / undo-redo)
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [legendOpen, setLegendOpen] = useState(false);
   const [focus, setFocus] = useState<string | null>(null);
   const [openCard, setOpenCard] = useState<string | null>(null);
+  const [card, setCard] = useState<BakeCardVM | null>(null);          // the loaded card for openCard (lazy-fetched)
+  const cardCache = useRef<Map<string, BakeCardVM>>(new Map());        // fetched cards, kept for instant re-open
+  const wantCardRef = useRef<string | null>(null);                    // latest requested id — guards against a stale fetch landing
   const [cameFromDrawer, setCameFromDrawer] = useState(false); // card opened from the search drawer → offer "← Results"
   const [nav, setNav] = useState({ canUndo: false, canRedo: false });
   const pan = useRef<{ sx: number; sy: number } | null>(null);
@@ -56,16 +60,33 @@ export function TreeView({ graph, pos, width, height, cards }: {
   }, [focusBoard]);
   const backToResults = useCallback(() => { setOpenCard(null); cameFromDrawerRef.current = false; setCameFromDrawer(false); setDrawerOpen(true); }, []);
 
+  // open a card by id: render it from cache instantly, else fetch the static /cards/<id> JSON (cards are
+  // no longer all shipped to the page). wantCardRef guards a slow fetch landing after a newer open.
+  const openCardId = useCallback((id: string) => {
+    wantCardRef.current = id;
+    setOpenCard(id);
+    const cached = cardCache.current.get(id);
+    if (cached) { setCard(cached); return; }
+    setCard(null);
+    fetch(`/cards/${id}`)
+      .then((r) => (r.ok ? (r.json() as Promise<BakeCardVM>) : null))
+      .then((c) => { if (c) { cardCache.current.set(id, c); if (wantCardRef.current === id) setCard(c); } })
+      .catch(() => {});
+  }, []);
+
   // ----- view + navigation history (undo/redo) -----
   const tRef = useRef(t); useEffect(() => { tRef.current = t; }, [t]);
   const drawerOpenRef = useRef(drawerOpen); useEffect(() => { drawerOpenRef.current = drawerOpen; }, [drawerOpen]); // for the touch handler (its effect closure is stale)
+  // a CLOSED drawer is only translated off-screen, so without `inert` its search input + rows stay
+  // Tab-focusable behind the canvas. Toggle the DOM `inert` property directly (cross-React-version safe).
+  useEffect(() => { const el = drawerRef.current; if (el) (el as HTMLElement & { inert: boolean }).inert = !drawerOpen; }, [drawerOpen]);
   const hist = useRef<View[]>([]);
   const hi = useRef(-1);
   const syncNav = () => setNav({ canUndo: hi.current > 0, canRedo: hi.current < hist.current.length - 1 });
 
   const pushHist = useCallback((v: View) => {
     const h = hist.current.slice(0, hi.current + 1);
-    if (h.length && sameView(h[h.length - 1], v)) return; // ignore no-op moves
+    if (h.length && sameView(h[h.length - 1]!, v)) return; // ignore no-op moves (h.length guards the index)
     h.push(v);
     while (h.length > HIST_MAX) h.shift();
     hist.current = h; hi.current = h.length - 1; syncNav();
@@ -115,8 +136,8 @@ export function TreeView({ graph, pos, width, height, cards }: {
     setSmooth(false); setT(v); pushHist(v);
   };
 
-  const undo = useCallback(() => { if (hi.current <= 0) return; hi.current--; setSmooth(true); setT(hist.current[hi.current]); syncNav(); }, []);
-  const redo = useCallback(() => { if (hi.current >= hist.current.length - 1) return; hi.current++; setSmooth(true); setT(hist.current[hi.current]); syncNav(); }, []);
+  const undo = useCallback(() => { if (hi.current <= 0) return; hi.current--; setSmooth(true); setT(hist.current[hi.current]!); syncNav(); }, []);
+  const redo = useCallback(() => { if (hi.current >= hist.current.length - 1) return; hi.current++; setSmooth(true); setT(hist.current[hi.current]!); syncNav(); }, []);
 
   // pan continues even when the cursor leaves the board → listen on window; commit one history entry per drag
   useEffect(() => {
@@ -157,11 +178,11 @@ export function TreeView({ graph, pos, width, height, cards }: {
       if (drawerOpenRef.current) { setDrawerOpen(false); e.preventDefault(); return; } // tap the canvas to dismiss the recipe drawer
       if (e.touches.length === 1) {
         setSmooth(false); moved = false; pinch = null;
-        tpan = { sx: e.touches[0].clientX - tRef.current.ox, sy: e.touches[0].clientY - tRef.current.oy };
+        tpan = { sx: e.touches[0]!.clientX - tRef.current.ox, sy: e.touches[0]!.clientY - tRef.current.oy };
         e.preventDefault();
       } else if (e.touches.length === 2) {
         setSmooth(false); tpan = null;
-        const r = board.getBoundingClientRect(), a = e.touches[0], b = e.touches[1];
+        const r = board.getBoundingClientRect(), a = e.touches[0]!, b = e.touches[1]!;
         pinch = { d0: dist(a, b), s0: tRef.current.scale, mx: (a.clientX + b.clientX) / 2 - r.left, my: (a.clientY + b.clientY) / 2 - r.top, ox0: tRef.current.ox, oy0: tRef.current.oy };
         e.preventDefault();
       }
@@ -169,13 +190,13 @@ export function TreeView({ graph, pos, width, height, cards }: {
     const onMove = (e: TouchEvent) => {
       if (pinch && e.touches.length >= 2 && pinch.d0 > 0) {
         e.preventDefault();
-        const ns = clampS(pinch.s0 * (dist(e.touches[0], e.touches[1]) / pinch.d0)), k = ns / pinch.s0;
+        const ns = clampS(pinch.s0 * (dist(e.touches[0]!, e.touches[1]!) / pinch.d0)), k = ns / pinch.s0;
         setT({ scale: ns, ox: pinch.mx - k * (pinch.mx - pinch.ox0), oy: pinch.my - k * (pinch.my - pinch.oy0) });
       } else if (tpan && e.touches.length === 1) {
         e.preventDefault(); moved = true;
         // capture offsets as primitives — never deref tpan/the Touch inside the updater,
         // which React can replay after touchend has nulled tpan (intermittent crash).
-        const nox = e.touches[0].clientX - tpan.sx, noy = e.touches[0].clientY - tpan.sy;
+        const nox = e.touches[0]!.clientX - tpan.sx, noy = e.touches[0]!.clientY - tpan.sy;
         setT((p) => ({ ...p, ox: nox, oy: noy }));
       }
     };
@@ -204,6 +225,9 @@ export function TreeView({ graph, pos, width, height, cards }: {
   // read by e.code (physical position) so they're layout-proof, numpad-aware, and never stick when Shift
   // is released before the key. F frames the whole graph (Fit).
   const openCardRef = useRef(openCard); useEffect(() => { openCardRef.current = openCard; }, [openCard]);
+  // true once the CardModal is actually mounted (card loaded). While the loading scrim shows, CardModal's
+  // own Escape listener isn't there yet, so the canvas handler covers Escape until it takes over.
+  const cardReadyRef = useRef(false); useEffect(() => { cardReadyRef.current = !!(card && card.recipeId === openCard); }, [card, openCard]);
   const fitRef = useRef(fit); useEffect(() => { fitRef.current = fit; }, [fit]);
   useEffect(() => {
     const ACT: Record<string, string> = {
@@ -254,7 +278,7 @@ export function TreeView({ graph, pos, width, height, cards }: {
       const el = document.activeElement as HTMLElement | null;
       const tag = el?.tagName ?? "";
       if (el?.isContentEditable || tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return; // ONLY text entry blocks canvas keys — a focused button/link must not, else you'd have to click the canvas to pan again after Tab/?
-      if (openCardRef.current) { if (e.code === "Backspace") { e.preventDefault(); closeCard(); } return; } // card open: ⌫ closes it back to the tree (and refocuses the canvas); all else goes to the modal
+      if (openCardRef.current) { if (e.code === "Backspace" || (e.code === "Escape" && !cardReadyRef.current)) { e.preventDefault(); closeCard(); } return; } // card open: ⌫ closes it; Esc too while still loading (once mounted, CardModal owns Esc), else everything goes to the modal
       if (e.ctrlKey || e.metaKey || e.altKey) return;   // never hijack real OS/browser shortcuts (Ctrl+W, Cmd±, …)
       if (e.code === "KeyL") { e.preventDefault(); setLegendOpen((o) => !o); return; }                  // toggle legend
       if (e.key === "/") { e.preventDefault(); if (drawerOpenRef.current) closeDrawer(); else setDrawerOpen(true); return; } // toggle the recipe finder (open focuses its search, close refocuses the canvas); by character so it's layout-proof and never the "?" key
@@ -304,10 +328,11 @@ export function TreeView({ graph, pos, width, height, cards }: {
     goTo({ scale: prev.scale, ox: board.clientWidth / 2 - (p.x + p.w / 2) * prev.scale, oy: board.clientHeight / 2 - (p.y + p.h / 2) * prev.scale });
   }, [posMap, goTo]);
 
-  // stable so the memoized RecipeNodes don't re-render every pan/zoom frame
-  const openFromNode = useCallback((id: string) => { cameFromDrawerRef.current = false; setCameFromDrawer(false); setDrawerOpen(false); setFocus(id); setOpenCard(id); focusBoard(); }, [focusBoard]);
-  const pickFromDrawer = (id: string) => { cameFromDrawerRef.current = true; setCameFromDrawer(true); setDrawerOpen(false); centerOn(id); setOpenCard(id); focusBoard(); }; // remember the origin so closing the card (esc / ⌫ / click-away / ← Results) drops you back on your search
-  const navInCard = useCallback((id: string) => { if (cards[id]) { centerOn(id); setOpenCard(id); } }, [cards, centerOn]);
+  // stable so the memoized RecipeNodes don't re-render every pan/zoom frame. No focusBoard() here — the
+  // CardModal moves focus into itself on open (focusing the canvas behind it would defeat the trap).
+  const openFromNode = useCallback((id: string) => { cameFromDrawerRef.current = false; setCameFromDrawer(false); setDrawerOpen(false); setFocus(id); openCardId(id); }, [openCardId]);
+  const pickFromDrawer = (id: string) => { cameFromDrawerRef.current = true; setCameFromDrawer(true); setDrawerOpen(false); centerOn(id); openCardId(id); }; // remember the origin so closing the card (esc / ⌫ / click-away / ← Results) drops you back on your search
+  const navInCard = useCallback((id: string) => { centerOn(id); openCardId(id); }, [centerOn, openCardId]);
 
   // arm labels (A/B/C…) come straight from the bake-off note, so the node badge and the pill agree
   const arm = useMemo(() => {
@@ -349,11 +374,13 @@ export function TreeView({ graph, pos, width, height, cards }: {
 
       <div className="panhint">WASD / arrows move · +/− zoom · F fit · L legend · / find · ? shortcuts</div>
 
-      <div className={`drawer${drawerOpen ? " open" : ""}`} aria-hidden={!drawerOpen}>
+      <div className={`drawer${drawerOpen ? " open" : ""}`} ref={drawerRef} aria-hidden={!drawerOpen}>
         <TreeOutline graph={graph} focus={focus} open={drawerOpen} onPick={pickFromDrawer} onClose={closeDrawer} />
       </div>
 
-      {openCard && cards[openCard] && <CardModal key={openCard} card={cards[openCard]} onClose={closeCard} onNavigate={navInCard} onBack={cameFromDrawer ? backToResults : undefined} />}
+      {openCard && (card && card.recipeId === openCard
+        ? <CardModal key={openCard} card={card} onClose={closeCard} onNavigate={navInCard} onBack={cameFromDrawer ? backToResults : undefined} />
+        : <div className="cmodal" role="dialog" aria-modal="true" aria-label="Loading recipe" onMouseDown={closeCard}><div className="cmodal-loading">Loading…</div></div>)}
     </div>
   );
 }

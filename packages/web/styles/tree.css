@@ -66,9 +66,9 @@
 .dt{font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint)}
 .drawer.open .dt{visibility:hidden}/* the floating ✕ Recipes toggle sits over this spot when open */
 .drawer-inner .sbx{margin:0 2px}/* the shared SearchBox; nudge to line up with the rows below */
-.dct{font-family:var(--mono);font-size:9.5px;color:var(--faint);margin:9px 6px 6px}
+.dct{font-family:var(--mono);font-size:9.5px;color:var(--muted);margin:9px 6px 6px}
 .dlist{flex:1;overflow-y:auto;padding:0 2px;min-height:0}
-.dempty{font-family:var(--mono);font-size:11px;color:var(--faint);padding:16px 8px;text-align:center;line-height:1.6}
+.dempty{font-family:var(--mono);font-size:11px;color:var(--muted);padding:16px 8px;text-align:center;line-height:1.6}
 
 /* recipe rows inside the drawer */
 .tol-row{display:flex;align-items:center;gap:7px;padding:5px 8px;border-radius:8px;cursor:pointer;transition:background .12s}
@@ -79,7 +79,7 @@
 .tol-row.grp{margin-top:2px}
 .tol-row.grp .tol-nm{font-weight:600}
 .tol-row.on .tol-nm{color:var(--accent-deep)}
-.tol-ct{font-family:var(--mono);font-size:9.5px;color:var(--faint)}
+.tol-ct{font-family:var(--mono);font-size:9.5px;color:var(--muted)}
 .ind1{padding-left:18px}
 /* hover macro preview — position:fixed (set from the row's rect) so it escapes the drawer's scroll clip */
 .tol-pop{position:fixed;z-index:40;width:228px;background:var(--panel);border:1px solid var(--line2);border-radius:11px;box-shadow:0 12px 30px rgba(60,44,18,.18);padding:10px 13px;pointer-events:none}
@@ -99,28 +99,28 @@
 /* queue search: filters every lane/column live (shared SearchBox + matcher). "/" focuses it. */
 .qb-search{display:flex;align-items:center;gap:12px;margin-top:15px;flex-wrap:wrap}
 .qb-search .sbx{flex:1 1 300px;max-width:460px}
-.qb-ct{font-family:var(--mono);font-size:10px;color:var(--faint);display:flex;align-items:center;gap:7px;white-space:nowrap}
+.qb-ct{font-family:var(--mono);font-size:10px;color:var(--muted);display:flex;align-items:center;gap:7px;white-space:nowrap}
 .qb-key{font-family:var(--mono);font-size:9px;color:var(--muted);border:1px solid var(--line2);border-radius:5px;padding:1px 5px;background:var(--page);line-height:1.4}
-.qb-nomatch{font-family:var(--mono);font-size:12px;color:var(--faint);padding:34px 4px;text-align:center;line-height:1.7}
+.qb-nomatch{font-family:var(--mono);font-size:12px;color:var(--muted);padding:34px 4px;text-align:center;line-height:1.7}
 .qb-cols.qf{grid-template-columns:repeat(auto-fit,minmax(248px,1fr))}
 .qb-lane{margin-bottom:30px}
 .qb-lh{display:flex;align-items:baseline;gap:9px;margin:0 0 13px;padding-bottom:8px;border-bottom:1px solid var(--line)}
 .q-lt{font-family:var(--serif);font-size:18px;font-weight:600;color:var(--ink);margin:0}
-.q-lct{font-family:var(--mono);font-size:10px;color:var(--faint)}
+.q-lct{font-family:var(--mono);font-size:10px;color:var(--muted)}
 .q-lsub{font-family:var(--mono);font-size:10px;color:var(--muted);margin-left:auto}
 .qb-cols{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start}
 .qb-col{border:1px solid var(--line);border-radius:12px;background:var(--surface);padding:5px 7px 9px}
 .qb-col.nb{border-color:rgba(180,122,55,.28)}
 .q-gt{display:flex;align-items:center;gap:7px;font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);margin:5px 7px;padding-bottom:6px;border-bottom:1px solid var(--line)}
 .qb-col.nb .q-gt{color:var(--accent-deep);border-bottom-color:rgba(180,122,55,.26)}
-.q-gt .q-ct{color:var(--faint)}
+.q-gt .q-ct{color:var(--muted)}
 .q-row{display:flex;flex-direction:column;gap:2px;padding:7px 9px;border-radius:8px;cursor:pointer;border:1px solid transparent;color:inherit;transition:background .12s,border-color .12s}
 .q-row:hover{background:var(--page);border-color:var(--line2)}
 .q-nm{font-family:var(--serif);font-size:14px;font-weight:500;color:var(--ink);display:flex;align-items:center;gap:6px;line-height:1.2}
 .q-mac{font-family:var(--mono);font-size:10px;color:var(--muted)}
 .q-prod{font-family:var(--mono);font-size:8px;letter-spacing:.05em;text-transform:uppercase;color:var(--accent-deep);background:var(--accent-soft);border:1px solid rgba(180,122,55,.28);border-radius:4px;padding:0 4px;flex:none}
 .q-row .star{color:var(--gold);font-size:11px;line-height:1}
-.q-empty{font-family:var(--mono);font-size:10px;color:var(--faint);padding:8px 9px}
+.q-empty{font-family:var(--mono);font-size:10px;color:var(--muted);padding:8px 9px}
 /* mobile: stack the two columns so rows stay full-width + legible (less important to see them at once
    on a small screen than to read them) */
 @media(max-width:680px){

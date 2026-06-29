@@ -7,6 +7,7 @@ import { MacroLine } from "./shared/MacroLine";
 import { StateDot } from "./shared/StateDot";
 import { SearchBox } from "./shared/SearchBox";
 import { isRatioWarn } from "../lib/viewmodel/format";
+import { recipeState } from "../lib/viewmodel/state";
 import { matchesSearch } from "../lib/search";
 
 export function IndexTable({ rows }: { rows: RecipeSummary[] }) {
@@ -30,7 +31,7 @@ export function IndexTable({ rows }: { rows: RecipeSummary[] }) {
             <span className="idxnm">{r.name}</span>
             <span className="idxfam">{r.family}</span>
             <MacroLine cal={r.cal} protein={r.protein} calPerGramProtein={r.calPerGramProtein} servings={r.servings} unit={r.servingUnit} warn={isRatioWarn(r.calPerGramProtein, r.tags.includes("sub-recipe"))} />
-            <span className="idxst"><StateDot made={r.made} rating={r.rating} /></span>
+            <span className="idxst"><StateDot state={recipeState(r)} /></span>
           </Link>
         ))}
         {filtered.length === 0 && <div className="dempty">No recipes match “{q}”.</div>}

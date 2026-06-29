@@ -11,7 +11,7 @@ it("two side-by-side arms → a pair connector (two anchors, no spine, pill at t
     ["a", { x: 0, y: 0, w: 200, h: 100 }],
     ["b", { x: 400, y: 0, w: 200, h: 100 }],
   ]);
-  const [c] = buildConnectors([{ arms: ["a", "b"], note: note(2) } as any], pos);
+  const c = buildConnectors([{ arms: ["a", "b"], note: note(2) } as any], pos)[0]!;
   expect(c.anchors.length).toBe(2);
   expect(c.spine).toBeUndefined();
   // right edge of A (x=200) ↔ left edge of B (x=400) at mid-height; pill midway
@@ -25,7 +25,7 @@ it("three arms in a row → a comb connector (three anchors + a spine floating a
     ["b", { x: 300, y: 100, w: 200, h: 100 }],
     ["c", { x: 600, y: 100, w: 200, h: 100 }],
   ]);
-  const [c] = buildConnectors([{ arms: ["a", "b", "c"], note: note(3) } as any], pos);
+  const c = buildConnectors([{ arms: ["a", "b", "c"], note: note(3) } as any], pos)[0]!;
   expect(c.anchors.length).toBe(3);
   expect(c.spine).toBeDefined();
   expect(c.my).toBeLessThan(100);        // spine floats above the arm tops (y=100)

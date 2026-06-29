@@ -29,7 +29,7 @@ const PRODUCE: Array<{ key: string; re: RegExp }> = [
 
 function produceOf(n: TreeNodeVM): { key: string | null; rank: number } {
   const hay = (n.name + " " + n.tags.join(" ")).toLowerCase();
-  for (let i = 0; i < PRODUCE.length; i++) if (PRODUCE[i].re.test(hay)) return { key: PRODUCE[i].key, rank: i };
+  for (let i = 0; i < PRODUCE.length; i++) { const p = PRODUCE[i]; if (p && p.re.test(hay)) return { key: p.key, rank: i }; }
   return { key: null, rank: PRODUCE.length };
 }
 

@@ -382,7 +382,7 @@ export class RecipeService {
     const bySection: Record<string, Macros> = {};
     content.usages.forEach((usage, i) => {
       const line = snapshot.lines[i];
-      if (!line || line.status !== "ok" || !line.macros) return;
+      if (!line || line.status !== "ok") return; // union: an "ok" line is guaranteed to carry macros
       const section = sectionOfStep.get(usage.stepKey) ?? "Base";
       bySection[section] = addMacros(bySection[section] ?? ZERO_MACROS, line.macros);
     });

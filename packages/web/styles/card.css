@@ -9,7 +9,7 @@
 .htitle{font-family:var(--serif);font-size:38px;font-weight:600;letter-spacing:-.02em;line-height:1.02;margin:0}
 .htitle .q{color:var(--muted);font-weight:500;font-size:24px;font-style:italic}
 .hmeta{display:flex;align-items:center;gap:12px;margin-top:13px;flex-wrap:wrap}
-.hhash{font-family:var(--mono);font-size:11.5px;color:var(--faint)}
+.hhash{font-family:var(--mono);font-size:11.5px;color:var(--muted)}
 .status{display:inline-flex;align-items:center;gap:7px;font-family:var(--mono);font-size:11px;letter-spacing:.04em;color:var(--green);border:1px solid rgba(94,154,107,.35);background:rgba(94,154,107,.08);border-radius:6px;padding:3px 9px}
 .status .d{width:7px;height:7px;border-radius:50%;background:var(--green)}
 /* to-make: hollow ring, muted */
@@ -31,7 +31,7 @@
 .mc .k{font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);margin-top:7px}
 .mc.accent .v{color:var(--accent-deep)}
 .macrosub{font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:14px}
-.macrosub .w{color:var(--faint)}
+.macrosub .w{color:var(--muted)}
 
 /* body grid */
 .grid{display:grid;grid-template-columns:344px 1fr;gap:46px;margin-top:30px;align-items:start}
@@ -44,6 +44,8 @@
    the root; starting it below the bar sidesteps that entirely. dvh keeps it correct across rotation. */
 .cmodal{position:fixed;top:60px;left:0;right:0;bottom:0;z-index:60;background:rgba(36,29,19,.42);backdrop-filter:blur(3px);display:flex;align-items:flex-start;justify-content:center;padding:22px 20px;overflow:auto}
 .cmodal-panel{position:relative;width:min(1000px,100%);background:var(--surface);border:1px solid var(--line2);border-radius:18px;box-shadow:0 30px 80px rgba(36,29,19,.34);max-height:calc(100dvh - 104px);display:flex;flex-direction:column;overflow:hidden;animation:cmodal-in .16s ease}
+/* brief while a card's static JSON loads on first open (cached opens are instant) */
+.cmodal-loading{margin-top:16vh;align-self:center;font-family:var(--mono);font-size:12px;color:var(--muted);background:var(--surface);border:1px solid var(--line2);border-radius:14px;padding:16px 28px;box-shadow:0 20px 60px rgba(36,29,19,.28)}
 @keyframes cmodal-in{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
 /* fixed header bar pinned to the panel top: "open full page" on the left, close ✕ on the right.
    Always fully visible (panel starts below the site bar), so neither control can be blocked. */
@@ -75,7 +77,7 @@
 .ing:last-child{border-bottom:0}
 .ing .q{font-family:var(--mono);font-size:12px;color:var(--accent-deep);width:76px;flex:none;text-align:right}
 .ing .nm{color:var(--ink-soft);flex:1}
-.ing .g{font-family:var(--mono);font-size:11px;color:var(--faint);width:42px;flex:none;text-align:right}
+.ing .g{font-family:var(--mono);font-size:11px;color:var(--muted);width:42px;flex:none;text-align:right}
 
 /* composition table */
 .ctbl{margin-top:14px;font-size:12.5px}
@@ -94,14 +96,14 @@
 .lrow .ic{font-family:var(--mono);font-size:12px;color:var(--accent);width:13px;text-align:center;flex:none}
 .lrow .ic.c{color:var(--muted)}
 .lrow .nm{font-family:var(--serif);font-size:14px;font-weight:500;flex:1}
-.lrow .meta{font-family:var(--mono);font-size:10px;color:var(--faint)}
+.lrow .meta{font-family:var(--mono);font-size:10px;color:var(--muted)}
 
 /* tasting log */
 .log{padding:13px 14px;border:1px solid var(--line);border-radius:12px;background:var(--surface);margin-top:14px}
 .log .top{display:flex;align-items:center;gap:9px}
 .log .rate{font-family:var(--serif);font-size:14px;font-weight:600;color:var(--green)}
 .log .dot{width:8px;height:8px;border-radius:50%;background:var(--green)}
-.log .date{font-family:var(--mono);font-size:10.5px;color:var(--faint);margin-left:auto}
+.log .date{font-family:var(--mono);font-size:10.5px;color:var(--muted);margin-left:auto}
 .log .note{font-size:13px;line-height:1.55;color:var(--ink-soft);margin-top:9px}
 /* to-make log: hollow ring, amber */
 .log.plan .rate{color:var(--accent-deep)}
@@ -112,7 +114,7 @@
 .msub{font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);margin:0 0 12px}
 .comp{padding:11px 0;border-bottom:1px solid var(--line)}
 .comp .ct{font-family:var(--serif);font-size:16px;font-weight:500;margin-bottom:5px;display:flex;align-items:center;gap:9px}
-.comp .ck{font-family:var(--mono);font-size:10px;color:var(--faint)}
+.comp .ck{font-family:var(--mono);font-size:10px;color:var(--muted)}
 .comp .cx{font-size:14px;line-height:1.62;color:var(--ink-soft)}
 .step{display:flex;gap:15px;padding:13px 0;border-bottom:1px solid var(--line)}
 .step .n{font-family:var(--mono);font-size:13px;color:var(--accent);width:20px;flex:none;padding-top:2px}

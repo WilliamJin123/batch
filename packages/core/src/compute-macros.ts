@@ -41,7 +41,7 @@ export function computeMacros(
   for (const usage of content.usages) {
     const slot = slotByKey.get(usage.slotKey);
     const label = slot?.name ?? usage.slotKey;
-    const fail = (reason: string, extra: Partial<MacroLine> = {}): void => {
+    const fail = (reason: string, extra: { ingredientId?: string; ingredientName?: string } = {}): void => {
       lines.push({ slotKey: usage.slotKey, status: "unresolved", reason, ...extra });
       unresolved.push(`${label}: ${reason}`);
     };

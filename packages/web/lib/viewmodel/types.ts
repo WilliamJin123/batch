@@ -1,4 +1,4 @@
-import type { Rating, VersionStatus, FeedbackKind } from "@batch/core";
+import type { Rating, VersionStatus } from "@batch/core";
 
 export interface MacroVM { calories: number; protein: number; carbs: number; fat: number; fiber: number; }
 export interface RecipeSummary {
@@ -25,7 +25,11 @@ export interface BakeCardVM {
   lineage: Array<{ name: string; rel: "forked-from" | "composes" | "sibling"; recipeId?: string }>;
   method: Array<{ section: string; steps: Array<{ text: string; tempF?: number; minutes?: number; ingredients: IngredientRowVM[]; notes?: NoteVM[] }> }>;
   notes: NoteVM[]; // recipe-level "Watch-outs" panel: every pitfall + any unanchored technique/note
-  tastingLog: Array<{ kind: FeedbackKind; rating?: string; date: string; note?: string; component?: string }>;
+  // discriminated like core's FeedbackEntry — only a "made" entry can carry a rating
+  tastingLog: Array<
+    | { kind: "made"; rating?: Rating; date: string; note?: string; component?: string }
+    | { kind: "to-make"; date: string; note?: string; component?: string }
+  >;
 }
 export interface TreeNodeVM extends RecipeSummary { feedbackNote?: string; needsTuning: boolean; }
 export interface TreeEdgeVM { from: string; to: string; rel: "derives" | "composes"; }

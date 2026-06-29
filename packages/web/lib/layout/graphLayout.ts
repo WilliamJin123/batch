@@ -55,7 +55,7 @@ function layoutCluster(
     const present = bo.arms.filter((id) => ids.has(id));
     if (present.length < 2) continue;
     present.sort((u, v) => dg.node(u).x - dg.node(v).x);
-    for (let i = 1; i < present.length; i++) affinity.push([present[i - 1], present[i]]);
+    for (let i = 1; i < present.length; i++) affinity.push([present[i - 1]!, present[i]!]);
   }
   if (affinity.length) dg = build(affinity);
 
@@ -92,7 +92,7 @@ export function layoutGraph(g: Pick<TreeGraphVM, "nodes" | "edges"> & { bakeoffs
   const find = (x: string): string => { while (parent.get(x) !== x) { parent.set(x, parent.get(parent.get(x)!)!); x = parent.get(x)!; } return x; };
   const union = (a: string, b: string) => { const ra = find(a), rb = find(b); if (ra !== rb) parent.set(ra, rb); };
   for (const e of g.edges) if (ids.has(e.from) && ids.has(e.to)) union(e.from, e.to);
-  for (const bo of g.bakeoffs ?? []) { const present = bo.arms.filter((id) => ids.has(id)); for (let i = 1; i < present.length; i++) union(present[0], present[i]); }
+  for (const bo of g.bakeoffs ?? []) { const present = bo.arms.filter((id) => ids.has(id)); for (let i = 1; i < present.length; i++) union(present[0]!, present[i]!); }
 
   const clusters = new Map<string, TreeNodeVM[]>();
   for (const n of g.nodes) { const r = find(n.recipeId); (clusters.get(r) ?? clusters.set(r, []).get(r)!).push(n); }
@@ -131,7 +131,7 @@ export function layoutGraph(g: Pick<TreeGraphVM, "nodes" | "edges"> & { bakeoffs
 
   const out = new Map<string, Pos>();
   for (const o of packAt(best).origins) {
-    for (const [id, p] of boxes[o.i].pos) out.set(id, { ...p, x: p.x + o.x, y: p.y + o.y });
+    for (const [id, p] of boxes[o.i]!.pos) out.set(id, { ...p, x: p.x + o.x, y: p.y + o.y });
   }
   return out;
 }

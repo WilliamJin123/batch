@@ -63,7 +63,7 @@ export async function buildBakeCard(svc: RecipeService, recipeId: string): Promi
     const row: IngredientRowVM = { qtyNatural: qtyNat, qtyFull, grams, name: slot?.name ?? line?.ingredientName ?? u.slotKey };
     const g = groups.get(section) ?? { title: section, subRecipe: isSub, calories: 0, items: [] };
     g.subRecipe = g.subRecipe || isSub;
-    g.calories += line?.macros?.calories ?? 0;
+    g.calories += line?.status === "ok" ? line.macros.calories : 0;
     g.items.push(row);
     groups.set(section, g);
     // same row attaches to the step that uses it, so the method can show ingredients inline
@@ -88,7 +88,10 @@ export async function buildBakeCard(svc: RecipeService, recipeId: string): Promi
     lineage: await buildLineage(svc, version),
     method: buildMethod(content, stepUses, notesByStep),
     notes: notesPanel,
-    tastingLog: feedback.map((e) => ({ kind: e.kind, rating: e.kind === "made" ? e.rating : undefined, date: e.date.slice(0, 10), note: e.notes, component: e.componentKey })),
+    tastingLog: feedback.map((e) =>
+      e.kind === "made"
+        ? { kind: "made" as const, rating: e.rating, date: e.date.slice(0, 10), note: e.notes, component: e.componentKey }
+        : { kind: "to-make" as const, date: e.date.slice(0, 10), note: e.notes, component: e.componentKey }),
   };
 }
 

@@ -1,6 +1,9 @@
 :root{
   --page:#FBF7F0; --surface:#FFFDFA; --panel:#FFFFFF;
-  --ink:#241D13; --ink-soft:#463D2E; --muted:#8C8474; --faint:#B5AC9A;
+  /* --muted carries readable secondary text + data (≈6.3:1 on --page, AA for normal text); --faint is
+     for quiet labels/dividers/placeholders (≈3.5:1, AA for large/incidental). Data-bearing labels that
+     used --faint were reassigned to --muted so the numbers themselves clear AA. */
+  --ink:#241D13; --ink-soft:#463D2E; --muted:#635B49; --faint:#8C8474;
   --line:rgba(60,44,18,.10); --line2:rgba(60,44,18,.16);
   --accent:#B47A37; --accent-deep:#956120; --accent-soft:#F6EBD9;
   --green:#5E9A6B; --gold:#C79A3B; --warn:#9a5230; --exc:#C79A3B;

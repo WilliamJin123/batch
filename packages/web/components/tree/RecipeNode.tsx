@@ -2,19 +2,8 @@ import { memo } from "react";
 import type { TreeNodeVM } from "../../lib/viewmodel/types";
 import type { Pos } from "../../lib/layout/graphLayout";
 import { splitName, r0, r1, isRatioWarn } from "../../lib/viewmodel/format";
+import { recipeState, nodeStatus } from "../../lib/viewmodel/state";
 import { RatioDot } from "../shared/RatioDot";
-
-// One status per recipe, driving the border + the always-visible status line. Ordered best→plain.
-// Sub-recipes are components (never made/queued) so they carry no status.
-type Status = { cls: string; glyph: string; label: string };
-function statusOf(node: TreeNodeVM): Status | null {
-  if (node.kind === "sub-recipe") return null;
-  if (node.rating === "excellent") return { cls: "exc", glyph: "★", label: "excellent" };
-  if (node.made && node.rating === "bad") return { cls: "bad", glyph: "▲", label: "needs work" };
-  if (node.made) return { cls: "good", glyph: "●", label: node.rating ?? "good" };
-  if (node.queued) return { cls: "tomake", glyph: "○", label: "to make" };
-  return null; // untried and not queued (e.g. an idle base) — left plain
-}
 
 // Greedy word-wrap line count for a title at `cpl` chars/line (a word longer than the line breaks).
 function wrapLines(words: string[], cpl: number): number {
@@ -51,7 +40,7 @@ export const RecipeNode = memo(function RecipeNode({ node, pos, arm, selected, o
   const role = isSub ? "sub-recipe" : node.kind === "base" ? "base" : node.kind === "root" ? "root" : "variant";
   // max zoomed-out title size that still shows the whole title (content width ≈ card minus padding)
   const titleFit = fitTitlePx(title, isSub ? 158 : 174, isSub ? 17 : 26);
-  const status = statusOf(node);
+  const status = nodeStatus(recipeState(node), node.rating);
   const ratioHot = isRatioWarn(node.calPerGramProtein, isSub);
   const cls = ["node", node.kind === "sub-recipe" ? "sub" : "", node.kind === "base" ? "base" : "",
     status ? `s-${status.cls}` : "", selected ? "cur" : ""].filter(Boolean).join(" ");

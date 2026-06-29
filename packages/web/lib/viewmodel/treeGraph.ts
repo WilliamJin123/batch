@@ -15,7 +15,7 @@ const SPECIFIC_FAMILIES: Record<string, string> = {
 };
 export function familyOf(v: RecipeVersion): string {
   const specific = v.tags.find((x) => x in SPECIFIC_FAMILIES);   // recipe-tag order wins among specifics
-  if (specific) return SPECIFIC_FAMILIES[specific];
+  if (specific) return SPECIFIC_FAMILIES[specific]!; // `specific` was found via `in`, so the lookup is defined
   if (v.tags.includes("no-bake")) return "No-Bake";
   if (v.tags.includes("bars")) return "Protein Bars";
   if (v.tags.includes("cake")) return "Cakes";

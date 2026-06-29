@@ -74,7 +74,7 @@ describe("buildQueue", () => {
 
   it("tags each item with its no-bake flag and produce keyword", () => {
     const q = buildQueue([node({ recipeId: "c", name: "Carrot No-Bake", tags: ["bars", "no-bake"], queued: true })]);
-    const item = q.makeNext.noBake[0];
+    const item = q.makeNext.noBake[0]!;
     expect(item.noBake).toBe(true);
     expect(item.produce).toBe("carrot");
   });

@@ -108,16 +108,15 @@ export interface LibraryIngredient {
   usdaFdcId?: string;
 }
 
-/** One usage's contribution to a version's macros — or why it couldn't be counted. */
-export interface MacroLine {
-  slotKey: ComponentKey;
-  ingredientId?: string;
-  ingredientName?: string;
-  grams?: number;
-  macros?: Macros; // this usage's contribution
-  status: "ok" | "unresolved";
-  reason?: string; // present iff unresolved
-}
+/**
+ * One usage's contribution to a version's macros — or why it couldn't be counted. Discriminated on
+ * `status`: an `ok` line always carries its `grams` + `macros`; an `unresolved` line always carries a
+ * `reason` and never `macros`. (`ingredientId`/`ingredientName` stay best-effort on both — a sub-recipe
+ * `ok` line has no library ingredient id, and an unresolved line may not know the ingredient.)
+ */
+export type MacroLine =
+  | { status: "ok"; slotKey: ComponentKey; ingredientId?: string; ingredientName?: string; grams: number; macros: Macros }
+  | { status: "unresolved"; slotKey: ComponentKey; ingredientId?: string; ingredientName?: string; grams?: number; reason: string };
 
 /**
  * Computed nutrition frozen onto a version at commit (UC19). `basis` is

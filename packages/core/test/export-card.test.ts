@@ -61,8 +61,8 @@ describe("renderCard", () => {
   it("displays the canonical cook-unit · grams pair, derived from grams (not the entered unit)", () => {
     const m = macros();
     m.lines = [
-      { slotKey: "graham", ingredientId: "ing-g", grams: 57, status: "ok" },
-      { slotKey: "cc", ingredientId: "ing-cc", grams: 113, status: "ok" },
+      { slotKey: "graham", ingredientId: "ing-g", grams: 57, status: "ok", macros: { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 } },
+      { slotKey: "cc", ingredientId: "ing-cc", grams: 113, status: "ok", macros: { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 } },
     ];
     const unitInfo = new Map([
       ["ing-g", { densityGPerMl: 0.42, unitEquivalences: { sheet: 14 } }],
@@ -76,8 +76,8 @@ describe("renderCard", () => {
   it("falls back to grams alone when the ingredient has no derivable cook unit", () => {
     const m = macros();
     m.lines = [
-      { slotKey: "graham", ingredientId: "ing-g", grams: 57, status: "ok" },
-      { slotKey: "cc", ingredientId: "ing-cc", grams: 113, status: "ok" },
+      { slotKey: "graham", ingredientId: "ing-g", grams: 57, status: "ok", macros: { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 } },
+      { slotKey: "cc", ingredientId: "ing-cc", grams: 113, status: "ok", macros: { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 } },
     ];
     const unitInfo = new Map([["ing-g", {}], ["ing-cc", {}]]); // no density, no equivalences
     const md = renderCard({ name: "X", yield: { amount: 8, unit: "slices" } }, content(), m, unitInfo);

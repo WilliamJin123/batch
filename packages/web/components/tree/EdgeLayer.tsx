@@ -40,7 +40,7 @@ export const EdgeLayer = memo(function EdgeLayer({ edges, pos, connectors, width
               `M${c.spine.x1},${c.spine.y1} L${c.spine.x2},${c.spine.y1}`,                 // the spine
               ...c.anchors.map((a) => `M${a.x},${a.y} L${a.x},${c.spine!.y1}`),            // a drop to each arm
             ]
-          : [`M${c.anchors[0].x},${c.anchors[0].y} Q${c.mx},${c.anchors[0].y} ${c.mx},${c.my} Q${c.mx},${c.anchors[1].y} ${c.anchors[1].x},${c.anchors[1].y}`];
+          : [`M${c.anchors[0]!.x},${c.anchors[0]!.y} Q${c.mx},${c.anchors[0]!.y} ${c.mx},${c.my} Q${c.mx},${c.anchors[1]!.y} ${c.anchors[1]!.x},${c.anchors[1]!.y}`]; // non-spine branch = exactly 2 arms
         return (
           <g key={`bo-${i}`} className="boconn">
             {paths.map((d, j) => <path key={j} d={d} {...stroke} />)}

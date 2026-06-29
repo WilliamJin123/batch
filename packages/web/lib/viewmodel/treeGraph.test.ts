@@ -80,7 +80,7 @@ describe("buildTreeGraph", () => {
     expect(bo!.note.arms.map((a) => a.label).sort()).toEqual(["A", "B", "C"]);
     // the three differ in flour grams/serving → at least one differing-ingredient row, values aligned to arms
     expect(bo!.note.differingIngredients.length).toBeGreaterThan(0);
-    expect(bo!.note.differingIngredients[0].values.length).toBe(3);
+    expect(bo!.note.differingIngredients[0]!.values.length).toBe(3);
   });
   it("carries per-serving carbs and fat on each node (for the hover preview)", async () => {
     const svc = serviceFrom(await buildRepository(fixture as any));
