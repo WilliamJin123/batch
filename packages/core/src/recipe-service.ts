@@ -360,6 +360,18 @@ export class RecipeService {
     return { version };
   }
 
+  /**
+   * The set of library-ingredient ids a version uses, with any sub-recipes flattened in (so a
+   * cheesecake's crust ingredients count too). The substrate for ingredient-based queries
+   * (`list --with/--without`). Sub-recipe pins that can't resolve simply contribute nothing.
+   */
+  async ingredientIds(versionId: VersionId): Promise<Set<string>> {
+    const { content } = await this.flatten(versionId);
+    const ids = new Set<string>();
+    for (const sl of content.slots) if (sl.resolution.kind === "raw") ids.add(sl.resolution.libraryIngredientId);
+    return ids;
+  }
+
   /** Expand a composed recipe into one flat card (DM3-3) — derived, never stored. */
   async flatten(versionId: VersionId): Promise<{ content: RecipeContent; sources: FlattenSource[] }> {
     const v = await this.getVersion(versionId);

@@ -304,4 +304,91 @@ describe("commands", () => {
     expect(set.macrosPer100g.calories).toBe(143); // untouched fields survive the merge
     expect((await cmd.ingredientList(s))).toHaveLength(1); // upsert in place, not a duplicate
   });
+
+  it("ingredientSet stamps a substitution category in place", async () => {
+    const s = svc();
+    await cmd.ingredientAdd(s, { id: "ing-prot-van", name: "vanilla protein", macrosPer100g: { calories: 400, protein: 80, carbs: 5, fat: 3, fiber: 0 } });
+    const set = await cmd.ingredientSet(s, "vanilla protein", { category: "protein-powder" });
+    expect(set.category).toBe("protein-powder");
+    expect(set.macrosPer100g.protein).toBe(80); // category is macro-inert
+  });
+});
+
+describe("list ingredient filters (--with / --without / --allow-sub)", () => {
+  const M = { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 };
+  const raw = (key: string, ing: string) => ({ componentKey: key, name: key, resolution: { kind: "raw", libraryIngredientId: ing } as const });
+  const flat = (key: string, ing: string): RecipeContent => ({
+    steps: [{ componentKey: "s1", order: 1, instructionText: "mix" }],
+    slots: [raw("sl", ing)],
+    usages: [{ componentKey: "u1", stepKey: "s1", slotKey: "sl", quantityValue: 50, quantityUnit: "g" }],
+  });
+
+  // vanilla & chocolate protein are one substitution family; sugar/flour stand alone.
+  async function world() {
+    const s = svc();
+    await cmd.ingredientAdd(s, { id: "ing-prot-van", name: "vanilla protein", category: "protein-powder", macrosPer100g: M });
+    await cmd.ingredientAdd(s, { id: "ing-prot-choc", name: "chocolate protein", category: "protein-powder", macrosPer100g: M });
+    await cmd.ingredientAdd(s, { id: "ing-sugar", name: "sugar", macrosPer100g: M });
+    await cmd.ingredientAdd(s, { id: "ing-flour", name: "flour", macrosPer100g: M });
+    await cmd.create(s, { name: "Vanilla Bar", yield: { amount: 1, unit: "x" }, content: flat("a", "ing-prot-van") });
+    await cmd.create(s, { name: "Choc Bar", yield: { amount: 1, unit: "x" }, content: flat("b", "ing-prot-choc") });
+    await cmd.create(s, { name: "Plain", yield: { amount: 1, unit: "x" }, content: flat("c", "ing-sugar") });
+    // a composed recipe whose chocolate protein lives only inside a sub-recipe crust
+    const { version: crust } = await cmd.create(s, { name: "Choc Crust", yield: { amount: 1, unit: "batch" }, content: flat("k", "ing-prot-choc") });
+    await cmd.create(s, {
+      name: "Composed", yield: { amount: 8, unit: "slices" },
+      content: {
+        steps: [{ componentKey: "s1", order: 1, instructionText: "assemble" }],
+        slots: [raw("sl-sugar", "ing-sugar"), { componentKey: "sl-crust", name: "crust", resolution: { kind: "sub_recipe", subRecipeVersionId: crust.id } }],
+        usages: [
+          { componentKey: "u-sugar", stepKey: "s1", slotKey: "sl-sugar", quantityValue: 100, quantityUnit: "g" },
+          { componentKey: "u-crust", stepKey: "s1", slotKey: "sl-crust", quantityValue: 1, quantityUnit: "batch" },
+        ],
+      },
+    });
+    return s;
+  }
+  const names = (rows: cmd.ListRow[]) => rows.map((r) => r.name).sort();
+
+  it("--with keeps only recipes containing the ingredient, counting sub-recipe ingredients", async () => {
+    const s = await world();
+    // Composed gets in via its crust, which flattening splices in — proves the set is computed on flattened content
+    expect(names(await cmd.list(s, { with: ["ing-prot-choc"] }))).toEqual(["Choc Bar", "Choc Crust", "Composed"]);
+  });
+
+  it("--without literally excludes recipes using the ingredient (resolves by name too)", async () => {
+    const s = await world();
+    const rows = await cmd.list(s, { without: ["vanilla protein"] });
+    expect(names(rows)).not.toContain("Vanilla Bar");
+    expect(rows.every((r) => r.swappable === undefined)).toBe(true); // no --allow-sub → no swap annotations
+  });
+
+  it("--without --allow-sub keeps a swappable hit and flags what to swap out", async () => {
+    const s = await world();
+    const rows = await cmd.list(s, { without: ["ing-prot-van"], allowSub: true });
+    const van = rows.find((r) => r.name === "Vanilla Bar");
+    expect(van?.swappable).toEqual(["vanilla protein"]); // kept, because chocolate protein can stand in
+  });
+
+  it("--with --allow-sub accepts a same-family stand-in and names the in-recipe ingredient", async () => {
+    const s = await world();
+    const rows = await cmd.list(s, { with: ["ing-prot-choc"], allowSub: true });
+    expect(names(rows)).toEqual(["Choc Bar", "Choc Crust", "Composed", "Vanilla Bar"]);
+    expect(rows.find((r) => r.name === "Vanilla Bar")?.swappable).toEqual(["vanilla protein"]);
+    expect(rows.find((r) => r.name === "Choc Bar")?.swappable).toBeUndefined(); // exact match, nothing to swap
+    expect(names(rows)).not.toContain("Plain"); // no protein powder at all → no stand-in
+  });
+
+  it("a non-substitutable ingredient is excluded even under --allow-sub", async () => {
+    const s = await world();
+    // sugar has no category, so --without sugar can't be forgiven
+    const rows = await cmd.list(s, { without: ["ing-sugar"], allowSub: true });
+    expect(names(rows)).toEqual(["Choc Bar", "Choc Crust", "Vanilla Bar"]); // Plain + Composed (the sugar users) dropped
+    expect(rows.every((r) => r.swappable === undefined)).toBe(true); // nothing was swap-forgiven
+  });
+
+  it("an unknown ingredient ref fails fast", async () => {
+    const s = await world();
+    await expect(cmd.list(s, { with: ["ing-nonexistent"] })).rejects.toThrow();
+  });
 });

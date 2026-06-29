@@ -159,7 +159,15 @@ export async function run(argv: string[]): Promise<void> {
     .option("--tag <tag>", "only recipes carrying this tag")
     .option("--name <substr>", "only recipes whose name contains this substring (case-insensitive)")
     .option("--kind <kind>", "only recipes of this kind: root | base | variant | sub-recipe")
-    .action(async (opts) => out(await cmd.list(makeService(), { toMake: opts.toMake, tag: opts.tag, name: opts.name, kind: opts.kind })));
+    .option("--with <csv>", "only recipes that use ALL of these ingredients (id/name/alias)")
+    .option("--without <csv>", "exclude recipes that use ANY of these ingredients (id/name/alias)")
+    .option("--allow-sub", "with --with/--without: treat same-category ingredients as swappable (keep + flag the swap)")
+    .action(async (opts) => out(await cmd.list(makeService(), {
+      toMake: opts.toMake, tag: opts.tag, name: opts.name, kind: opts.kind,
+      with: opts.with ? csv(opts.with) : undefined,
+      without: opts.without ? csv(opts.without) : undefined,
+      allowSub: opts.allowSub,
+    })));
 
   program.command("tree")
     .description("list all versions with their derivation/history edges")
@@ -206,6 +214,7 @@ export async function run(argv: string[]): Promise<void> {
     .option("--alias <csv>", "comma-separated aliases (replaces the list)")
     .option("--brand <brand>")
     .option("--notes <text>")
+    .option("--category <cat>", "substitution family, e.g. protein-powder (groups swappable ingredients)")
     .option("--density <gPerMl>", "grams per ml", parseFloat)
     .option("--macro <k=v>", "set one per-100g macro, e.g. --macro protein=12 (repeatable)", collect, [])
     .option("--unit <k=v>", "set one unit-equivalence in grams, e.g. --unit each=50 (repeatable)", collect, [])
@@ -215,6 +224,7 @@ export async function run(argv: string[]): Promise<void> {
       if (opts.alias !== undefined) patch.aliases = csv(opts.alias);
       if (opts.brand !== undefined) patch.brand = opts.brand;
       if (opts.notes !== undefined) patch.notes = opts.notes;
+      if (opts.category !== undefined) patch.category = opts.category;
       if (opts.density !== undefined) patch.densityGPerMl = opts.density;
       if (opts.macro.length) patch.macrosPer100g = kvNumbers(opts.macro) as Partial<Macros>;
       if (opts.unit.length) patch.unitEquivalences = kvNumbers(opts.unit);

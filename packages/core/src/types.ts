@@ -98,6 +98,13 @@ export interface LibraryIngredient {
   name: string;
   aliases?: string[];
   brand?: string;
+  /**
+   * Substitution family (free-form, e.g. `"protein-powder"`, `"sweetener-zero"`, `"milk"`). Ingredients
+   * sharing a category are treated as plausibly interchangeable by `list --with/--without --allow-sub` —
+   * a *discovery* signal ("a swap is conceptually possible, check the recipe"), not a macro-equivalence
+   * guarantee. Optional and macro-inert.
+   */
+  category?: string;
   macrosPer100g: Macros;
   /** Volume→mass bridge: grams per millilitre. Converts any volume unit (D8). */
   densityGPerMl?: number;

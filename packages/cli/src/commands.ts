@@ -93,6 +93,7 @@ export interface IngredientInput {
   name: string;
   aliases?: string[];
   brand?: string;
+  category?: string;
   macrosPer100g: Macros;
   densityGPerMl?: number;
   unitEquivalences?: Record<string, number>;
@@ -108,7 +109,7 @@ export function ingredientAdd(svc: RecipeService, input: IngredientInput): Promi
 }
 
 export interface IngredientPatch {
-  name?: string; aliases?: string[]; brand?: string; notes?: string;
+  name?: string; aliases?: string[]; brand?: string; notes?: string; category?: string;
   densityGPerMl?: number;
   macrosPer100g?: Partial<Macros>;          // merged onto existing macros (set one field without resending all)
   unitEquivalences?: Record<string, number>; // merged onto existing (e.g. bump `each` 44→50, keep the rest)
@@ -129,6 +130,7 @@ export async function ingredientSet(
     ...(patch.aliases !== undefined ? { aliases: patch.aliases } : {}),
     ...(patch.brand !== undefined ? { brand: patch.brand } : {}),
     ...(patch.notes !== undefined ? { notes: patch.notes } : {}),
+    ...(patch.category !== undefined ? { category: patch.category } : {}),
     ...(patch.densityGPerMl !== undefined ? { densityGPerMl: patch.densityGPerMl } : {}),
     ...(patch.macrosPer100g ? { macrosPer100g: { ...cur.macrosPer100g, ...patch.macrosPer100g } } : {}),
     ...(patch.unitEquivalences
@@ -175,8 +177,19 @@ export interface ListRow {
   status: VersionStatus; tags: string[]; isVariant: boolean; kind: RecipeKind;
   kcalPerServing?: number; macroBasis?: "complete" | "partial";
   tried: boolean; queued: boolean; verdict?: Rating;
+  /** With `--allow-sub`: in-recipe ingredients you'd swap to satisfy the filter (else absent). */
+  swappable?: string[];
 }
-export interface ListOpts { toMake?: boolean; tag?: string; name?: string; kind?: RecipeKind }
+export interface ListOpts {
+  toMake?: boolean; tag?: string; name?: string; kind?: RecipeKind;
+  /** Keep only recipes using ALL of these (id/name/alias). */
+  with?: string[];
+  /** Drop recipes using ANY of these (id/name/alias). */
+  without?: string[];
+  /** Treat same-`category` ingredients as interchangeable: keep a recipe that misses a `--with`
+   *  (or hits a `--without`) when a same-family swap exists, and flag it in `swappable`. */
+  allowSub?: boolean;
+}
 export async function list(svc: RecipeService, opts: ListOpts = {}): Promise<ListRow[]> {
   const recipes = await svc.listRecipes();
   const summary = await svc.feedbackSummary();
@@ -202,7 +215,57 @@ export async function list(svc: RecipeService, opts: ListOpts = {}): Promise<Lis
     filtered = filtered.filter((row) => row.name.toLowerCase().includes(n));
   }
   if (opts.kind) filtered = filtered.filter((row) => row.kind === opts.kind);
+  filtered = await filterByIngredients(svc, filtered, opts);
   return filtered.sort((a, b) => a.name.localeCompare(b.name));
+}
+
+/**
+ * Apply `--with` / `--without` (and `--allow-sub`) to the rows. Refs resolve by id/name/alias (a bad
+ * ref throws — fail fast). Membership is tested against each head's flattened ingredient set, so a
+ * sub-recipe's ingredients count. With `--allow-sub`, two ingredients sharing a `category` are
+ * interchangeable: a missing `--with` (or a present `--without`) is forgiven when a same-family swap
+ * exists, and the in-recipe ingredient to swap is recorded in `row.swappable`.
+ */
+async function filterByIngredients(svc: RecipeService, rows: ListRow[], opts: ListOpts): Promise<ListRow[]> {
+  const withRefs = opts.with ?? [], withoutRefs = opts.without ?? [];
+  if (!withRefs.length && !withoutRefs.length) return rows;
+
+  const withIngs = await Promise.all(withRefs.map((r) => svc.getIngredientRef(r)));
+  const withoutIngs = await Promise.all(withoutRefs.map((r) => svc.getIngredientRef(r)));
+  const lib = await svc.listIngredients();
+  const byId = new Map(lib.map((i) => [i.id, i] as const));
+  const familyIds = (category: string) => lib.filter((i) => i.category === category).map((i) => i.id);
+  // a substitute exists in the library: same category, different id
+  const hasSibling = (ing: LibraryIngredient) =>
+    ing.category !== undefined && familyIds(ing.category).some((id) => id !== ing.id);
+
+  const idSets = new Map<string, Set<string>>(
+    await Promise.all(rows.map(async (row) => [row.headVersionId, await svc.ingredientIds(row.headVersionId)] as const)),
+  );
+
+  const out: ListRow[] = [];
+  for (const row of rows) {
+    const ids = idSets.get(row.headVersionId)!;
+    const swaps = new Set<string>();
+    let keep = true;
+
+    for (const ing of withIngs) {
+      if (ids.has(ing.id)) continue; // exact ingredient present
+      const sib = opts.allowSub && ing.category
+        ? familyIds(ing.category).find((id) => id !== ing.id && ids.has(id))
+        : undefined;
+      if (sib) { swaps.add(byId.get(sib)!.name); continue; } // a family sibling stands in
+      keep = false; break;
+    }
+    if (keep) for (const ing of withoutIngs) {
+      if (!ids.has(ing.id)) continue; // forbidden ingredient absent
+      if (opts.allowSub && hasSibling(ing)) { swaps.add(ing.name); continue; } // present but swappable out
+      keep = false; break;
+    }
+
+    if (keep) out.push(swaps.size ? { ...row, swappable: [...swaps].sort() } : row);
+  }
+  return out;
 }
 
 // ----- dump / import: regenerate declarative sources FROM the live store, and replay them back -----

@@ -38,7 +38,8 @@ function renderList(rows: any[]): string {
       const kind = r.kind ? r.kind.padEnd(7) : "";
       const kcal = r.kcalPerServing != null ? `${Math.round(r.kcalPerServing)} cal/srv` : "";
       const tags = (r.tags ?? []).length ? `[${r.tags.join(",")}]` : "";
-      const marks = [r.queued ? "☐ to-make" : "", r.tried ? `✓ ${r.verdict ?? "made"}` : ""].filter(Boolean).join(" ");
+      const swap = (r.swappable ?? []).length ? `↺ swap: ${r.swappable.join(", ")}` : "";
+      const marks = [r.queued ? "☐ to-make" : "", r.tried ? `✓ ${r.verdict ?? "made"}` : "", swap].filter(Boolean).join(" ");
       return `${String(r.name).padEnd(nameW)}  ${id}  ${kind}  ${kcal.padStart(10)}  ${tags} ${marks}`.trimEnd();
     })
     .join("\n");
