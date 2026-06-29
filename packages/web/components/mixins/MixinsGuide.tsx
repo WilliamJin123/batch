@@ -43,6 +43,7 @@ const CATEGORIES: Category[] = [
       { name: "Peanut butter / Biscoff", note: "Swirl on top or marble through. Adds fat but huge flavor; PB + chocolate is the classic." },
       { name: "Toffee bits", note: "Caramel crunch scattered through blondies and cookies." },
       { name: "Mini marshmallows", note: "S'mores bars — fold in late, they melt." },
+      { name: "Toasted marshmallow meringue", note: "The lean s'mores topping — your Marshmallow Meringue sub-recipe. Whip egg whites to stiff peaks with a little real sugar (Splenda to finish), swirl over a cooled base, and broil the peaks brown (no torch). Toasted-marshmallow flavor for almost no calories and zero fat, plus ~4g protein. Best fresh.", lean: true },
     ],
   },
   {

@@ -23,3 +23,9 @@ body{background:var(--page);color:var(--ink);font-family:var(--sans);-webkit-fon
 a{color:inherit;text-decoration:none}
 .tlink{color:var(--accent-deep);text-decoration:none;border-bottom:1px solid rgba(180,122,55,.35)}
 .tlink:hover{border-bottom-color:var(--accent)}
+/* respect reduced-motion: collapse the scene glide/tween, node morph, drawer slide, and pop-in
+   animations to near-instant for users who ask the OS to minimize motion. The JS momentum-pan tick in
+   TreeView is a separate, faster decay but still honors this via the same transitions it drives. */
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important;scroll-behavior:auto!important}
+}

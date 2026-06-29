@@ -1,10 +1,12 @@
+import type { Rating, VersionStatus, FeedbackKind } from "@batch/core";
+
 export interface MacroVM { calories: number; protein: number; carbs: number; fat: number; fiber: number; }
 export interface RecipeSummary {
   recipeId: string; versionId: string; name: string; tags: string[];
   kind: "base" | "variant" | "root" | "sub-recipe"; family: string;
   cal: number; protein: number; carbs: number; fat: number; wholeCal: number; wholeProtein: number; calPerGramProtein: number | null; servings: number; servingUnit: string;
-  made: boolean; rating?: "bad" | "okay" | "good" | "excellent"; queued: boolean;
-  status?: "draft" | "approved" | "rejected"; // a rejected (superseded) recipe is kept as a record but dropped from the queue
+  made: boolean; rating?: Rating; queued: boolean;
+  status?: VersionStatus; // a rejected (superseded) recipe is kept as a record but dropped from the queue
 }
 // qtyNatural = the cook unit alone (cups/spoons/scoops…), for the aligned Ingredients table where grams
 // sits in its own column. qtyFull = the always-both "<cook> · <grams> g" string for inline method chips,
@@ -15,7 +17,7 @@ export interface IngredientGroupVM { title: string; subRecipe: boolean; calories
 export interface BakeCardVM {
   recipeId: string; versionId: string; shortSha: string;
   name: string; description?: string; tags: string[];
-  made: boolean; rating?: "bad" | "okay" | "good" | "excellent"; queued: boolean;
+  made: boolean; rating?: Rating; queued: boolean;
   yield: { amount: number; unit: string };
   perServing: MacroVM; whole: MacroVM; calPerGramProtein: number | null; basis: "complete" | "partial";
   ingredientGroups: IngredientGroupVM[];
@@ -23,7 +25,7 @@ export interface BakeCardVM {
   lineage: Array<{ name: string; rel: "forked-from" | "composes" | "sibling"; recipeId?: string }>;
   method: Array<{ section: string; steps: Array<{ text: string; tempF?: number; minutes?: number; ingredients: IngredientRowVM[]; notes?: NoteVM[] }> }>;
   notes: NoteVM[]; // recipe-level "Watch-outs" panel: every pitfall + any unanchored technique/note
-  tastingLog: Array<{ kind: "made" | "to-make"; rating?: string; date: string; note?: string; component?: string }>;
+  tastingLog: Array<{ kind: FeedbackKind; rating?: string; date: string; note?: string; component?: string }>;
 }
 export interface TreeNodeVM extends RecipeSummary { feedbackNote?: string; needsTuning: boolean; }
 export interface TreeEdgeVM { from: string; to: string; rel: "derives" | "composes"; }

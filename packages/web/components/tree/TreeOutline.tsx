@@ -1,11 +1,10 @@
 "use client";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import type { TreeGraphVM, TreeNodeVM } from "../../lib/viewmodel/types";
 import { StateDot } from "../shared/StateDot";
+import { SearchBox } from "../shared/SearchBox";
 import { matchesSearch } from "../../lib/search";
-
-const r0 = (x: number) => Math.round(x);
-const r1 = (x: number) => Math.round(x * 10) / 10;
+import { r0, r1 } from "../../lib/viewmodel/format";
 
 /** The "all recipes" drawer: a live filter over every recipe, grouped by family.
  *  Picking a row centres that node in the canvas and opens its card. */
@@ -19,19 +18,21 @@ export function TreeOutline({ graph, focus, open, onPick, onClose }: {
   // when the drawer opens (e.g. via the "/" hotkey) drop the cursor straight into search
   useEffect(() => { if (open) { const id = setTimeout(() => inputRef.current?.focus(), 60); return () => clearTimeout(id); } }, [open]);
   const searching = q.trim().length > 0;
-  // one shared, punctuation/accent-insensitive substring matcher (see lib/search) so the tree
-  // drawer and the recipes table behave identically — e.g. "smores" finds "Lean S'mores …".
-  const match = (n: TreeNodeVM) => matchesSearch([n.name, n.family, ...n.tags], q);
-
-  const families = new Map<string, TreeNodeVM[]>();
-  let total = 0;
-  for (const n of graph.nodes) {
-    if (!match(n)) continue;
-    total++;
-    (families.get(n.family) ?? families.set(n.family, []).get(n.family)!).push(n);
-  }
+  // Group + filter once per (nodes, query) instead of on every hover/collapse re-render. One shared,
+  // punctuation/accent-insensitive substring matcher (see lib/search) so the tree drawer and the
+  // recipes table behave identically — e.g. "smores" finds "Lean S'mores …".
+  const { families, total, flat } = useMemo(() => {
+    const match = (n: TreeNodeVM) => matchesSearch([n.name, n.family, ...n.tags], q);
+    const families = new Map<string, TreeNodeVM[]>();
+    let total = 0;
+    for (const n of graph.nodes) {
+      if (!match(n)) continue;
+      total++;
+      (families.get(n.family) ?? families.set(n.family, []).get(n.family)!).push(n);
+    }
+    return { families, total, flat: [...families.values()].flat() }; // flat[0] = top match for Enter-to-open
+  }, [graph.nodes, q]);
   const isOpen = (f: string) => searching || !closed[f];
-  const flat = [...families.values()].flat();   // top match for Enter-to-open
 
   return (
     <div className="drawer-inner">
@@ -39,14 +40,16 @@ export function TreeOutline({ graph, focus, open, onPick, onClose }: {
         <span className="dt">All recipes</span>
         {/* no ✕ here — the floating "✕ Recipes" toggle that sits over this row already closes it */}
       </div>
-      <input ref={inputRef} className="dq" value={q} onChange={(e) => setQ(e.target.value)}
-        onKeyDown={(e) => { if (e.key === "Enter" && flat[0]) { e.preventDefault(); onPick(flat[0].recipeId); } else if (e.key === "Escape" || e.key === "/") { e.preventDefault(); onClose(); } }}
-        placeholder="Search name, family, or tag…" aria-label="Search recipes" />
+      <SearchBox ref={inputRef} value={q} onChange={setQ}
+        placeholder="Search name, family, or tag…" ariaLabel="Search recipes"
+        onEnter={() => { if (flat[0]) onPick(flat[0].recipeId); }} onDismiss={onClose} />
       <div className="dct">{total} of {graph.nodes.length}</div>
       <div className="dlist">
         {[...families.entries()].map(([fam, nodes]) => (
           <div key={fam}>
-            <div className="tol-row grp" onClick={() => setClosed((c) => ({ ...c, [fam]: isOpen(fam) }))}>
+            <div className="tol-row grp" role="button" tabIndex={0} aria-expanded={isOpen(fam)}
+              onClick={() => setClosed((c) => ({ ...c, [fam]: isOpen(fam) }))}
+              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setClosed((c) => ({ ...c, [fam]: isOpen(fam) })); } }}>
               <span className="tol-tw">{isOpen(fam) ? "▾" : "▸"}</span>
               <span className="tol-nm">{fam}</span>
               <span className="tol-ct">{nodes.length}</span>
@@ -54,7 +57,7 @@ export function TreeOutline({ graph, focus, open, onPick, onClose }: {
             {isOpen(fam) && nodes.map((n) => (
               <div key={n.recipeId} className={`tol-row ind1${focus === n.recipeId ? " on" : ""}`} role="button" tabIndex={0}
                 onClick={() => onPick(n.recipeId)}
-                onKeyDown={(e) => { if (e.key === "Enter") onPick(n.recipeId); }}
+                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onPick(n.recipeId); } }}
                 onMouseEnter={(e) => { const r = e.currentTarget.getBoundingClientRect(); setHover({ n, top: r.top, left: r.right + 10 }); }}
                 onMouseLeave={() => setHover((h) => (h?.n.recipeId === n.recipeId ? null : h))}>
                 <span className="tol-tw" />

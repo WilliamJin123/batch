@@ -1,5 +1,6 @@
-import { render, screen } from "@testing-library/react";
-import { it, expect } from "vitest";
+import { render, screen, fireEvent } from "@testing-library/react";
+import { it, expect, vi } from "vitest";
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push: () => {} }) }));
 import { QueueBoard } from "./QueueBoard";
 import { buildQueue } from "../../lib/viewmodel/queue";
 import type { TreeNodeVM } from "../../lib/viewmodel/types";
@@ -35,4 +36,23 @@ it("lays out Make-next and Make-again lanes, no-bakes in their own column, rows 
   expect(screen.getByRole("link", { name: /Fudgy Protein Brownies/ })).toBeTruthy();
   expect(screen.queryByText(/Chewiest Protein Brownies/)).toBe(null);
   expect(screen.queryByText(/Cream-Cheese Frosting/)).toBe(null);
+});
+
+it("filters every lane live from the search box and shows an empty state for no matches", () => {
+  render(<QueueBoard queue={buildQueue(nodes)} />);
+  const box = screen.getByRole("searchbox");
+
+  // a query narrows to matching recipes across lanes and hides the rest
+  fireEvent.change(box, { target: { value: "nanaimo" } });
+  expect(screen.getByRole("link", { name: /High-Protein Nanaimo Bars/ })).toBeTruthy();
+  expect(screen.queryByText(/Carrot Cake Loaf/)).toBe(null);
+  expect(screen.queryByRole("link", { name: /Fudgy Protein Brownies/ })).toBe(null);
+
+  // a query that matches nothing shows the empty state
+  fireEvent.change(box, { target: { value: "zzzzz" } });
+  expect(screen.getByText(/No queued recipes match/i)).toBeTruthy();
+
+  // clearing restores the full queue
+  fireEvent.change(box, { target: { value: "" } });
+  expect(screen.getByRole("link", { name: /Carrot Cake Loaf/ })).toBeTruthy();
 });

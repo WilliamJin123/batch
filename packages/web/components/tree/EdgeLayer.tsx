@@ -1,3 +1,4 @@
+import { memo } from "react";
 import type { Pos } from "../../lib/layout/graphLayout";
 import type { Connector } from "../../lib/layout/bakeoffConnectors";
 
@@ -12,7 +13,9 @@ function side(a: Pos, b: Pos) {
   };
 }
 
-export function EdgeLayer({ edges, pos, connectors, width, height }: {
+// memo'd: the SVG layer only depends on the graph + layout (all stable), never on the pan/zoom
+// transform, so it shouldn't reconcile on every frame the scene moves.
+export const EdgeLayer = memo(function EdgeLayer({ edges, pos, connectors, width, height }: {
   edges: Edge[]; pos: Map<string, Pos>; connectors?: Connector[]; width: number; height: number;
 }) {
   return (
@@ -70,4 +73,4 @@ export function EdgeLayer({ edges, pos, connectors, width, height }: {
       })}
     </svg>
   );
-}
+});

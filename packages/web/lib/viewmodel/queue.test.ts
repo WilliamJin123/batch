@@ -78,4 +78,16 @@ describe("buildQueue", () => {
     expect(item.noBake).toBe(true);
     expect(item.produce).toBe("carrot");
   });
+
+  it("matches produce at a word boundary — 'Pineapple' is not the perishable 'apple'", () => {
+    const q = buildQueue([
+      node({ recipeId: "pine", name: "Pineapple Upside-Down Cake", tags: ["cake"], queued: true, calPerGramProtein: 30 }),
+      node({ recipeId: "apple", name: "Apple Fritter", tags: ["apple"], queued: true, calPerGramProtein: 12 }),
+    ]);
+    const items = q.makeNext.bake;
+    expect(items.find((i) => i.recipeId === "pine")?.produce).toBe(null);
+    expect(items.find((i) => i.recipeId === "apple")?.produce).toBe("apple");
+    // and the real apple recipe still sorts ahead of the (non-produce) pineapple one
+    expect(items.map((i) => i.recipeId)).toEqual(["apple", "pine"]);
+  });
 });

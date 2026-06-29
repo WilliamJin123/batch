@@ -1,6 +1,8 @@
+import { memo } from "react";
 import type { TreeNodeVM } from "../../lib/viewmodel/types";
 import type { Pos } from "../../lib/layout/graphLayout";
 import { splitName, r0, r1, isRatioWarn } from "../../lib/viewmodel/format";
+import { RatioDot } from "../shared/RatioDot";
 
 // One status per recipe, driving the border + the always-visible status line. Ordered best→plain.
 // Sub-recipes are components (never made/queued) so they carry no status.
@@ -38,7 +40,10 @@ function fitTitlePx(name: string, width: number, maxF: number): number {
   return 11;
 }
 
-export function RecipeNode({ node, pos, arm, selected, onOpen }: {
+// memo'd: in a graph of ~80 nodes this component runs the per-node title-fit measurement, and the
+// canvas re-renders on every pan/zoom frame. With stable props (pos from a memoized map, onOpen a
+// stable callback) only the node whose `selected` flips actually re-renders.
+export const RecipeNode = memo(function RecipeNode({ node, pos, arm, selected, onOpen }: {
   node: TreeNodeVM; pos: Pos; arm?: string; selected?: boolean; onOpen?: (recipeId: string) => void;
 }) {
   const { title, paren } = splitName(node.name);
@@ -69,10 +74,10 @@ export function RecipeNode({ node, pos, arm, selected, onOpen }: {
         <div className="nmeta">
           {r0(node.cal)} cal · {r1(node.protein)} P <span className="munit">/ serving</span><br />
           {node.servings > 1 && <>{r0(node.wholeCal).toLocaleString("en-US")} cal · {r0(node.wholeProtein)} P <span className="munit">total</span><br /></>}
-          {node.calPerGramProtein != null ? r1(node.calPerGramProtein) : "—"}{ratioHot && <span className="rdot" role="img" aria-label="lean-light: high cal per gram protein" title="high cal/g protein — lean-light for a protein recipe" />} cal/g · makes {node.servings} {node.servingUnit}
+          {node.calPerGramProtein != null ? r1(node.calPerGramProtein) : "—"}<RatioDot warn={ratioHot} /> cal/g · makes {node.servings} {node.servingUnit}
         </div>
         {node.feedbackNote && <div className={`nfb${node.needsTuning ? " bad" : ""}`}>{node.feedbackNote}</div>}
       </div></div>
     </div>
   );
-}
+});

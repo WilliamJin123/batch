@@ -4,6 +4,7 @@ export interface QueueItemVM {
   recipeId: string;
   name: string;
   family: string;
+  tags: string[];
   cal: number;
   calPerGramProtein: number | null;
   servings: number;
@@ -15,14 +16,20 @@ export interface QueueItemVM {
 export interface QueueLaneVM { bake: QueueItemVM[]; noBake: QueueItemVM[]; }
 export interface QueueVM { makeNext: QueueLaneVM; makeAgain: QueueLaneVM; }
 
-// Perishable produce to use up first, in the user's stated priority order — the index is the sort
-// rank (apple before carrot before lemon…). Matched as a substring of the recipe name + its tags.
-const PRODUCE = ["apple", "carrot", "lemon", "banana", "blueberr"];
-const PRODUCE_LABEL: Record<string, string> = { carrot: "carrot", lemon: "lemon", apple: "apple", banana: "banana", blueberr: "blueberry" };
+// Perishable produce to use up first, in the user's stated priority order — the array index is the
+// sort rank (apple before carrot before lemon…). Matched at a WORD BOUNDARY against the recipe name +
+// tags, so "Pineapple Upside-Down …" doesn't get yanked to the front as a perishable "apple".
+const PRODUCE: Array<{ key: string; re: RegExp }> = [
+  { key: "apple", re: /\bapple/ },
+  { key: "carrot", re: /\bcarrot/ },
+  { key: "lemon", re: /\blemon/ },
+  { key: "banana", re: /\bbanana/ },
+  { key: "blueberry", re: /\bblueberr/ },
+];
 
 function produceOf(n: TreeNodeVM): { key: string | null; rank: number } {
   const hay = (n.name + " " + n.tags.join(" ")).toLowerCase();
-  for (let i = 0; i < PRODUCE.length; i++) if (hay.includes(PRODUCE[i])) return { key: PRODUCE_LABEL[PRODUCE[i]], rank: i };
+  for (let i = 0; i < PRODUCE.length; i++) if (PRODUCE[i].re.test(hay)) return { key: PRODUCE[i].key, rank: i };
   return { key: null, rank: PRODUCE.length };
 }
 
@@ -30,7 +37,7 @@ const isNoBake = (n: TreeNodeVM) => n.tags.includes("no-bake");
 
 function toItem(n: TreeNodeVM): QueueItemVM {
   return {
-    recipeId: n.recipeId, name: n.name, family: n.family, cal: n.cal,
+    recipeId: n.recipeId, name: n.name, family: n.family, tags: n.tags, cal: n.cal,
     calPerGramProtein: n.calPerGramProtein, servings: n.servings, servingUnit: n.servingUnit,
     noBake: isNoBake(n), produce: produceOf(n).key, rating: n.rating,
   };

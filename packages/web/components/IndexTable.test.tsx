@@ -1,6 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { vi, it, expect } from "vitest";
 vi.mock("next/link", () => ({ default: ({ children, ...p }: any) => <a {...p}>{children}</a> }));
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push: () => {} }) }));
 import fixture from "../test/fixtures/db.fixture.json";
 import { StaticRecipeSource } from "../lib/source/StaticRecipeSource";
 import { IndexTable } from "./IndexTable";

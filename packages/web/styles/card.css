@@ -89,7 +89,7 @@
 .crow.per .cn,.crow.per .cv{color:var(--accent-deep)}
 
 /* lineage */
-.lrow{display:flex;align-items:center;gap:11px;padding:8px 9px;margin:0 -9px;border-radius:9px;cursor:pointer}
+.lrow{display:flex;align-items:center;gap:11px;padding:8px 9px;margin:0 -9px;border-radius:9px;cursor:pointer;transition:background .12s}
 .lrow:hover{background:var(--accent-soft)}
 .lrow .ic{font-family:var(--mono);font-size:12px;color:var(--accent);width:13px;text-align:center;flex:none}
 .lrow .ic.c{color:var(--muted)}

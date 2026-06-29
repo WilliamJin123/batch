@@ -38,6 +38,9 @@ async function readJson(file?: string): Promise<any> {
 /** Collect a repeatable option into an array (commander accumulator). */
 function collect(value: string, acc: string[]): string[] { acc.push(value); return acc; }
 
+/** Split a comma-separated option value into a trimmed, non-empty list. */
+const csv = (s: string): string[] => String(s).split(",").map((t) => t.trim()).filter(Boolean);
+
 /** Parse `key=value` pairs (value numeric) into a record, e.g. `each=50` → { each: 50 }. */
 function kvNumbers(pairs: string[]): Record<string, number> {
   const out: Record<string, number> = {};
@@ -86,7 +89,7 @@ export async function run(argv: string[]): Promise<void> {
     .option("--rationale <text>", "why these sources were blended into this champion")
     .action(async (opts) => {
       const input = await readJson(opts.file);
-      if (opts.parents) input.parents = String(opts.parents).split(",").map((p: string) => p.trim()).filter(Boolean);
+      if (opts.parents) input.parents = csv(opts.parents);
       if (opts.rationale) input.rationale = opts.rationale;
       out(await cmd.create(makeService(), input));
     });
@@ -124,7 +127,7 @@ export async function run(argv: string[]): Promise<void> {
       if (opts.name !== undefined) patch.name = opts.name;
       if (opts.description !== undefined) patch.description = opts.description;
       if (opts.status !== undefined) patch.status = opts.status;
-      if (opts.tags !== undefined) patch.tags = String(opts.tags).split(",").map((t) => t.trim()).filter(Boolean);
+      if (opts.tags !== undefined) patch.tags = csv(opts.tags);
       if (opts.yieldAmount !== undefined && opts.yieldUnit !== undefined) {
         patch.yield = { amount: opts.yieldAmount, unit: opts.yieldUnit };
       }
@@ -185,7 +188,7 @@ export async function run(argv: string[]): Promise<void> {
     .option("-m, --message <msg>", "commit message")
     .action(async (targetVersionId, opts) => out(await cmd.promote(makeService(), {
       targetVersionId, sourceVersionId: opts.from,
-      componentKeys: String(opts.component).split(",").map((c: string) => c.trim()).filter(Boolean),
+      componentKeys: csv(opts.component),
       message: opts.message,
     })));
 
@@ -209,7 +212,7 @@ export async function run(argv: string[]): Promise<void> {
     .action(async (ref, opts) => {
       const patch: cmd.IngredientPatch = {};
       if (opts.name !== undefined) patch.name = opts.name;
-      if (opts.alias !== undefined) patch.aliases = String(opts.alias).split(",").map((a) => a.trim()).filter(Boolean);
+      if (opts.alias !== undefined) patch.aliases = csv(opts.alias);
       if (opts.brand !== undefined) patch.brand = opts.brand;
       if (opts.notes !== undefined) patch.notes = opts.notes;
       if (opts.density !== undefined) patch.densityGPerMl = opts.density;

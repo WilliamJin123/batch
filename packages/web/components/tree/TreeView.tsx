@@ -1,5 +1,5 @@
 "use client";
-import { useRef, useState, useCallback, useEffect } from "react";
+import { useRef, useState, useCallback, useEffect, useMemo } from "react";
 import { EdgeLayer } from "./EdgeLayer";
 import { RecipeNode } from "./RecipeNode";
 import { TreeOutline } from "./TreeOutline";
@@ -24,7 +24,7 @@ const sameView = (a: View, b: View) => a.ox === b.ox && a.oy === b.oy && a.scale
 export function TreeView({ graph, pos, width, height, cards }: {
   graph: TreeGraphVM; pos: Record<string, Pos>; width: number; height: number; cards: Record<string, BakeCardVM>;
 }) {
-  const posMap = new Map(Object.entries(pos));
+  const posMap = useMemo(() => new Map(Object.entries(pos)), [pos]); // stable id→Pos map (the layout never moves)
   const boardRef = useRef<HTMLDivElement>(null);
   const [t, setT] = useState<View>({ ox: 24, oy: 8, scale: 1 });
   const [smooth, setSmooth] = useState(false);          // animate the scene transform (buttons / undo-redo)
@@ -304,16 +304,20 @@ export function TreeView({ graph, pos, width, height, cards }: {
     goTo({ scale: prev.scale, ox: board.clientWidth / 2 - (p.x + p.w / 2) * prev.scale, oy: board.clientHeight / 2 - (p.y + p.h / 2) * prev.scale });
   }, [posMap, goTo]);
 
-  const openFromNode = (id: string) => { cameFromDrawerRef.current = false; setCameFromDrawer(false); setDrawerOpen(false); setFocus(id); setOpenCard(id); focusBoard(); };
+  // stable so the memoized RecipeNodes don't re-render every pan/zoom frame
+  const openFromNode = useCallback((id: string) => { cameFromDrawerRef.current = false; setCameFromDrawer(false); setDrawerOpen(false); setFocus(id); setOpenCard(id); focusBoard(); }, [focusBoard]);
   const pickFromDrawer = (id: string) => { cameFromDrawerRef.current = true; setCameFromDrawer(true); setDrawerOpen(false); centerOn(id); setOpenCard(id); focusBoard(); }; // remember the origin so closing the card (esc / ⌫ / click-away / ← Results) drops you back on your search
-  const navInCard = (id: string) => { if (cards[id]) { centerOn(id); setOpenCard(id); } };
+  const navInCard = useCallback((id: string) => { if (cards[id]) { centerOn(id); setOpenCard(id); } }, [cards, centerOn]);
 
   // arm labels (A/B/C…) come straight from the bake-off note, so the node badge and the pill agree
-  const arm = new Map<string, string>();
-  for (const b of graph.bakeoffs) for (const a of b.note.arms) arm.set(a.recipeId, a.label);
+  const arm = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const b of graph.bakeoffs) for (const a of b.note.arms) m.set(a.recipeId, a.label);
+    return m;
+  }, [graph.bakeoffs]);
 
   // bake-off brackets (2-arm curve or N-arm comb) — geometry lives in buildConnectors
-  const connectors = buildConnectors(graph.bakeoffs, posMap);
+  const connectors = useMemo(() => buildConnectors(graph.bakeoffs, posMap), [graph.bakeoffs, posMap]);
 
   return (
     <div className="treepage">
@@ -349,7 +353,7 @@ export function TreeView({ graph, pos, width, height, cards }: {
         <TreeOutline graph={graph} focus={focus} open={drawerOpen} onPick={pickFromDrawer} onClose={closeDrawer} />
       </div>
 
-      {openCard && cards[openCard] && <CardModal card={cards[openCard]} onClose={closeCard} onNavigate={navInCard} onBack={cameFromDrawer ? backToResults : undefined} />}
+      {openCard && cards[openCard] && <CardModal key={openCard} card={cards[openCard]} onClose={closeCard} onNavigate={navInCard} onBack={cameFromDrawer ? backToResults : undefined} />}
     </div>
   );
 }

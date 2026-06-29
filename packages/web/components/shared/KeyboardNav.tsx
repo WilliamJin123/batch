@@ -24,6 +24,9 @@ export function KeyboardNav() {
       const typing = !!(el?.isContentEditable || tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT");
       if (e.ctrlKey || e.metaKey || e.altKey) return;                                    // leave OS/browser combos alone
       if (!typing && e.key === "?") { e.preventDefault(); set(!helpRef.current); return; } // ? opens AND closes (by character, so it's layout-proof)
+      // a recipe card modal is open (not our own help overlay) — let it own the keyboard so R/Q/T/M
+      // don't route the whole tree (and the card) out from under it.
+      if (!helpRef.current && document.querySelector('[role="dialog"][aria-modal="true"]')) return;
       if (helpRef.current) set(false);                                                   // ANY other key dismisses it — closing never needs Esc
       if (typing || e.shiftKey) return;                                                  // (Shift is "sprint" on the canvas)
       if (e.code === "KeyT") { e.preventDefault(); router.push("/"); return; }
