@@ -1,11 +1,18 @@
-/* The formula sheet: white bond paper, one ink, one grey rule, one highlighter. */
+/* Matcha: cream-green paper, moss ink, one matcha highlighter. Round, soft, a little sticker-ish. */
 :root{
-  --paper:#FFFFFF; --ink:#1A1A1A;
-  /* --ink-2 = secondary copy (≈8.6:1 on paper); --ink-3 = quiet labels and small figures (≈5.1:1, AA) */
-  --ink-2:#4A4A48; --ink-3:#6B6B68;
-  --rule:#C9C9C4; --rule-soft:#E6E6E2;
-  --hi:#FFE84D; --hi-soft:#FFF6B8;
-  --sheet: var(--font-sheet), 'Archivo', 'Helvetica Neue', Arial, sans-serif;
+  --paper:#F6FAF2; --paper-2:#E8F2DF; --ink:#2F4A2A;
+  /* --ink-2 = secondary copy (≈6:1 on paper); --ink-3 = quiet labels and small figures (≈4.6:1, AA) */
+  --ink-2:#4A6645; --ink-3:#5E7A58;
+  --rule:#C9DFBD; --rule-soft:#DFECD6;
+  /* --hi = the highlighter fill; --hi-soft = its tint; --hi-ink = text on a hi fill; --hi-text = accent headings (≈4.6:1) */
+  --hi:#6CC48A; --hi-soft:#D6F0DE; --hi-ink:#17321C; --hi-text:#27804A;
+  --warn:#D9534F;
+  --sheet: var(--font-body), 'Nunito', 'Helvetica Neue', Arial, sans-serif;
+  --display: var(--font-display), 'Baloo 2', var(--sheet);
+  --radius:14px; --radius-sm:8px;
+  /* floating surfaces (modal, drawer, popovers) lift with a soft shadow; nodes and pills sit with a hard sticker offset */
+  --shadow-soft:0 10px 28px rgba(47,74,42,.16), 0 1px 2px rgba(47,74,42,.08);
+  --shadow-hard:3px 3px 0 var(--ink);
   --rail-h:44px; --row:28px;
   color-scheme:light;
 }
@@ -14,14 +21,14 @@
    Set on html AND body — some iOS builds read it off the scrolling element, not just the root. */
 html,body{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 html,body{margin:0}
-body{background:var(--paper);color:var(--ink);font-family:var(--sheet);-webkit-font-smoothing:antialiased;font-size:14px;line-height:1.5;font-variant-numeric:tabular-nums lining-nums;accent-color:var(--ink);caret-color:var(--ink)}
-::selection{background:var(--hi);color:var(--ink)}
+body{background:var(--paper);color:var(--ink);font-family:var(--sheet);-webkit-font-smoothing:antialiased;font-size:14px;line-height:1.5;font-variant-numeric:tabular-nums lining-nums;accent-color:var(--hi);caret-color:var(--ink)}
+::selection{background:var(--hi-soft);color:var(--ink)}
 *{scrollbar-width:thin;scrollbar-color:var(--rule) transparent}
 h1,h2,h3{font-weight:700;margin:0}
-/* condensed cut for header rows and titles — one variable face, narrowed */
-.cd{font-stretch:82%;letter-spacing:-.005em}
-/* keyboard focus: a square ink ring offset by the rule gap. Only on keyboard focus — mouse clicks show nothing. */
-:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+/* the display cut for titles and header rows: Baloo 2, round and chubby, in the accent green */
+.cd{font-family:var(--display);font-weight:700;letter-spacing:0}
+/* keyboard focus: a rounded ink ring offset by the rule gap. Only on keyboard focus — mouse clicks show nothing. */
+:focus-visible{outline:2px solid var(--ink);outline-offset:2px;border-radius:var(--radius-sm)}
 :focus:not(:focus-visible){outline:none}
 a{color:inherit;text-decoration:none}
 .tlink{text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px}
@@ -30,9 +37,9 @@ input{font-family:inherit}
 /* the page body under the rail — one side gutter at every width, never a shorthand that zeroes it */
 .page{max-width:1280px;margin:0 auto;padding-inline:32px;padding-block:0 64px}
 @media(max-width:640px){.page{padding-inline:16px;padding-block:0 48px}}
-/* small ruled cell: the sheet's chip / tag / kbd */
-.cell{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--rule);padding:1px 6px;font-size:11px;line-height:1.5;color:var(--ink-2);white-space:nowrap;vertical-align:middle}
-.cell.hi{background:var(--hi);border-color:var(--hi);color:var(--ink)}
+/* small rounded cell: the sheet's chip / tag / kbd */
+.cell{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--rule);border-radius:999px;padding:1px 8px;font-size:11px;line-height:1.5;color:var(--ink-2);white-space:nowrap;vertical-align:middle;background:var(--paper)}
+.cell.hi{background:var(--hi);border-color:var(--hi);color:var(--hi-ink)}
 /* respect reduced-motion: collapse the scene glide/tween, node morph, drawer slide, and pop-in
    animations to near-instant for users who ask the OS to minimize motion. */
 @media (prefers-reduced-motion: reduce){

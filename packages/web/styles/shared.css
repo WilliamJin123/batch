@@ -2,27 +2,27 @@
 .mk{display:inline-block;vertical-align:-1px;flex:none;color:var(--ink)}
 .ic{display:inline-block;vertical-align:middle;flex:none}
 
-/* the lean line: a ratio past RATIO_WARN carries a highlighter dash beneath it (see format.ts) */
-.rdot{display:inline-block;width:.6em;height:3px;background:var(--hi);margin-left:3px;vertical-align:2px}
+/* the lean line: a ratio past RATIO_WARN carries a small warm dash beneath it (see format.ts) */
+.rdot{display:inline-block;width:.6em;height:3px;border-radius:2px;background:var(--warn);margin-left:3px;vertical-align:2px}
 
 /* SearchBox — the one recipe-search input shared by the tree drawer, recipes table, and queue.
-   A ruled cell; the clear button floats at its right edge. */
+   A rounded cell; the clear button floats at its right edge. */
 .sbx{position:relative;display:flex;align-items:center}
-.sbx-in{width:100%;font-size:13.5px;color:var(--ink);border:1px solid var(--rule);background:var(--paper);border-radius:0;padding:6px 30px 6px 9px;-webkit-appearance:none;appearance:none;line-height:1.5}
-.sbx-in:focus{outline:none;border-color:var(--ink)}
+.sbx-in{width:100%;font-size:13.5px;color:var(--ink);border:1.5px solid var(--rule);background:var(--paper);border-radius:999px;padding:6px 32px 6px 13px;-webkit-appearance:none;appearance:none;line-height:1.5;transition:border-color .12s,box-shadow .12s}
+.sbx-in:focus{outline:none;border-color:var(--hi);box-shadow:0 0 0 3px var(--hi-soft)}
 .sbx-in::placeholder{color:var(--ink-3)}
 .sbx-in::-webkit-search-cancel-button{-webkit-appearance:none;appearance:none}
-.sbx-clear{position:absolute;right:4px;top:50%;transform:translateY(-50%);width:24px;height:24px;display:flex;align-items:center;justify-content:center;padding:0;border:none;background:transparent;color:var(--ink-3);cursor:pointer;border-radius:0;transition:color .12s}
-.sbx-clear:hover{color:var(--ink)}
+.sbx-clear{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:24px;height:24px;display:flex;align-items:center;justify-content:center;padding:0;border:none;background:transparent;color:var(--ink-3);cursor:pointer;border-radius:999px;transition:color .12s,background .12s}
+.sbx-clear:hover{color:var(--ink);background:var(--rule-soft)}
 .sbx.wide{min-width:280px}
 
-/* ruled 2-column ledger used across the sheet: label left, figure right */
-.ledger{display:grid;grid-template-columns:1fr auto;column-gap:16px;border-top:1px solid var(--ink)}
+/* 2-column ledger used across the sheet: label left, figure right; the north-star row a soft band */
+.ledger{display:grid;grid-template-columns:1fr auto;column-gap:16px;border-top:1.5px solid var(--rule)}
 .ledger>*{padding:6px 0;border-bottom:1px solid var(--rule-soft);display:contents}
 .ledger .lk{color:var(--ink-2);padding:6px 0;border-bottom:1px solid var(--rule-soft)}
 .ledger .lv{text-align:right;padding:6px 0;border-bottom:1px solid var(--rule-soft);white-space:nowrap}
-.ledger .lv b{font-weight:600}
+.ledger .lv b{font-weight:700}
 .ledger .lu{color:var(--ink-3);font-size:12px;margin-left:4px}
-.ledger .hi .lk,.ledger .hi .lv{background:var(--hi);border-bottom-color:var(--hi)}
-.ledger .hi .lk{padding-left:6px}
-.ledger .hi .lv{padding-right:6px}
+.ledger .hi .lk,.ledger .hi .lv{background:var(--hi-soft);border-bottom-color:var(--hi-soft)}
+.ledger .hi .lk{padding-left:8px;border-radius:var(--radius-sm) 0 0 var(--radius-sm)}
+.ledger .hi .lv{padding-right:8px;border-radius:0 var(--radius-sm) var(--radius-sm) 0}

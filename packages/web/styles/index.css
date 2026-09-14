@@ -1,24 +1,24 @@
 /* recipes index: title + filter on one line, then the ledger */
 .idx{padding-top:28px}
 .idxhead{display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap}
-.idxhead h1{font-size:32px;font-weight:800;font-stretch:82%;letter-spacing:-.01em;line-height:1;margin:0}
+.idxhead h1{font-family:var(--display);font-size:34px;font-weight:800;letter-spacing:0;line-height:1;margin:0;color:var(--hi-text)}
 .idxhead .sbx{flex:0 1 360px}/* the shared SearchBox sits beside the title (see .sbx in shared.css) */
 .idxct{font-size:12px;color:var(--ink-3);margin:14px 0 6px}
-.idxlist{border-top:1px solid var(--ink)}
-.idxrow{display:grid;grid-template-columns:minmax(0,2.2fr) minmax(0,1.2fr) 56px 56px 72px 112px 16px;gap:14px;align-items:center;padding:8px 6px;border-bottom:1px solid var(--rule-soft);color:inherit;text-decoration:none;font-size:13.5px;transition:background .1s}
-.idxrow:hover{background:var(--rule-soft)}
-.idxrow.idxhr{font-size:12px;color:var(--ink-3);border-bottom:1px solid var(--rule);padding-block:6px}
+.idxlist{border-top:1.5px solid var(--rule)}
+.idxrow{display:grid;grid-template-columns:minmax(0,2.2fr) minmax(0,1.2fr) 56px 56px 72px 112px 16px;gap:14px;align-items:center;padding:8px 8px;border-bottom:1px solid var(--rule-soft);color:inherit;text-decoration:none;font-size:13.5px;border-radius:var(--radius-sm);transition:background .1s}
+.idxrow:hover{background:var(--paper-2)}
+.idxrow.idxhr{font-size:12px;color:var(--ink-3);border-bottom:1px solid var(--rule);padding-block:6px;border-radius:0}
 .idxrow.idxhr:hover{background:none}
 .idxrow .n{text-align:right;white-space:nowrap}
 .idxrow .rs{display:inline-block;width:12px;text-align:left}/* fixed slot for the lean-line dash so the column stays aligned */
 .idxrow .rs .rdot{margin-left:3px}
-.idxnm{font-weight:500;color:var(--ink);min-width:0}
+.idxnm{font-weight:700;color:var(--ink);min-width:0}
 .idxfam{font-size:12.5px;color:var(--ink-2);min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .idxmk{font-size:12.5px;color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .idxst{display:flex;justify-content:flex-end}
 @media(max-width:720px){
   .idx{padding-top:20px}
-  .idxhead h1{font-size:26px}
+  .idxhead h1{font-size:28px}
   .idxhead .sbx{flex-basis:100%}
   .idxrow{grid-template-columns:minmax(0,1fr) 48px 64px 16px;gap:10px}
   .idxfam,.idxp,.idxmk{display:none}

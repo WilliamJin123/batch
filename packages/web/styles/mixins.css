@@ -1,14 +1,14 @@
 /* mix-ins guide: a two-column ledger of fold-ins, grouped by category */
 .mx{padding:28px 0 0}
 .mx-head{margin:0 0 24px;max-width:66ch}
-.mx-title{font-size:32px;font-weight:800;font-stretch:82%;letter-spacing:-.01em;line-height:1;margin:0 0 10px}
+.mx-title{font-family:var(--display);font-size:34px;font-weight:800;letter-spacing:0;line-height:1;margin:0 0 10px;color:var(--hi-text)}
 .mx-sub{color:var(--ink-2);font-size:14px;line-height:1.6;margin:0}
 .mx-grid{columns:2;column-gap:48px}/* flows the categories so neither column leaves a gap */
 .mx-card{margin-bottom:28px;break-inside:avoid}
-.mx-ct{font-size:14px;font-weight:700;font-stretch:82%;margin:0;padding-bottom:5px;border-bottom:1px solid var(--ink);color:var(--ink)}
+.mx-ct{font-family:var(--display);font-size:16px;font-weight:700;margin:0;padding-bottom:5px;border-bottom:1.5px solid var(--rule);color:var(--hi-text)}
 .mx-list{list-style:none;margin:0;padding:0}
 .mx-item{display:grid;grid-template-columns:minmax(0,1fr);gap:2px;padding:8px 0;border-bottom:1px solid var(--rule-soft)}
-.mx-nm{font-weight:600;font-size:13.5px;color:var(--ink);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.mx-nm{font-weight:700;font-size:13.5px;color:var(--ink);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .mx-note{font-size:13px;color:var(--ink-2);line-height:1.55;max-width:60ch}
-.mx-lean{font-weight:600}
-@media(max-width:720px){.mx-grid{columns:1}.mx-title{font-size:26px}.mx{padding-top:20px}}
+.mx-lean{font-weight:700}
+@media(max-width:720px){.mx-grid{columns:1}.mx-title{font-size:28px}.mx{padding-top:20px}}

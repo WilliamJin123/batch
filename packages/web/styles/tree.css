@@ -1,34 +1,42 @@
 /* full-bleed graph: fills the viewport beneath the sticky rail */
 .treepage{position:fixed;top:var(--rail-h);left:0;right:0;bottom:0;overflow:hidden;background:var(--paper)}
 
-/* board = pannable + zoomable viewport. The backdrop is the sheet's ledger ruling: one faint
-   horizontal rule every 28px, fixed to the viewport (the scene pans over the paper). */
-.board{position:absolute;inset:0;overflow:hidden;cursor:grab;touch-action:none;background-image:linear-gradient(var(--rule-soft) 1px,transparent 1px);background-size:100% var(--row);background-position:0 -1px}
+/* board = pannable + zoomable viewport. The backdrop is a faint polka-dot grid, fixed to the
+   viewport (the scene pans over the paper). */
+.board{position:absolute;inset:0;overflow:hidden;cursor:grab;touch-action:none;background-image:radial-gradient(var(--rule) 1.1px,transparent 1.4px);background-size:18px 18px;background-position:9px 9px}
 .board.grabbing{cursor:grabbing}
 .board:focus{outline:none}/* focused programmatically to recapture WASD/arrows; no ring */
 .scene{position:absolute;top:0;left:0;transform-origin:0 0;will-change:transform}
 .scene > svg{position:absolute;inset:0;z-index:1;pointer-events:none}/* the edge layer only — marks inside nodes are inline svgs */
 
-/* edges: 1px ink for derivation, 1px dashed grey for composition. A wide transparent hit-path makes
-   the line grabbable (the svg itself stays pointer-events:none, so panning is unaffected); hovering
-   thickens the line to 2px ink — no glow, the sheet has no light source. */
+/* edges: ink for derivation, dashed quiet-ink for composition (colours live here — SVG presentation
+   attributes can't take var()). A wide transparent hit-path makes the line grabbable (the svg itself
+   stays pointer-events:none, so panning is unaffected); hovering thickens the line to 2.5px matcha. */
 .edge{pointer-events:none}
 .edge .ehit{pointer-events:stroke}
-.edge .evis{transition:stroke .12s ease,stroke-width .12s ease}
-.edge:hover .evis{stroke:var(--ink);stroke-width:2}
+.edge .evis{transition:stroke .12s ease,stroke-width .12s ease;stroke-linecap:round}
+.ederiv .evis{stroke:var(--ink)}
+.ecomp .evis{stroke:var(--ink-3)}
+.edge:hover .evis{stroke:var(--hi-text);stroke-width:2.5}
 
 /* control clusters pinned to the corners; the centre stays empty for the graph */
 .tctl{position:absolute;z-index:20;display:flex;align-items:center;gap:10px}
 .tctl.tl{top:12px;left:16px;max-width:calc(100% - 32px);z-index:26}/* above the drawer (z25) so its Recipes toggle stays clickable while the drawer is open */
 .tctl.tr{top:12px;right:16px}
-/* a group of controls shares its rules: adjacent cells overlap by 1px so the strip reads as one ruled row */
+/* a group of controls is one pill strip: adjacent cells overlap by 1.5px and only the ends are rounded */
 .tgrp{display:flex;align-items:center}
-.tgrp .fbtn+.fbtn{margin-left:-1px}
-.fbtn{font:inherit;font-size:12.5px;font-weight:500;line-height:1;color:var(--ink);border:1px solid var(--rule);background:var(--paper);border-radius:0;height:30px;padding:0 10px;cursor:pointer;display:flex;align-items:center;gap:6px;white-space:nowrap;position:relative;transition:border-color .12s,background .12s,color .12s}
+.tgrp .fbtn+.fbtn{margin-left:-1.5px}
+.tgrp .fbtn{border-radius:0}
+.tgrp .fbtn:first-child{border-radius:999px 0 0 999px;padding-left:12px}
+.tgrp .fbtn:last-child{border-radius:0 999px 999px 0;padding-right:12px}
+.tgrp .fbtn:first-child.ico{padding-left:2px}
+.tgrp .fbtn:last-child.ico{padding-right:2px}
+.tgrp .fbtn:only-child{border-radius:999px;padding-inline:12px}
+.fbtn{font:inherit;font-size:12.5px;font-weight:700;line-height:1;color:var(--ink);border:1.5px solid var(--rule);background:var(--paper);border-radius:999px;height:32px;padding:0 12px;cursor:pointer;display:flex;align-items:center;gap:6px;white-space:nowrap;position:relative;transition:border-color .12s,background .12s,color .12s}
 .fbtn:hover{border-color:var(--ink);z-index:1}
 .fbtn:active{background:var(--rule-soft)}
-.fbtn.on{background:var(--hi);border-color:var(--ink);z-index:1}
-.fbtn.ico{width:30px;padding:0;justify-content:center}
+.fbtn.on{background:var(--hi);border-color:var(--hi);color:var(--hi-ink);z-index:1}
+.fbtn.ico{width:32px;padding:0;justify-content:center}
 .fbtn:disabled{color:var(--ink-3);cursor:default;opacity:.55}
 .fbtn:disabled:hover{border-color:var(--rule);z-index:0}
 .fbtn:disabled:active{background:var(--paper)}
@@ -37,6 +45,7 @@
    +/- zoom is redundant on touch (pinch zooms), so those cells are hidden */
 @media(max-width:640px){
   .mobhide{display:none}
+  .tgrp .mobhide + .fbtn{border-radius:999px;padding-inline:12px}/* Fit stands alone once +/- are hidden */
   .tctl.tr{flex-wrap:wrap;justify-content:flex-end;max-width:calc(100% - 140px);row-gap:8px}
 }
 
@@ -44,88 +53,90 @@
 .legendbox{position:relative;display:flex}
 .legendpop{position:absolute;right:0;top:calc(100% + 8px);z-index:40;transform-origin:100% 0;animation:legend-in .16s ease-out}
 @keyframes legend-in{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
-.legend{display:grid;grid-template-columns:auto auto;column-gap:22px;row-gap:5px;font-size:12px;color:var(--ink-2);background:var(--paper);border:1px solid var(--ink);padding:10px 14px;white-space:nowrap}
+.legend{display:grid;grid-template-columns:auto auto;column-gap:22px;row-gap:6px;font-size:12px;color:var(--ink-2);background:var(--paper);border:1.5px solid var(--rule);border-radius:var(--radius);box-shadow:var(--shadow-soft);padding:12px 16px;white-space:nowrap}
 .legend span{display:flex;align-items:center;gap:8px}
-.lk{width:22px;height:0;border-top:1px solid var(--ink);flex:none}
-.lk.dash{border-top:1px dashed var(--ink-3)}
-.lk.dot{border-top:1px dotted var(--ink)}
+.lk{width:22px;height:0;border-top:1.5px solid var(--ink);flex:none}
+.lk.dash{border-top:1.5px dashed var(--ink-3)}
+.lk.dot{border-top:1.5px dotted var(--ink)}
 
-.panhint{position:absolute;right:16px;bottom:14px;z-index:20;font-size:11.5px;color:var(--ink-3);background:var(--paper);border:1px solid var(--rule);padding:4px 9px;pointer-events:none}
+.panhint{position:absolute;right:16px;bottom:14px;z-index:20;font-size:11.5px;color:var(--ink-3);background:var(--paper);border:1px solid var(--rule);border-radius:999px;padding:4px 11px;pointer-events:none}
 @media(max-width:760px){.panhint{display:none}}
 
 /* drawer = togglable "all recipes" index, slides over the canvas from the left as a second sheet */
-.drawer{position:absolute;top:0;left:0;bottom:0;width:320px;max-width:100vw;z-index:25;background:var(--paper);border-right:1px solid var(--ink);transform:translateX(-100%);transition:transform .2s ease-out}
-@media(max-width:640px){.drawer{width:100%;border-right:none}}/* phone: a full-width page-over sheet, never a partial overlay that half-covers the corner cells */
+.drawer{position:absolute;top:0;left:0;bottom:0;width:320px;max-width:100vw;z-index:25;background:var(--paper);border-right:1.5px solid var(--rule);box-shadow:var(--shadow-soft);transform:translateX(-100%);transition:transform .2s ease-out}
+@media(max-width:640px){.drawer{width:100%;border-right:none;box-shadow:none}}/* phone: a full-width page-over sheet, never a partial overlay that half-covers the corner cells */
 .drawer.open{transform:translateX(0)}
 .drawer-inner{display:flex;flex-direction:column;height:100%;padding:12px 16px 0}
 /* min-height reserves the row for the floating "Recipes" toggle (30px) that overlays the drawer's
    top-left when open, so the search input below it always clears the button instead of being covered. */
 .dhead{display:flex;align-items:center;justify-content:space-between;min-height:30px;margin-bottom:10px}
-.dt{font-size:13px;font-weight:600;color:var(--ink)}
+.dt{font-size:13px;font-weight:700;color:var(--ink)}
 .drawer.open .dt{visibility:hidden}/* the floating Recipes toggle sits over this spot when open */
-.dct{font-size:12px;color:var(--ink-3);padding:8px 0 4px;border-bottom:1px solid var(--ink)}
+.dct{font-size:12px;color:var(--ink-3);padding:8px 0 4px;border-bottom:1.5px solid var(--rule)}
 .dlist{flex:1;overflow-y:auto;min-height:0}
 .dempty{font-size:13px;color:var(--ink-2);padding:20px 0;line-height:1.6}
 
 /* recipe rows inside the drawer — ruled lines, the picked row a highlighter band */
-.tol-row{display:flex;align-items:center;gap:8px;min-height:30px;padding:3px 4px;border-bottom:1px solid var(--rule-soft);cursor:pointer;transition:background .1s}
-.tol-row:hover{background:var(--rule-soft)}
-.tol-row.on{background:var(--hi)}
+.tol-row{display:flex;align-items:center;gap:8px;min-height:30px;padding:3px 8px;border-bottom:1px solid var(--rule-soft);border-radius:var(--radius-sm);cursor:pointer;transition:background .1s}
+.tol-row:hover{background:var(--paper-2)}
+.tol-row.on{background:var(--hi);color:var(--hi-ink)}
+.tol-row.on .mk,.tol-row.on .tol-tw{color:var(--hi-ink)}
 .tol-tw{width:12px;flex:none;display:flex;align-items:center;justify-content:center;color:var(--ink-3)}
 .tol-tw .tw{display:flex;transition:transform .12s ease-out}
 .tol-tw .tw.open{transform:rotate(90deg)}
 .tol-nm{font-size:13.5px;flex:1;display:flex;align-items:center;gap:6px;min-width:0}
 .tol-nm .t{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .tol-row.grp{border-bottom-color:var(--rule)}
-.tol-row.grp .tol-nm{font-weight:600}
+.tol-row.grp .tol-nm{font-weight:700}
 .tol-ct{font-size:12px;color:var(--ink-3)}
-.ind1{padding-left:24px}
-.basel,.flag{font-size:10.5px;line-height:1;padding:2px 4px;border:1px solid var(--rule);color:var(--ink-2);flex:none}
-.flag{border-color:var(--ink);color:var(--ink)}
+.ind1{padding-left:28px}
+.basel,.flag{font-size:10.5px;line-height:1;padding:2px 6px;border:1px solid var(--rule);border-radius:999px;color:var(--ink-2);flex:none;background:var(--paper)}
+.flag{border-color:var(--hi);background:var(--hi-soft);color:var(--hi-ink)}
 /* hover macro preview — position:fixed (set from the row's rect) so it escapes the drawer's scroll clip */
-.tol-pop{position:fixed;z-index:40;width:240px;background:var(--paper);border:1px solid var(--ink);padding:10px 12px;pointer-events:none}
-.tol-pop b{font-size:13.5px;font-weight:600;color:var(--ink);display:block}
+.tol-pop{position:fixed;z-index:40;width:240px;background:var(--paper);border:1.5px solid var(--rule);border-radius:var(--radius);box-shadow:var(--shadow-soft);padding:12px 14px;pointer-events:none}
+.tol-pop b{font-size:13.5px;font-weight:700;color:var(--ink);display:block}
 .tol-pop .tp-mac{font-size:12.5px;color:var(--ink);margin-top:6px;padding-top:6px;border-top:1px solid var(--rule)}
 .tol-pop .tp-sub{font-size:12px;color:var(--ink-2);margin-top:3px}
-.railsum{display:flex;gap:14px;flex-wrap:wrap;padding:8px 0;border-top:1px solid var(--ink);font-size:12px;color:var(--ink-2)}
+.railsum{display:flex;gap:14px;flex-wrap:wrap;padding:8px 0;border-top:1.5px solid var(--rule);font-size:12px;color:var(--ink-2)}
 .railsum span{display:flex;align-items:center;gap:5px}
 
 /* cooking queue = a dedicated /queue page (top-bar tab + Q hotkey): a shift list. NOT a canvas
    overlay, so it never covers the tree controls — incl. undo/redo on mobile. */
 .qb{padding-top:28px}
 .qb-head{margin:0 0 24px}
-.qb-title{font-size:32px;font-weight:800;font-stretch:82%;letter-spacing:-.01em;line-height:1.05;color:var(--ink);margin:0 0 8px}
+.qb-title{font-family:var(--display);font-size:34px;font-weight:800;letter-spacing:0;line-height:1.05;color:var(--hi-text);margin:0 0 8px}
 .qb-sub{font-size:13.5px;line-height:1.55;color:var(--ink-2);max-width:66ch;margin:0}
 /* queue search: filters every lane/column live (shared SearchBox + matcher). "/" focuses it. */
 .qb-search{display:flex;align-items:center;gap:12px;margin-top:16px;flex-wrap:wrap}
 .qb-search .sbx{flex:1 1 300px;max-width:460px}
 .qb-ct{font-size:12px;color:var(--ink-3);display:flex;align-items:center;gap:8px;white-space:nowrap}
-.qb-key{font-size:11px;color:var(--ink-2);border:1px solid var(--rule);padding:1px 5px;line-height:1.4}
-.qb-nomatch{font-size:13.5px;color:var(--ink-2);padding:40px 0;text-align:center;line-height:1.7;border-top:1px solid var(--ink)}
+.qb-key{font-size:11px;color:var(--ink-2);border:1px solid var(--rule);border-bottom-width:2px;border-radius:6px;padding:1px 6px;line-height:1.4}
+.qb-nomatch{font-size:13.5px;color:var(--ink-2);padding:40px 0;text-align:center;line-height:1.7;border-top:1.5px solid var(--rule)}
 .qb-cols.qf{grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
 .qb-lane{margin-bottom:36px}
-.qb-lh{display:flex;align-items:baseline;gap:10px;margin:0 0 12px;padding-bottom:6px;border-bottom:1px solid var(--ink)}
-.q-lt{font-size:16px;font-weight:700;font-stretch:82%;color:var(--ink);margin:0}
+.qb-lh{display:flex;align-items:baseline;gap:10px;margin:0 0 12px;padding-bottom:6px;border-bottom:1.5px solid var(--rule)}
+.q-lt{font-family:var(--display);font-size:18px;font-weight:700;color:var(--hi-text);margin:0}
 .q-lct{font-size:12px;color:var(--ink-3)}
 .q-lsub{font-size:12px;color:var(--ink-3);margin-left:auto}
 .qb-cols{display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start}
 .qb-col{border-top:1px solid var(--rule)}
-.q-gt{display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:600;color:var(--ink);padding:7px 0;border-bottom:1px solid var(--rule)}
+.q-gt{display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:700;color:var(--ink);padding:7px 0;border-bottom:1px solid var(--rule)}
 .q-gt .q-ct{color:var(--ink-3);font-weight:400}
-.q-row{display:grid;grid-template-columns:1fr auto;column-gap:14px;align-items:center;padding:7px 6px;border-bottom:1px solid var(--rule-soft);color:inherit;text-decoration:none;transition:background .1s}
-.q-row:hover{background:var(--rule-soft)}
-.q-row.next{background:var(--hi)}/* the top of each Make-next column: what's up next, highlighted */
+.q-row{display:grid;grid-template-columns:1fr auto;column-gap:14px;align-items:center;padding:7px 8px;border-bottom:1px solid var(--rule-soft);border-radius:var(--radius-sm);color:inherit;text-decoration:none;transition:background .1s}
+.q-row:hover{background:var(--paper-2)}
+.q-row.next{background:var(--hi);color:var(--hi-ink)}/* the top of each Make-next column: what's up next, highlighted */
 .q-row.next:hover{background:var(--hi)}
-.q-nm{font-size:14px;font-weight:500;color:var(--ink);display:flex;align-items:center;gap:7px;line-height:1.25;min-width:0}
+.q-row.next .q-nm,.q-row.next .q-mac,.q-row.next .mk{color:var(--hi-ink)}
+.q-nm{font-size:14px;font-weight:600;color:var(--ink);display:flex;align-items:center;gap:7px;line-height:1.25;min-width:0}
 .q-nm .mk{margin-right:1px}
 .q-mac{font-size:12.5px;color:var(--ink-2);white-space:nowrap;text-align:right}
-.q-prod{font-size:10.5px;line-height:1;padding:2px 4px;border:1px solid var(--ink);color:var(--ink);flex:none}
+.q-prod{font-size:10.5px;line-height:1;padding:2px 6px;border:1px solid currentColor;border-radius:999px;flex:none}
 .q-empty{font-size:12.5px;color:var(--ink-3);padding:10px 6px}
 /* mobile: stack the two columns so rows stay full-width + legible */
 @media(max-width:680px){
   .qb-cols,.qb-cols.qf{grid-template-columns:1fr;gap:18px}
   .q-lsub{display:none}
-  .qb-title{font-size:26px}
+  .qb-title{font-size:28px}
   .qb{padding-top:20px}
   .qb-key{display:none}/* no "/" hotkey on touch */
   .qb-search .sbx{flex-basis:100%;max-width:none}
@@ -133,45 +144,49 @@
   .q-mac{text-align:left}
 }
 
-/* nodes = ledger plates. min-height pins the box to its laid-out height (--nh) and the flex column
-   vertically centres the content — so in far mode the title sits at the box's centre (where edges
-   anchor) and GLIDES there as the detail collapses; the box never changes size when modes switch. */
-.node{position:absolute;width:200px;min-height:calc(var(--nh,120)*1px);display:flex;flex-direction:column;justify-content:center;background:var(--paper);border:1px solid var(--rule);border-top:1px solid var(--ink);border-radius:0;padding:0;z-index:2;cursor:pointer;transition:border-color .12s}
-.node.base{border-top-width:2px}
-.node:hover{border-color:var(--ink)}
-.node:focus-visible{outline:2px solid var(--ink);outline-offset:2px;border-color:var(--ink)}
+/* nodes = stickers: a 2px ink outline, rounded, with a hard offset shadow (a base is filled with the
+   matcha tint; a sub-recipe is a dashed cut-out with no shadow). min-height pins the box to its laid-out
+   height (--nh) and the flex column vertically centres the content — so in far mode the title sits at
+   the box's centre (where edges anchor) and GLIDES there as the detail collapses; the box never
+   changes size when modes switch. */
+.node{position:absolute;width:200px;min-height:calc(var(--nh,120)*1px);display:flex;flex-direction:column;justify-content:center;background:var(--paper);border:2px solid var(--ink);border-radius:var(--radius);box-shadow:var(--shadow-hard);padding:0;z-index:2;cursor:pointer;transition:border-color .12s,box-shadow .12s,transform .12s}
+.node.base{background:var(--hi-soft)}
+.node:hover{transform:translate(-1px,-1px);box-shadow:4px 4px 0 var(--ink)}
+.node:focus-visible{outline:2px solid var(--hi-text);outline-offset:3px;border-radius:var(--radius)}
 /* header row: the name, plus a ruled cell for the role (base / sub-recipe / root) and the arm letter */
-.node .nhead{position:relative;display:flex;align-items:flex-start;justify-content:space-between;gap:8px;padding:7px 10px 6px;border-bottom:1px solid var(--rule);z-index:0}
-.node .nname{font-size:15px;font-weight:700;font-stretch:82%;line-height:1.15;color:var(--ink);min-width:0;flex:1;position:relative;transition:font-size .3s ease-out}
-.node .nname .q{color:var(--ink-2);font-weight:500;font-size:12px}
+.node .nhead{position:relative;display:flex;align-items:flex-start;justify-content:space-between;gap:8px;padding:8px 11px 7px;border-bottom:1.5px solid var(--rule);border-radius:calc(var(--radius) - 2px) calc(var(--radius) - 2px) 0 0;overflow:hidden;z-index:0}
+.node .nname{font-family:var(--display);font-size:15px;font-weight:700;line-height:1.15;color:var(--ink);min-width:0;flex:1;position:relative;transition:font-size .3s ease-out}
+.node .nname .q{font-family:var(--sheet);color:var(--ink-2);font-weight:600;font-size:12px}
 .node .ncells{display:flex;gap:3px;flex:none;position:relative}
-.node .ncell{font-size:10.5px;line-height:1;font-weight:600;padding:3px 4px;border:1px solid var(--rule);color:var(--ink-2);white-space:nowrap}
+.node .ncell{font-family:var(--sheet);font-size:10.5px;line-height:1;font-weight:700;padding:3px 6px;border:1px solid var(--rule);border-radius:999px;color:var(--ink-2);background:var(--paper);white-space:nowrap}
 .node .ncell.arm{border-color:var(--ink);color:var(--ink)}
-.node.base .ncell.role{border-color:var(--ink);color:var(--ink)}
+.node.base .ncell.role{border-color:var(--hi);background:var(--hi);color:var(--hi-ink)}
 /* figures line: three ledger cells — kcal · g protein · cal/g protein */
-.node .nfig{display:grid;grid-template-columns:auto auto minmax(0,1fr);font-size:12px;color:var(--ink);border-bottom:1px solid var(--rule-soft)}
-.node .nfig > span{padding:5px 6px;white-space:nowrap;border-right:1px solid var(--rule-soft);min-width:0;overflow:hidden;text-overflow:clip}
+.node .nfig{display:grid;grid-template-columns:auto auto minmax(0,1fr);font-size:12px;font-weight:600;color:var(--ink);border-bottom:1px solid var(--rule-soft)}
+.node .nfig > span{padding:5px 7px;white-space:nowrap;border-right:1px solid var(--rule-soft);min-width:0;overflow:hidden;text-overflow:clip}
 .node .nfig > span:last-child{border-right:none}
-.node .nfig .u{color:var(--ink-3)}
+.node .nfig .u{color:var(--ink-3);font-weight:400}
 .node .nmakes{font-size:11.5px;color:var(--ink-2);padding:4px 10px 0;line-height:1.4}
 .node .nmakes .tot{display:block}
 .node .nstat{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink);padding:4px 10px 7px}
-.node .nfb{font-size:11.5px;color:var(--ink-2);line-height:1.4;margin:0 10px 8px;padding-left:8px;border-left:1px solid var(--rule)}
-.node .nfb.bad{border-left-color:var(--ink);color:var(--ink)}
-.tune,.nobake{font-size:10px;font-weight:500;line-height:1;padding:2px 3px;border:1px solid var(--rule);color:var(--ink-2);margin-left:6px;vertical-align:2px;white-space:nowrap;font-stretch:100%}
-.tune{border-color:var(--ink);color:var(--ink)}
-/* the picked recipe: a highlighter stroke runs across the header row (the sheet's one authored
-   motion). ::before is the stroke — scaleX 0→1 from the left, 240ms ease-out, once, on open. */
+.node .nfb{font-size:11.5px;color:var(--ink-2);line-height:1.4;margin:0 10px 9px;padding-left:8px;border-left:2px solid var(--rule)}
+.node .nfb.bad{border-left-color:var(--warn);color:var(--ink)}
+.tune,.nobake{font-family:var(--sheet);font-size:10px;font-weight:700;line-height:1;padding:2px 6px;border:1px solid var(--rule);border-radius:999px;color:var(--ink-2);background:var(--paper);margin-left:6px;vertical-align:2px;white-space:nowrap}
+.tune{border-color:var(--warn);color:var(--warn)}
+/* the picked recipe: a matcha stroke runs across the header row (the sheet's one authored motion).
+   ::before is the stroke — scaleX 0→1 from the left, 240ms ease-out, once, on open. */
 .node .nhead::before{content:"";position:absolute;inset:0;background:var(--hi);transform:scaleX(0);transform-origin:0 50%;z-index:-1}
-.node.cur{border-color:var(--ink)}
+.node.cur{box-shadow:var(--shadow-hard),0 0 0 3px var(--hi-soft)}
 .node.cur .nhead::before{transform:none;animation:hi-stroke .24s ease-out}
+.node.cur .nname,.node.cur .nname .q{color:var(--hi-ink)}
 @keyframes hi-stroke{from{transform:scaleX(0)}to{transform:none}}
-/* status marks: an excellent bake carries a double top rule; needs-work a struck header */
-.node.s-exc{border-top:3px double var(--ink)}
-.node.s-tomake{border-style:dashed;border-top-style:solid}
-/* sub-recipes: narrower margin call-outs with a bracket rule down the left */
-.node.sub{width:184px;border-left:2px solid var(--ink-3)}
-.node.sub .nname{font-size:13.5px;font-weight:600}
+/* status: a to-make recipe is a dashed sticker (not peeled yet); the star marks carry the rest */
+.node.s-tomake{border-style:dashed}
+/* sub-recipes: narrower, thin quiet outline, no shadow (dashed stays reserved for to-make) */
+.node.sub{width:184px;border-width:1.5px;border-color:var(--ink-3);box-shadow:none}
+.node.sub:hover{box-shadow:none;transform:none;border-color:var(--hi-text)}
+.node.sub.cur{box-shadow:0 0 0 3px var(--hi-soft)}
+.node.sub .nname{font-size:13.5px;font-weight:700}
 
 /* the morph between detailed view and title-only: the detail grid collapses (1fr→0fr, lag-free)
    while it fades, and the title eases up to its big size. Because the node is a centred flex
@@ -184,6 +199,7 @@
    Type is COUNTER-SCALED against the canvas zoom (--z) so on-screen text stays a readable size:
    font-size = target/zoom, clamped by --tf (the largest size at which the whole title still fits). */
 .scene.far .node{text-align:center;padding:12px 10px;overflow:hidden}
+.scene.far .node .nhead{border-radius:0;overflow:visible}
 .scene.far .node .nhead{border-bottom:none;padding:0;flex-direction:column;align-items:center;gap:4px}
 .scene.far .node .ncells{order:-1;font-size:min(calc(7px / var(--z)),15px)}
 .scene.far .node .ncell{font-size:inherit}
@@ -194,13 +210,14 @@
 .scene.far .node.sub .nname{font-size:min(calc(9px / var(--z)),calc(var(--tf,18) * 1px))}
 .scene.far .node.cur .nhead::before{inset:-12px -10px}
 
-/* bake-off pill (centres on the bracket midpoint): a ruled highlighter cell */
-.bopill{position:absolute;z-index:5;font-size:11px;font-weight:600;line-height:1;color:var(--ink);background:var(--hi);border:1px solid var(--ink);padding:4px 7px;cursor:help;display:flex;align-items:center;gap:6px;white-space:nowrap}
-.bonote{display:none;position:absolute;left:50%;bottom:26px;transform:translateX(-50%);width:320px;background:var(--paper);border:1px solid var(--ink);padding:12px 14px;z-index:9;cursor:default;text-align:left;font-weight:400;line-height:1.5}
+/* bake-off pill (centres on the bracket midpoint): a matcha sticker pill */
+.bopill{position:absolute;z-index:5;font-size:11px;font-weight:800;line-height:1;color:var(--hi-ink);background:var(--hi);border:2px solid var(--ink);border-radius:999px;box-shadow:2px 2px 0 var(--ink);padding:5px 9px;cursor:help;display:flex;align-items:center;gap:6px;white-space:nowrap}
+.bonote{display:none;position:absolute;left:50%;bottom:30px;transform:translateX(-50%);width:320px;background:var(--paper);border:1.5px solid var(--rule);border-radius:var(--radius);box-shadow:var(--shadow-soft);padding:12px 14px;z-index:9;cursor:default;text-align:left;font-weight:400;line-height:1.5;color:var(--ink)}
 .bopill:hover .bonote,.bopill:focus-within .bonote{display:block}
-.bonote b{font-size:13px;font-weight:600;color:var(--ink);display:block}
+.bonote b{font-size:13px;font-weight:700;color:var(--ink);display:block}
 .bonote .bln{display:grid;grid-template-columns:auto 1fr;column-gap:8px;font-size:12.5px;color:var(--ink);margin-top:8px;align-items:baseline}
 .bonote .bln i{font-style:normal;font-size:12px;color:var(--ink-2);grid-column:2}
-.bonote .ba{display:inline-block;min-width:16px;height:16px;border:1px solid var(--ink);font-size:10.5px;font-weight:600;text-align:center;line-height:15px;padding:0 3px}
+.bonote .ba{display:inline-block;min-width:18px;height:18px;border:1.5px solid var(--ink);border-radius:999px;font-size:10.5px;font-weight:700;text-align:center;line-height:15px;padding:0 4px}
 .bonote .bvs{font-size:12.5px;color:var(--ink-2);margin-top:10px;padding-top:8px;border-top:1px solid var(--rule)}
-.bonote .bvs em{font-style:normal;font-weight:600;color:var(--ink)}
+.bonote .bvs em{font-style:normal;font-weight:700;color:var(--ink)}
+.node.cur:hover{box-shadow:4px 4px 0 var(--ink),0 0 0 3px var(--hi-soft)}

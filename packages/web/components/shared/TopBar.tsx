@@ -2,12 +2,12 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-/** Brand mark: a ruled sheet with one row highlighted — a schedule with what's next marked. */
+/** Brand mark: a rounded sheet with one row highlighted — a schedule with what's next marked. */
 const BatchMark = () => (
   <svg className="mark" viewBox="0 0 18 18" aria-hidden="true">
-    <rect x="1" y="1" width="16" height="16" fill="none" stroke="#1A1A1A" strokeWidth="1.5" />
-    <rect x="1.75" y="6.5" width="14.5" height="4.5" fill="#FFE84D" />
-    <path d="M1.75 6.5h14.5M1.75 11h14.5" stroke="#1A1A1A" strokeWidth="1" />
+    <rect x="1" y="1" width="16" height="16" rx="4" fill="none" style={{ stroke: "var(--ink)" }} strokeWidth="1.6" />
+    <rect x="1.8" y="6.5" width="14.4" height="4.5" style={{ fill: "var(--hi)" }} />
+    <path d="M1.8 6.5h14.4M1.8 11h14.4" style={{ stroke: "var(--ink)" }} strokeWidth="1" />
   </svg>
 );
 

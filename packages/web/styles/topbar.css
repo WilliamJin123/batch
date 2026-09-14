@@ -1,20 +1,19 @@
 /* the rail: one row of the sheet, ruled beneath */
-.topbar{display:flex;align-items:center;gap:28px;height:var(--rail-h);border-bottom:1px solid var(--ink);position:sticky;top:0;background:var(--paper);z-index:30;padding-inline:32px}
-.brand{display:flex;align-items:center;gap:9px}
+.topbar{display:flex;align-items:center;gap:28px;height:var(--rail-h);border-bottom:1.5px solid var(--rule);position:sticky;top:0;background:var(--paper);z-index:30;padding-inline:32px}
+.brand{display:flex;align-items:center;gap:9px;color:var(--hi-text)}
 .mark{width:18px;height:18px;flex:none}
-.brand b{font-stretch:78%;font-weight:800;font-size:19px;letter-spacing:-.01em;line-height:1}
-.nav{display:flex;gap:22px}
-.nav a{display:inline-flex;align-items:center;height:var(--rail-h);font-size:13.5px;font-weight:500;color:var(--ink-2);position:relative;transition:color .12s}
-.nav a:hover{color:var(--ink)}
-.nav a:focus-visible{outline-offset:-3px}
-.nav a.on{color:var(--ink);font-weight:600}
-.nav a.on::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;background:var(--ink)}
+.brand b{font-family:var(--display);font-weight:800;font-size:20px;letter-spacing:0;line-height:1}
+.nav{display:flex;gap:6px}
+.nav a{display:inline-flex;align-items:center;height:28px;padding:0 11px;border-radius:999px;font-size:13.5px;font-weight:600;color:var(--ink-2);position:relative;transition:color .12s,background .12s}
+.nav a:hover{color:var(--ink);background:var(--rule-soft)}
+.nav a:focus-visible{outline-offset:-2px}
+.nav a.on{color:var(--hi-ink);background:var(--hi-soft);font-weight:700}
 .spacer{flex:1}
-.branch{font-size:11px;color:var(--ink-2);border:1px solid var(--rule);padding:1px 7px;line-height:1.5;display:inline-flex;align-items:center;gap:6px}
-.branch::before{content:"";width:6px;height:6px;background:var(--ink)}
+.branch{font-size:11px;color:var(--ink-2);border:1px solid var(--rule);border-radius:999px;padding:1px 9px;line-height:1.5;display:inline-flex;align-items:center;gap:6px;background:var(--paper)}
+.branch::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--hi)}
 @media(max-width:640px){
-  .topbar{gap:16px;padding-inline:16px}
-  .nav{gap:14px}
-  .nav a{font-size:13px}
+  .topbar{gap:14px;padding-inline:16px}
+  .nav{gap:2px}
+  .nav a{font-size:13px;padding:0 9px}
   .branch{display:none}
 }
