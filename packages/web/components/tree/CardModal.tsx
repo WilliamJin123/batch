@@ -7,8 +7,9 @@ import { CompositionRollup } from "../card/CompositionRollup";
 import { Lineage } from "../card/Lineage";
 import { TastingLog } from "../card/TastingLog";
 import { Method } from "../card/Method";
+import { Icon } from "../shared/Icon";
 
-/** The bake card as an overlay viewer over the tree. Esc / click-away / ✕ dismisses
+/** The bake card as an overlay viewer over the tree. Esc / click-away / close dismisses
  *  back to the exact canvas state — no route change, the tree never unmounts. */
 export function CardModal({ card, onClose, onNavigate, onBack }: {
   card: BakeCardVM; onClose: () => void; onNavigate?: (recipeId: string) => void; onBack?: () => void;
@@ -44,9 +45,9 @@ export function CardModal({ card, onClose, onNavigate, onBack }: {
     <div className="cmodal" role="dialog" aria-modal="true" aria-label={card.name} onMouseDown={onClose}>
       <div className="cmodal-panel" ref={panelRef} tabIndex={-1} onMouseDown={(e) => e.stopPropagation()}>
         <div className="cmodal-bar">
-          {onBack && <button className="cmodal-back" onClick={onBack} aria-label="Back to results">← Results</button>}
-          <a className="cmodal-full" href={`/r/${card.recipeId}`} target="_blank" rel="noreferrer">open full page ↗</a>
-          <button className="cmodal-x" onClick={onClose} aria-label="Close recipe"><span className="esc">esc</span><span className="xg" aria-hidden="true">✕</span></button>
+          {onBack && <button className="cmodal-back" onClick={onBack} aria-label="Back to results"><Icon name="back" size={13} /> Results</button>}
+          <a className="cmodal-full" href={`/r/${card.recipeId}`} target="_blank" rel="noreferrer" aria-label="Open full page"><span>open full page</span> <Icon name="external" size={13} /></a>
+          <button className="cmodal-x" onClick={onClose} aria-label="Close recipe"><span className="esc">esc</span><Icon name="close" size={13} /></button>
         </div>
         <div className="cmodal-scroll">
           <RecipeHero card={card} />

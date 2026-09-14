@@ -1,4 +1,4 @@
-/** The lean-light flag: a small brick-red dot beside a recipe's cal/g-protein when the ratio drifts
+/** The lean-line flag: a short highlighter dash beside a recipe's cal/g-protein when the ratio drifts
  *  past RATIO_WARN (see format.ts) — the protein is getting incidental for the calories. One component
  *  so the glyph and its aria/title copy stay identical everywhere it appears. */
 export function RatioDot({ warn }: { warn?: boolean }) {

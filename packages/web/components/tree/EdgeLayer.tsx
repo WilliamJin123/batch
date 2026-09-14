@@ -23,18 +23,18 @@ export const EdgeLayer = memo(function EdgeLayer({ edges, pos, connectors, width
       <defs>
         {/* derivation: hollow triangle on the variant end (parent → variant) */}
         <marker id="m-tri" markerWidth="18" markerHeight="16" refX="15" refY="8" orient="auto" markerUnits="userSpaceOnUse">
-          <path d="M15,8 L3,2.5 L3,13.5 Z" fill="#FFFDFA" stroke="#956120" strokeWidth="1.3" />
+          <path d="M15,8 L3,2.5 L3,13.5 Z" fill="#FFFFFF" stroke="#1A1A1A" strokeWidth="1.2" />
         </marker>
         {/* composition: hollow diamond at the recipe that composes the sub-recipe */}
         <marker id="m-dia" markerWidth="20" markerHeight="14" refX="10" refY="7" orient="auto" markerUnits="userSpaceOnUse">
-          <path d="M3,7 L10,2.5 L17,7 L10,11.5 Z" fill="#FFFDFA" stroke="#8C8474" strokeWidth="1.2" />
+          <path d="M3,7 L10,2.5 L17,7 L10,11.5 Z" fill="#FFFFFF" stroke="#6B6B68" strokeWidth="1.2" />
         </marker>
       </defs>
       {/* bake-off brackets. Two arms: one curve between the facing edges, threaded through the pill at
           the midpoint. Three+ arms: a horizontal comb — a spine floating above the row with a drop to
           each arm — and the pill centred on the spine. Each arm gets a dot where its branch lands. */}
       {connectors?.map((c, i) => {
-        const stroke = { stroke: "#B47A37", strokeWidth: 1.6, strokeDasharray: "2 4", strokeLinecap: "round" as const, opacity: 0.85, fill: "none" };
+        const stroke = { stroke: "#1A1A1A", strokeWidth: 1, strokeDasharray: "1.5 3.5", strokeLinecap: "round" as const, fill: "none" };
         const paths = c.spine
           ? [
               `M${c.spine.x1},${c.spine.y1} L${c.spine.x2},${c.spine.y1}`,                 // the spine
@@ -44,7 +44,7 @@ export const EdgeLayer = memo(function EdgeLayer({ edges, pos, connectors, width
         return (
           <g key={`bo-${i}`} className="boconn">
             {paths.map((d, j) => <path key={j} d={d} {...stroke} />)}
-            {c.anchors.map((a, j) => <circle key={j} cx={a.x} cy={a.y} r={2.6} fill="#B47A37" />)}
+            {c.anchors.map((a, j) => <circle key={j} cx={a.x} cy={a.y} r={2.5} fill="#1A1A1A" />)}
           </g>
         );
       })}
@@ -59,7 +59,7 @@ export const EdgeLayer = memo(function EdgeLayer({ edges, pos, connectors, width
           return (
             <g key={i} className="edge ederiv">
               <path className="ehit" d={d} fill="none" stroke="transparent" strokeWidth={14} />
-              <path className="evis" d={d} fill="none" stroke="#B47A37" strokeWidth={1.5} opacity={0.9} markerEnd="url(#m-tri)" />
+              <path className="evis" d={d} fill="none" stroke="#1A1A1A" strokeWidth={1} markerEnd="url(#m-tri)" />
             </g>
           );
         }
@@ -67,7 +67,7 @@ export const EdgeLayer = memo(function EdgeLayer({ edges, pos, connectors, width
         return (
           <g key={i} className="edge ecomp">
             <path className="ehit" d={d} fill="none" stroke="transparent" strokeWidth={14} />
-            <path className="evis" d={d} fill="none" stroke="#8C8474" strokeWidth={1.4} strokeDasharray="5 4" opacity={0.9} markerStart="url(#m-dia)" />
+            <path className="evis" d={d} fill="none" stroke="#6B6B68" strokeWidth={1} strokeDasharray="4 3" markerStart="url(#m-dia)" />
           </g>
         );
       })}

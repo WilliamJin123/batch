@@ -5,3 +5,6 @@ node_modules
 *.tsbuildinfo
 # unignore lib/ (root .gitignore has a Python-artifact `lib/` pattern)
 !lib/
+# impeccable session-local artifacts (screens + live-question logs)
+/.impeccable/review/
+/.impeccable/questions/

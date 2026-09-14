@@ -1,0 +1,150 @@
+{
+  "title": "Choose the visual world for Batch",
+  "question": "The roll assigned Technique Plate. Keep it, take an alternate, or re-roll.",
+  "options": [
+    {
+      "id": "assigned",
+      "label": "Technique Plate",
+      "kicker": "THE ROLL",
+      "lineage": "Swiss instructional charts and pastry-school technique plates — International Typographic Style put to work",
+      "thesis": "Every recipe is a numbered plate on chart paper; the tree is the chart's construction grid made visible.",
+      "palette": ["#FFFFFF", "#111111", "#1D3BD6", "#EDEDE9"],
+      "materials": ["white poster stock", "black ink rules — hairline and heavy", "one spot ink (ultramarine)", "faint construction grid"],
+      "viewport": "Top rail: white, heavy black rule beneath, 'Batch' wordmark + a 2×2 grid mark with one blue cell (a base with one component changed); nav as numbered plates 01 Tree · 02 Recipes · 03 Queue · 04 Mix-ins. Below: full-bleed chart paper with a faint square grid. Recipes are plates — white rectangles, hairline black frame, heavy black head rule carrying the kicker (BASE / VARIANT / SUB-RECIPE) — name in heavy grotesk, macros in tabular numerals. Edges route orthogonally at 45/90°, interchange rings where a sub-recipe joins. Controls sit in the corners; the center is the graph. Bake card: title in heavy grotesk, a solid blue spec block with white numerals (kcal · protein · cal/g · makes), ingredients as a ruled table, steps as large gutter numerals, notes as marked marginalia (▲ pitfall ◆ technique ● note).",
+      "risk": "Reads cold if the grid is rigid and the type timid — the plate must earn poster scale (large numerals, heavy rules) or it collapses into a spreadsheet.",
+      "raised": [
+        { "from": "challenger-transit", "raise": "Edges bend only at 45° and 90° with interchange rings at every composition join; hovering a plate traces its whole route — ancestors and sub-recipes light, the rest dims." },
+        { "from": "challenger-cutting-bench", "raise": "State is a mark, not a hue: ○ to-make, ● tried, ★ excellent, ▲ over the lean line. Blue never means status — only structure and selection." },
+        { "from": "challenger-streetwear", "raise": "Every zone carries its literal label plate (INGREDIENTS · METHOD · MAKE NEXT); wayfinding is reading, never icon-guessing." },
+        { "from": "challenger-viewfinder", "raise": "Canvas controls pinned to the safe-area corners at every width; the center stays empty for the graph." },
+        { "from": "challenger-rain-garden", "raise": "One dominant field per phone viewport: the tree becomes an outline-first page on phones; the canvas is a step away, never an overlay covering controls." },
+        { "from": "challenger-hypercard", "raise": "Back retraces the exact trail: undo/redo stays, and the modal names the plate you came from." }
+      ],
+      "wireframe": { "cols": 12, "rows": 10, "regions": [
+        { "label": "rail · Batch · 01 02 03 04", "x": 0, "y": 0, "w": 12, "h": 1, "accent": true },
+        { "label": "index ☰", "x": 0, "y": 1, "w": 2, "h": 1 },
+        { "label": "↶ ↷ + − fit key", "x": 9, "y": 1, "w": 3, "h": 1 },
+        { "label": "BASE plate", "x": 0, "y": 5, "w": 2, "h": 2 },
+        { "label": "VARIANT plate", "x": 4, "y": 2, "w": 2, "h": 2 },
+        { "label": "VARIANT plate", "x": 4, "y": 5, "w": 2, "h": 2, "accent": true },
+        { "label": "VARIANT plate", "x": 4, "y": 8, "w": 2, "h": 2 },
+        { "label": "SUB-RECIPE", "x": 8, "y": 4, "w": 2, "h": 1 },
+        { "label": "SUB-RECIPE", "x": 8, "y": 6, "w": 2, "h": 1 },
+        { "label": "keys", "x": 8, "y": 9, "w": 4, "h": 1 }
+      ] }
+    },
+    {
+      "id": "model-pick",
+      "label": "Formula Sheet",
+      "kicker": "IMPECCABLE’S PICK",
+      "lineage": "the professional bakery's production formula sheet — baker's percentages on a ruled grid",
+      "thesis": "Every recipe is a production formula: quantities, ratios, and macros in one ruled grid you can run a shift from.",
+      "palette": ["#FFFFFF", "#1A1A1A", "#FFE84D", "#C9C9C4"],
+      "materials": ["office bond paper", "printed ledger rules", "highlighter yellow", "tabular numerals"],
+      "viewport": "The tree as a ruled production schedule: bases as bold header rows, variants indented beneath, sub-recipes as call-outs in the margin; macros and the ratio as the rightmost ledger columns; the queue as a shift list with highlighter on what's next.",
+      "risk": "Familiar — a spreadsheet-like data UI is where most runs in this category land; the graph loses its shape as a graph.",
+      "wireframe": { "cols": 12, "rows": 10, "regions": [
+        { "label": "rail", "x": 0, "y": 0, "w": 12, "h": 1 },
+        { "label": "BASE row", "x": 0, "y": 1, "w": 9, "h": 1, "accent": true },
+        { "label": "variant", "x": 1, "y": 2, "w": 8, "h": 1 },
+        { "label": "variant", "x": 1, "y": 3, "w": 8, "h": 1 },
+        { "label": "BASE row", "x": 0, "y": 4, "w": 9, "h": 1, "accent": true },
+        { "label": "variant", "x": 1, "y": 5, "w": 8, "h": 1 },
+        { "label": "macros · ratio", "x": 9, "y": 1, "w": 3, "h": 5 },
+        { "label": "sub-recipes margin", "x": 9, "y": 6, "w": 3, "h": 4 }
+      ] }
+    },
+    {
+      "id": "challenger-transit",
+      "label": "Midnight Transit Diagram",
+      "verdict": "competitive",
+      "lineage": "metropolitan rail map fired as a midnight-blue enamel mural",
+      "thesis": "Lineage as lines: each base is a line, variants are stations, sub-recipes are interchanges, and the chosen recipe's route burns brightest.",
+      "palette": ["#0B1A3A", "#F4F1EA", "#D7263D", "#2F6BFF", "#F2B705", "#2E9E5B"],
+      "materials": ["midnight-blue enamel", "porcelain-white ticks", "four line inks"],
+      "viewport": "The tree as a transit diagram on enamel: lines bending at 45/90°, station dots per recipe, interchange rings where sub-recipes join; a route search at top; the bake card slides in as a station board.",
+      "case": "Fused, it wins audience identification — a graph the builder reads daily — and loses clarity on the bake card and the 92-row index: dark enamel is the wrong reading ground under kitchen light with floury hands.",
+      "risk": "A dark surface read on a phone in a bright kitchen; four line colors invent a hierarchy the recipes don't have.",
+      "hero": "https://impeccable.style/worlds/cards/wayfinding-cartography-signage-midnight-transit-diagram-hero.webp",
+      "board": "https://impeccable.style/worlds/cards/wayfinding-cartography-signage-midnight-transit-diagram.webp"
+    },
+    {
+      "id": "challenger-cutting-bench",
+      "label": "Cutting Bench Select Rail",
+      "verdict": "declined",
+      "lineage": "film cutting bench flattened into a sheet",
+      "thesis": "Recipes as frames on a perforated rail; where you stopped is a folded flag.",
+      "palette": ["#000000", "#F26B1D", "#FFFFFF"],
+      "materials": ["film grain", "tape flags", "punched windows"],
+      "viewport": "A perforated rail crossing every page at a fixed height; the queue as frames strung between pins.",
+      "case": "Loses both axes: a baker does not identify with the cutting room, and one condensed size in orange-on-black cannot carry a 92-row macro table.",
+      "kept": "State is a mark, not a hue.",
+      "risk": "Novelty over legibility.",
+      "hero": "https://impeccable.style/worlds/cards/operate-a-cutting-bench-select-rail-hero.webp"
+    },
+    {
+      "id": "challenger-streetwear",
+      "label": "Industrial Quote Grammar",
+      "verdict": "declined",
+      "lineage": "industrial streetwear — quoted labels, zip ties, hazard stripes",
+      "thesis": "Every zone named in straight quotes; the hazard stripe runs under what matters.",
+      "palette": ["#FFFFFF", "#111111", "#FF6A00"],
+      "materials": ["white cotton", "black nylon", "hazard diagonals"],
+      "viewport": "\"TREE\" in giant caps, plates labeled \"BASE\" and \"VARIANT\", a stripe under the selected recipe.",
+      "case": "Loses both axes: the quotation gag adds noise to every number, and stripes fight the graph.",
+      "kept": "Every zone carries its literal label plate.",
+      "risk": "Costume, not a system, on a data surface."
+    },
+    {
+      "id": "challenger-rain-garden",
+      "label": "Gravity-Rain Garden",
+      "verdict": "declined",
+      "lineage": "surreal garden where rain falls by the color of its cloud",
+      "thesis": "Recipes as habitats with their own gravity.",
+      "palette": ["#3F5C4B", "#6FA8DC", "#C0392B", "#111111"],
+      "materials": ["dusk garden ground", "colored rains", "bent baselines"],
+      "viewport": "A garden field with recipes as habitats and rains as edges.",
+      "case": "Loses both axes: bent baselines destroy tabular numerals, and the metaphor carries none of lineage.",
+      "kept": "One dominant field per phone viewport.",
+      "risk": "Unreadable numbers."
+    },
+    {
+      "id": "challenger-viewfinder",
+      "label": "Viewfinder Bracket HUD",
+      "verdict": "declined",
+      "lineage": "camcorder viewfinder OSD",
+      "thesis": "The graph is the scene; readouts live in the corners.",
+      "palette": ["#000000", "#FFFFFF", "#FFB000"],
+      "materials": ["segmented OSD ink", "zebra stripes", "letterbox bars"],
+      "viewport": "Full-bleed graph with corner brackets and a tape-counter zoom bar.",
+      "case": "Loses both axes: a HUD reads as camera, not kitchen, and segmented caps cannot set a method.",
+      "kept": "Controls pinned to the corners; the center stays empty.",
+      "risk": "Gimmick on every page but the tree."
+    },
+    {
+      "id": "challenger-hypercard",
+      "label": "HyperCard Shoebox",
+      "verdict": "declined",
+      "lineage": "one-bit HyperCard stacks",
+      "thesis": "Every recipe is a card; buttons link cards; back retraces your trail.",
+      "palette": ["#FFFFFF", "#000000"],
+      "materials": ["one-bit dither", "pixel menus", "hand-drawn borders"],
+      "viewport": "A stack of fixed-proportion cards dissolving between each other.",
+      "case": "Loses both axes: one-bit stipple kills a macro table at phone size, and cards-in-a-stack hide the DAG.",
+      "kept": "Back retraces your exact trail.",
+      "risk": "Retro costume."
+    }
+  ],
+  "reroll": { "registers": ["safer", "bolder"] },
+  "buildPath": { "value": "code", "toggle": false },
+  "canon": true,
+  "canonCard": {
+    "label": "The recipe app",
+    "thesis": "What this category ships, executed impeccably: warm cream ground, serif titles, rounded cards, soft shadows.",
+    "palette": ["#FBF7F0", "#241D13", "#B47A37"],
+    "materials": ["cream paper", "rounded cards", "soft shadows", "serif display"],
+    "viewport": "A card grid with a serif title, warm chips, and a soft-cornered detail panel — essentially the incumbent, at full polish.",
+    "risk": "Indistinguishable from every recipe app — and from what Batch already looks like."
+  },
+  "steer": true
+}

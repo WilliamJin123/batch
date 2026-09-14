@@ -4,11 +4,11 @@ import { r0 } from "../../lib/viewmodel/format";
 export function IngredientList({ groups }: { groups: IngredientGroupVM[] }) {
   const count = groups.reduce((n, g) => n + g.items.length, 0);
   return (
-    <div className="block">
-      <div className="sh">Ingredients <span className="kc">{count} items</span></div>
+    <section className="block" aria-label="Ingredients">
+      <h2 className="sh">Ingredients <span className="kc">{count} items</span></h2>
       {groups.map((g) => (
         <div className="ggroup" key={g.title}>
-          <div className="gh"><span>{g.title} {g.subRecipe && <span className="sub">· sub-recipe</span>}</span> <span className="kc">{r0(g.calories)} cal</span></div>
+          <h3 className="gh"><span>{g.title} {g.subRecipe && <span className="cell">sub-recipe</span>}</span> <span className="kc">{r0(g.calories)} cal</span></h3>
           {g.items.map((it, i) => (
             <div className="ing" key={i}>
               <span className="q">{it.qtyNatural}</span>
@@ -18,6 +18,6 @@ export function IngredientList({ groups }: { groups: IngredientGroupVM[] }) {
           ))}
         </div>
       ))}
-    </div>
+    </section>
   );
 }

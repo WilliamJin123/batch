@@ -4,6 +4,7 @@ import { EdgeLayer } from "./EdgeLayer";
 import { RecipeNode } from "./RecipeNode";
 import { TreeOutline } from "./TreeOutline";
 import { Legend } from "./Legend";
+import { Icon } from "../shared/Icon";
 import { BakeoffPill } from "./BakeoffPill";
 import { CardModal } from "./CardModal";
 import type { BakeCardVM, TreeGraphVM } from "../../lib/viewmodel/types";
@@ -355,24 +356,26 @@ export function TreeView({ graph, pos, width, height }: {
       </div>
 
       <div className="tctl tl">
-        <button className={`fbtn${drawerOpen ? " on" : ""}`} onClick={() => { if (drawerOpen) closeDrawer(); else setDrawerOpen(true); }} aria-label={drawerOpen ? "Close recipes" : "Open recipes"}>{drawerOpen ? "✕ Recipes" : "☰ Recipes"}</button>
+        <button className={`fbtn${drawerOpen ? " on" : ""}`} onClick={() => { if (drawerOpen) closeDrawer(); else setDrawerOpen(true); }} aria-label={drawerOpen ? "Close recipes" : "Open recipes"}><Icon name={drawerOpen ? "close" : "list"} size={13} /> Recipes</button>
       </div>
 
       <div className="tctl tr">
-        <button className="fbtn ico" onClick={undo} disabled={!nav.canUndo} aria-label="Undo view (navigation)">↶</button>
-        <button className="fbtn ico" onClick={redo} disabled={!nav.canRedo} aria-label="Redo view (navigation)">↷</button>
-        <span className="tdiv" />
-        <button className="fbtn ico mobhide" onClick={() => zoom(BTN_STEP)} aria-label="Zoom in">+</button>
-        <button className="fbtn ico mobhide" onClick={() => zoom(1 / BTN_STEP)} aria-label="Zoom out">−</button>
-        <button className="fbtn" onClick={fit} aria-label="Fit graph">⤢ Fit</button>
-        <span className="tdiv" />
+        <div className="tgrp">
+          <button className="fbtn ico" onClick={undo} disabled={!nav.canUndo} aria-label="Undo view (navigation)"><Icon name="undo" size={14} /></button>
+          <button className="fbtn ico" onClick={redo} disabled={!nav.canRedo} aria-label="Redo view (navigation)"><Icon name="redo" size={14} /></button>
+        </div>
+        <div className="tgrp">
+          <button className="fbtn ico mobhide" onClick={() => zoom(BTN_STEP)} aria-label="Zoom in"><Icon name="plus" size={13} /></button>
+          <button className="fbtn ico mobhide" onClick={() => zoom(1 / BTN_STEP)} aria-label="Zoom out"><Icon name="minus" size={13} /></button>
+          <button className="fbtn" onClick={fit} aria-label="Fit graph"><Icon name="fit" size={13} /> Fit</button>
+        </div>
         <div className="legendbox">
-          <button className={`fbtn${legendOpen ? " on" : ""}`} onClick={() => setLegendOpen((o) => !o)} aria-label="Toggle legend" aria-expanded={legendOpen}>▦ Legend</button>
+          <button className={`fbtn${legendOpen ? " on" : ""}`} onClick={() => setLegendOpen((o) => !o)} aria-label="Toggle legend" aria-expanded={legendOpen}><Icon name="key" size={13} /> Legend</button>
           {legendOpen && <div className="legendpop"><Legend /></div>}
         </div>
       </div>
 
-      <div className="panhint">WASD / arrows move · +/− zoom · F fit · L legend · / find · ? shortcuts</div>
+      <div className="panhint">WASD or arrows move · + / − zoom · F fit · L legend · / find · ? shortcuts</div>
 
       <div className={`drawer${drawerOpen ? " open" : ""}`} ref={drawerRef} aria-hidden={!drawerOpen}>
         <TreeOutline graph={graph} focus={focus} open={drawerOpen} onPick={pickFromDrawer} onClose={closeDrawer} />

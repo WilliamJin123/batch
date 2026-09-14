@@ -6,20 +6,19 @@ import "../styles/tree.css";
 import "../styles/index.css";
 import "../styles/keys.css";
 import "../styles/mixins.css";
-import { Fraunces, Inter, JetBrains_Mono } from "next/font/google";
+import { Archivo } from "next/font/google";
 import { TopBar } from "../components/shared/TopBar";
 import { KeyboardNav } from "../components/shared/KeyboardNav";
 
-const fraunces = Fraunces({ subsets: ["latin"], variable: "--font-serif" });
-const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
-const mono = JetBrains_Mono({ subsets: ["latin"], variable: "--font-mono" });
+// one variable face carries the whole sheet: the width axis gives the condensed header cut
+const sheet = Archivo({ subsets: ["latin"], axes: ["wdth"], variable: "--font-sheet" });
 
 export const metadata = { title: "Batch", description: "git for recipes" };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${fraunces.variable} ${inter.variable} ${mono.variable}`}>
-      <body><TopBar /><KeyboardNav /><div style={{ maxWidth: 1280, margin: "0 auto", padding: "0 30px 60px" }}>{children}</div></body>
+    <html lang="en" className={sheet.variable}>
+      <body><TopBar /><KeyboardNav /><div className="page">{children}</div></body>
     </html>
   );
 }

@@ -4,6 +4,7 @@ import type { Pos } from "../../lib/layout/graphLayout";
 import { splitName, r0, r1, isRatioWarn } from "../../lib/viewmodel/format";
 import { recipeState, nodeStatus } from "../../lib/viewmodel/state";
 import { RatioDot } from "../shared/RatioDot";
+import { Mark, stateMark } from "../shared/Mark";
 
 // Greedy word-wrap line count for a title at `cpl` chars/line (a word longer than the line breaks).
 function wrapLines(words: string[], cpl: number): number {
@@ -37,12 +38,15 @@ export const RecipeNode = memo(function RecipeNode({ node, pos, arm, selected, o
 }) {
   const { title, paren } = splitName(node.name);
   const isSub = node.kind === "sub-recipe";
-  const role = isSub ? "sub-recipe" : node.kind === "base" ? "base" : node.kind === "root" ? "root" : "variant";
-  // max zoomed-out title size that still shows the whole title (content width ≈ card minus padding)
-  const titleFit = fitTitlePx(title, isSub ? 158 : 174, isSub ? 17 : 26);
-  const status = nodeStatus(recipeState(node), node.rating);
+  // the role cell names only what the plate's position doesn't already say: bases, sub-recipes, roots
+  const role = isSub ? "sub-recipe" : node.kind === "base" ? "base" : node.kind === "root" ? "root" : null;
+  // max zoomed-out title size that still shows the whole title (content width ≈ plate minus padding)
+  const titleFit = fitTitlePx(title, isSub ? 160 : 176, isSub ? 17 : 26);
+  const state = recipeState(node);
+  const status = nodeStatus(state, node.rating);
+  const mark = stateMark(state);
   const ratioHot = isRatioWarn(node.calPerGramProtein, isSub);
-  const cls = ["node", node.kind === "sub-recipe" ? "sub" : "", node.kind === "base" ? "base" : "",
+  const cls = ["node", isSub ? "sub" : "", node.kind === "base" ? "base" : "",
     status ? `s-${status.cls}` : "", selected ? "cur" : ""].filter(Boolean).join(" ");
   const open = () => onOpen?.(node.recipeId);
   return (
@@ -55,16 +59,27 @@ export const RecipeNode = memo(function RecipeNode({ node, pos, arm, selected, o
       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(); } }}
       style={{ left: pos.x, top: pos.y, width: pos.w, ["--nh" as string]: pos.h, ["--tf" as string]: titleFit }}
     >
-      <span className="role">{arm ? `${role} · ${arm}` : role}</span>
-      <div className="nname">{title} {paren && <span className="q">{paren}</span>}{node.tags.includes("no-bake") && <span className="nobake" title="no oven — sets in the fridge/freezer">no-bake</span>}{node.needsTuning && <span className="tune">needs-tuning</span>}</div>
-      {/* status line: always visible (both zoom modes), enlarged when zoomed out */}
-      {status && <div className={`nrate ${status.cls}`}><span className="rglyph">{status.glyph}</span> {status.label}</div>}
+      <div className="nhead">
+        <div className="nname">{title} {paren && <span className="q">{paren}</span>}{node.tags.includes("no-bake") && <span className="nobake" title="no oven — sets in the fridge/freezer">no-bake</span>}{node.needsTuning && <span className="tune">needs-tuning</span>}</div>
+        {(role || arm) && (
+          <div className="ncells">
+            {role && <span className="ncell role">{role}</span>}
+            {arm && <span className="ncell arm" title={`bake-off arm ${arm}`}>{arm}</span>}
+          </div>
+        )}
+      </div>
       <div className="ndetailw"><div className="ndetail">
-        <div className="nmeta">
-          {r0(node.cal)} cal · {r1(node.protein)} P <span className="munit">/ serving</span><br />
-          {node.servings > 1 && <>{r0(node.wholeCal).toLocaleString("en-US")} cal · {r0(node.wholeProtein)} P <span className="munit">total</span><br /></>}
-          {node.calPerGramProtein != null ? r1(node.calPerGramProtein) : "—"}<RatioDot warn={ratioHot} /> cal/g · makes {node.servings} {node.servingUnit}
+        {/* figures line: per-serving kcal · g protein · cal per g protein */}
+        <div className="nfig">
+          <span>{r0(node.cal)} cal</span>
+          <span>{r1(node.protein)} <span className="u">g P</span></span>
+          <span>{node.calPerGramProtein != null ? r1(node.calPerGramProtein) : "—"}<RatioDot warn={ratioHot} /> <span className="u">cal/g</span></span>
         </div>
+        <div className="nmakes">
+          makes {node.servings} {node.servingUnit}
+          {node.servings > 1 && <span className="tot">{r0(node.wholeCal).toLocaleString("en-US")} cal · {r0(node.wholeProtein)} g P whole</span>}
+        </div>
+        {status && mark && <div className="nstat"><Mark kind={mark} /> {status.label}</div>}
         {node.feedbackNote && <div className={`nfb${node.needsTuning ? " bad" : ""}`}>{node.feedbackNote}</div>}
       </div></div>
     </div>

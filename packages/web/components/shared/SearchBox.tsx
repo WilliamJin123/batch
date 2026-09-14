@@ -1,5 +1,6 @@
 "use client";
 import { forwardRef } from "react";
+import { Icon } from "./Icon";
 
 export interface SearchBoxProps {
   value: string;
@@ -17,7 +18,7 @@ export interface SearchBoxProps {
 }
 
 /** One search input for every recipe surface (tree drawer, recipes table, cooking queue) so they
- *  look and behave identically: a clear (✕) button, Enter to open the top match, Escape to clear
+ *  look and behave identically: a clear button, Enter to open the top match, Escape to clear
  *  (or dismiss, when the host passes onDismiss). Pair it with the shared matchesSearch() matcher so
  *  every surface filters the same punctuation/accent-insensitive way. */
 export const SearchBox = forwardRef<HTMLInputElement, SearchBoxProps>(function SearchBox(
@@ -54,7 +55,7 @@ export const SearchBox = forwardRef<HTMLInputElement, SearchBoxProps>(function S
           onMouseDown={(e) => e.preventDefault()} /* don't steal focus from the input */
           onClick={() => onChange("")}
         >
-          ✕
+          <Icon name="close" size={12} />
         </button>
       )}
     </div>

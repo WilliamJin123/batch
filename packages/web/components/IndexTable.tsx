@@ -3,13 +3,14 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { RecipeSummary } from "../lib/viewmodel/types";
-import { MacroLine } from "./shared/MacroLine";
 import { StateDot } from "./shared/StateDot";
 import { SearchBox } from "./shared/SearchBox";
-import { isRatioWarn } from "../lib/viewmodel/format";
+import { RatioDot } from "./shared/RatioDot";
+import { r0, r1, isRatioWarn } from "../lib/viewmodel/format";
 import { recipeState } from "../lib/viewmodel/state";
 import { matchesSearch } from "../lib/search";
 
+/** The recipes index: one ruled ledger, a row per recipe (each row is the link to its card). */
 export function IndexTable({ rows }: { rows: RecipeSummary[] }) {
   const [q, setQ] = useState("");
   const router = useRouter();
@@ -26,14 +27,23 @@ export function IndexTable({ rows }: { rows: RecipeSummary[] }) {
       </div>
       <div className="idxct">{filtered.length} of {rows.length}</div>
       <div className="idxlist">
-        {filtered.map((r) => (
-          <Link className="idxrow" key={r.recipeId} href={`/r/${r.recipeId}`}>
-            <span className="idxnm">{r.name}</span>
-            <span className="idxfam">{r.family}</span>
-            <MacroLine cal={r.cal} protein={r.protein} calPerGramProtein={r.calPerGramProtein} servings={r.servings} unit={r.servingUnit} warn={isRatioWarn(r.calPerGramProtein, r.tags.includes("sub-recipe"))} />
-            <span className="idxst"><StateDot state={recipeState(r)} /></span>
-          </Link>
-        ))}
+        <div className="idxrow idxhr" aria-hidden="true">
+          <span>Name</span><span className="idxfam">Family</span><span className="n">cal</span><span className="n idxp">g P</span><span className="n">cal/g</span><span className="idxmk">makes</span><span />
+        </div>
+        {filtered.map((r) => {
+          const sub = r.tags.includes("sub-recipe");
+          return (
+            <Link className="idxrow" key={r.recipeId} href={`/r/${r.recipeId}`}>
+              <span className="idxnm">{r.name}</span>
+              <span className="idxfam">{r.family}</span>
+              <span className="n">{r0(r.cal)}</span>
+              <span className="n idxp">{r1(r.protein)}</span>
+              <span className="n">{r.calPerGramProtein != null ? r1(r.calPerGramProtein) : "—"}<span className="rs"><RatioDot warn={isRatioWarn(r.calPerGramProtein, sub)} /></span></span>
+              <span className="idxmk">{r.servings} {r.servingUnit}</span>
+              <span className="idxst"><StateDot state={recipeState(r)} /></span>
+            </Link>
+          );
+        })}
         {filtered.length === 0 && <div className="dempty">No recipes match “{q}”.</div>}
       </div>
     </div>

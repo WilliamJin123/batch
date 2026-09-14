@@ -1,14 +1,15 @@
 import type { BakeCardVM } from "../../lib/viewmodel/types";
+import { Mark, type MarkKind } from "../shared/Mark";
 
-const glyph = (k: string): string => (k === "pitfall" ? "⚠" : k === "technique" ? "◆" : "•");
+const noteMark = (k: string): MarkKind => (k === "pitfall" ? "pitfall" : k === "technique" ? "technique" : "note");
 
 export function Method({ sections }: { sections: BakeCardVM["method"] }) {
   return (
-    <div className="method">
-      <div className="sh" style={{ marginBottom: 18 }}>Method</div>
+    <section className="method" aria-label="Method">
+      <h2 className="sh">Method <span className="kc">{sections.reduce((n, s) => n + s.steps.length, 0)} steps</span></h2>
       {sections.map((sec, si) => (
         <div className="msec" key={si}>
-          <p className="msub">{sec.section}</p>
+          {sections.length > 1 && <h3 className="msub">{sec.section}</h3>}
           {sec.steps.map((st, i) => (
             <div className="step" key={i}>
               <span className="n">{i + 1}</span>
@@ -24,7 +25,7 @@ export function Method({ sections }: { sections: BakeCardVM["method"] }) {
                 {st.notes && st.notes.length > 0 && (
                   <span className="snotes">
                     {st.notes.map((n, j) => (
-                      <span className={`snote ${n.kind}`} key={j}><span className="sg" aria-hidden="true">{glyph(n.kind)}</span>{n.text}</span>
+                      <span className={`snote ${n.kind}`} key={j}><span className="sg"><Mark kind={noteMark(n.kind)} label={n.kind} size={9} /></span>{n.text}</span>
                     ))}
                   </span>
                 )}
@@ -33,6 +34,6 @@ export function Method({ sections }: { sections: BakeCardVM["method"] }) {
           ))}
         </div>
       ))}
-    </div>
+    </section>
   );
 }

@@ -1,0 +1,328 @@
+{
+ "schemaVersion": 2,
+ "generatedAt": "2026-09-14T14:14:57+00:00",
+ "title": "Design System: Batch",
+ "extensions": {
+  "colorMeta": {
+   "highlighter": {
+    "role": "primary",
+    "displayName": "Highlighter",
+    "canonical": "#FFE84D",
+    "tonalRamp": [
+     "oklch(15% 0.16 95)",
+     "oklch(26% 0.16 95)",
+     "oklch(38% 0.16 95)",
+     "oklch(49% 0.16 95)",
+     "oklch(61% 0.16 95)",
+     "oklch(72% 0.16 95)",
+     "oklch(84% 0.16 95)",
+     "oklch(95% 0.16 95)"
+    ]
+   },
+   "highlighter-soft": {
+    "role": "primary",
+    "displayName": "Highlighter, soft",
+    "canonical": "#FFF6B8",
+    "tonalRamp": [
+     "oklch(15% 0.08 95)",
+     "oklch(26% 0.08 95)",
+     "oklch(38% 0.08 95)",
+     "oklch(49% 0.08 95)",
+     "oklch(61% 0.08 95)",
+     "oklch(72% 0.08 95)",
+     "oklch(84% 0.08 95)",
+     "oklch(95% 0.08 95)"
+    ]
+   },
+   "paper": {
+    "role": "neutral",
+    "displayName": "Paper",
+    "canonical": "#FFFFFF",
+    "tonalRamp": [
+     "oklch(15% 0 0)",
+     "oklch(26% 0 0)",
+     "oklch(38% 0 0)",
+     "oklch(49% 0 0)",
+     "oklch(61% 0 0)",
+     "oklch(72% 0 0)",
+     "oklch(84% 0 0)",
+     "oklch(95% 0 0)"
+    ]
+   },
+   "ink": {
+    "role": "neutral",
+    "displayName": "Ink",
+    "canonical": "#1A1A1A",
+    "tonalRamp": [
+     "oklch(15% 0 0)",
+     "oklch(26% 0 0)",
+     "oklch(38% 0 0)",
+     "oklch(49% 0 0)",
+     "oklch(61% 0 0)",
+     "oklch(72% 0 0)",
+     "oklch(84% 0 0)",
+     "oklch(95% 0 0)"
+    ]
+   },
+   "ink-2": {
+    "role": "neutral",
+    "displayName": "Ink 2",
+    "canonical": "#4A4A48",
+    "tonalRamp": [
+     "oklch(15% 0.004 100)",
+     "oklch(26% 0.004 100)",
+     "oklch(38% 0.004 100)",
+     "oklch(49% 0.004 100)",
+     "oklch(61% 0.004 100)",
+     "oklch(72% 0.004 100)",
+     "oklch(84% 0.004 100)",
+     "oklch(95% 0.004 100)"
+    ]
+   },
+   "ink-3": {
+    "role": "neutral",
+    "displayName": "Ink 3",
+    "canonical": "#6B6B68",
+    "tonalRamp": [
+     "oklch(15% 0.004 100)",
+     "oklch(26% 0.004 100)",
+     "oklch(38% 0.004 100)",
+     "oklch(49% 0.004 100)",
+     "oklch(61% 0.004 100)",
+     "oklch(72% 0.004 100)",
+     "oklch(84% 0.004 100)",
+     "oklch(95% 0.004 100)"
+    ]
+   },
+   "rule": {
+    "role": "neutral",
+    "displayName": "Rule",
+    "canonical": "#C9C9C4",
+    "tonalRamp": [
+     "oklch(15% 0.006 100)",
+     "oklch(26% 0.006 100)",
+     "oklch(38% 0.006 100)",
+     "oklch(49% 0.006 100)",
+     "oklch(61% 0.006 100)",
+     "oklch(72% 0.006 100)",
+     "oklch(84% 0.006 100)",
+     "oklch(95% 0.006 100)"
+    ]
+   },
+   "rule-soft": {
+    "role": "neutral",
+    "displayName": "Rule, soft",
+    "canonical": "#E6E6E2",
+    "tonalRamp": [
+     "oklch(15% 0.004 100)",
+     "oklch(26% 0.004 100)",
+     "oklch(38% 0.004 100)",
+     "oklch(49% 0.004 100)",
+     "oklch(61% 0.004 100)",
+     "oklch(72% 0.004 100)",
+     "oklch(84% 0.004 100)",
+     "oklch(95% 0.004 100)"
+    ]
+   },
+   "scrim": {
+    "role": "neutral",
+    "displayName": "Scrim",
+    "canonical": "rgba(26,26,26,.5)",
+    "tonalRamp": [
+     "oklch(15% 0 0)",
+     "oklch(26% 0 0)",
+     "oklch(38% 0 0)",
+     "oklch(49% 0 0)",
+     "oklch(61% 0 0)",
+     "oklch(72% 0 0)",
+     "oklch(84% 0 0)",
+     "oklch(95% 0 0)"
+    ]
+   }
+  },
+  "typographyMeta": {
+   "display": {
+    "displayName": "Display",
+    "purpose": "Bake card title; 32px on phones."
+   },
+   "headline": {
+    "displayName": "Headline",
+    "purpose": "Page titles (Recipes, Cooking queue, Mix-ins); 26px on phones."
+   },
+   "title": {
+    "displayName": "Title",
+    "purpose": "Plate names and condensed section heads."
+   },
+   "body": {
+    "displayName": "Body",
+    "purpose": "Everything else; prose 14.5px/1.6 at 68ch; tabular numerals always on."
+   },
+   "label": {
+    "displayName": "Label",
+    "purpose": "Ruled cells and chips; never uppercase."
+   }
+  },
+  "shadows": [],
+  "motion": [
+   {
+    "name": "hi-stroke",
+    "value": "transform scaleX(0\u21921) 240ms ease-out, transform-origin 0 50%",
+    "purpose": "The one authored moment: a highlighter stroke across the opened plate's header row."
+   },
+   {
+    "name": "ease-state",
+    "value": "120ms ease",
+    "purpose": "Border colour and icon colour on hover."
+   },
+   {
+    "name": "ease-panel",
+    "value": "160\u2013200ms ease-out",
+    "purpose": "Drawer slide, modal and shortcuts fade-in."
+   },
+   {
+    "name": "reduced-motion",
+    "value": "all transitions and animations 0ms",
+    "purpose": "prefers-reduced-motion: reduce removes every motion."
+   }
+  ],
+  "breakpoints": [
+   {
+    "name": "keys",
+    "value": "520px"
+   },
+   {
+    "name": "phone",
+    "value": "640px"
+   },
+   {
+    "name": "queue",
+    "value": "680px"
+   },
+   {
+    "name": "table",
+    "value": "720px"
+   },
+   {
+    "name": "hint",
+    "value": "760px"
+   },
+   {
+    "name": "card",
+    "value": "880px"
+   }
+  ]
+ },
+ "components": [
+  {
+   "name": "Control cell",
+   "kind": "button",
+   "refersTo": "control",
+   "description": "A ruled 30px cell for canvas controls; yellow with an ink border when on.",
+   "html": "<div style=\"display:flex;gap:8px\"><button class=\"ds-ctl\">Fit</button><button class=\"ds-ctl on\">Legend</button><button class=\"ds-ctl\" disabled>Undo</button></div>",
+   "css": ".ds-ctl{font:500 12.5px Archivo,'Helvetica Neue',Arial,sans-serif;color:#1A1A1A;background:#FFFFFF;border:1px solid #C9C9C4;border-radius:0;height:30px;padding:0 10px;cursor:pointer;transition:border-color .12s}.ds-ctl:hover{border-color:#1A1A1A}.ds-ctl:focus-visible{outline:2px solid #1A1A1A;outline-offset:2px}.ds-ctl.on{background:#FFE84D;border-color:#1A1A1A}.ds-ctl:disabled{opacity:.55;cursor:default}"
+  },
+  {
+   "name": "Search",
+   "kind": "input",
+   "refersTo": "search",
+   "description": "Ruled search field; border goes ink on focus, no glow.",
+   "html": "<div class=\"ds-sbx\"><input class=\"ds-sbx-in\" type=\"search\" placeholder=\"Search name, family, or tag\u2026\" value=\"cheesecake\"><button class=\"ds-sbx-clear\" aria-label=\"Clear search\"><svg width=\"12\" height=\"12\" viewBox=\"0 0 16 16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"square\"><path d=\"M3 3l10 10M12 3L3 12\"/></svg></button></div>",
+   "css": ".ds-sbx{position:relative;display:flex;align-items:center;max-width:320px}.ds-sbx-in{width:100%;font:13.5px/1.5 Archivo,'Helvetica Neue',Arial,sans-serif;color:#1A1A1A;border:1px solid #C9C9C4;background:#FFFFFF;border-radius:0;padding:6px 30px 6px 9px;appearance:none}.ds-sbx-in:focus{outline:none;border-color:#1A1A1A}.ds-sbx-in::placeholder{color:#6B6B68}.ds-sbx-clear{position:absolute;right:4px;top:50%;transform:translateY(-50%);width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:none;background:transparent;color:#6B6B68;cursor:pointer;padding:0}.ds-sbx-clear:hover{color:#1A1A1A}"
+  },
+  {
+   "name": "Rail",
+   "kind": "nav",
+   "refersTo": "",
+   "description": "The 44px rail: mark + Batch, four plain links, active one underlined in ink, branch cell at the right.",
+   "html": "<nav class=\"ds-rail\"><span class=\"ds-brand\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 18 18\"><rect x=\"1\" y=\"1\" width=\"16\" height=\"16\" fill=\"none\" stroke=\"#1A1A1A\" stroke-width=\"1.5\"/><rect x=\"4\" y=\"7\" width=\"10\" height=\"4\" fill=\"#FFE84D\"/></svg>Batch</span><a class=\"ds-nl on\" href=\"#\">Tree</a><a class=\"ds-nl\" href=\"#\">Recipes</a><a class=\"ds-nl\" href=\"#\">Queue</a><a class=\"ds-nl\" href=\"#\">Mix-ins</a><span class=\"ds-branch\">main</span></nav>",
+   "css": ".ds-rail{display:flex;align-items:center;gap:22px;height:44px;padding:0 16px;border-bottom:1px solid #C9C9C4;background:#FFFFFF;font-family:Archivo,'Helvetica Neue',Arial,sans-serif}.ds-brand{display:flex;align-items:center;gap:8px;font-weight:800;font-size:18px;font-stretch:78%;color:#1A1A1A}.ds-nl{position:relative;color:#4A4A48;text-decoration:none;font-size:14px;line-height:44px}.ds-nl:hover{color:#1A1A1A}.ds-nl.on{color:#1A1A1A;box-shadow:inset 0 -2px 0 #1A1A1A}.ds-branch{margin-left:auto;font-size:11px;border:1px solid #C9C9C4;padding:1px 6px;color:#4A4A48}"
+  },
+  {
+   "name": "Cell",
+   "kind": "chip",
+   "refersTo": "cell",
+   "description": "Ruled label cell; the highlighter variant marks lean / on.",
+   "html": "<div style=\"display:flex;gap:6px\"><span class=\"ds-cell\">cheesecake</span><span class=\"ds-cell ink\">base</span><span class=\"ds-cell hi\">lean</span></div>",
+   "css": ".ds-cell{display:inline-flex;align-items:center;border:1px solid #C9C9C4;padding:1px 6px;font:600 11px/1.5 Archivo,'Helvetica Neue',Arial,sans-serif;color:#4A4A48;background:#FFFFFF}.ds-cell.ink{border-color:#1A1A1A;color:#1A1A1A}.ds-cell.hi{background:#FFE84D;border-color:#FFE84D;color:#1A1A1A}"
+  },
+  {
+   "name": "Ledger table",
+   "kind": "card",
+   "refersTo": "ledger-row",
+   "description": "Key left, tabular value right, unit muted; the ratio row is a highlighter band with the lean dash.",
+   "html": "<table class=\"ds-ledger\"><thead><tr><th>per slice</th><th class=\"r\">makes 8 slices</th></tr></thead><tbody><tr><th>calories</th><td>130<span class=\"u\">kcal</span></td></tr><tr><th>protein</th><td>14.3<span class=\"u\">g</span></td></tr><tr class=\"hi\"><th>cal / g protein</th><td>9.1</td></tr><tr><th>carbs \u00b7 fat \u00b7 fiber</th><td>7.3 \u00b7 4.4 \u00b7 0.7<span class=\"u\">g</span></td></tr></tbody></table>",
+   "css": ".ds-ledger{width:300px;border-collapse:collapse;font:14px/1.5 Archivo,'Helvetica Neue',Arial,sans-serif;font-variant-numeric:tabular-nums lining-nums;color:#1A1A1A}.ds-ledger th,.ds-ledger td{padding:5px 6px;border-bottom:1px solid #E6E6E2;text-align:left;font-weight:400}.ds-ledger thead th{border-bottom:1px solid #1A1A1A;font-weight:700;font-stretch:82%}.ds-ledger thead th.r{text-align:right;color:#6B6B68;font-weight:400;font-stretch:100%}.ds-ledger tbody th{color:#4A4A48}.ds-ledger td{text-align:right;white-space:nowrap}.ds-ledger .u{color:#6B6B68;margin-left:3px}.ds-ledger tr.hi th,.ds-ledger tr.hi td{background:#FFE84D;font-weight:600;color:#1A1A1A}"
+  },
+  {
+   "name": "Plate",
+   "kind": "custom",
+   "refersTo": "plate",
+   "description": "A tree node: condensed name, three-cell ledger line, makes line, drawn state mark. Hover the plate to see the picked-state highlighter stroke.",
+   "html": "<div class=\"ds-plate\" tabindex=\"0\"><div class=\"ds-ph\"><span class=\"ds-pn\">Turtle Protein Cheesecake</span><span class=\"ds-cell ink\">base</span></div><div class=\"ds-pf\"><span>218 cal</span><span>18.9 <i>g P</i></span><span>11.5 <i>cal/g</i></span></div><div class=\"ds-pm\">makes 8 slices<span class=\"ds-pt\">1,741 cal \u00b7 151 g P whole</span></div><div class=\"ds-ps\"><svg width=\"10\" height=\"10\" viewBox=\"0 0 10 10\"><rect x=\".6\" y=\".6\" width=\"8.8\" height=\"8.8\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.2\"/><rect x=\"3\" y=\"3\" width=\"4\" height=\"4\" fill=\"currentColor\"/></svg> excellent</div></div>",
+   "css": ".ds-plate{position:relative;width:200px;background:#FFFFFF;border:1px solid #C9C9C4;border-top:2px solid #1A1A1A;font-family:Archivo,'Helvetica Neue',Arial,sans-serif;font-variant-numeric:tabular-nums;color:#1A1A1A;cursor:pointer;transition:border-color .12s}.ds-plate:hover,.ds-plate:focus-visible{border-color:#1A1A1A;outline:none}.ds-ph{position:relative;display:flex;align-items:flex-start;justify-content:space-between;gap:8px;padding:7px 10px 6px;border-bottom:1px solid #C9C9C4;z-index:0}.ds-ph::before{content:'';position:absolute;inset:0;background:#FFE84D;transform:scaleX(0);transform-origin:0 50%;z-index:-1;transition:transform .24s ease-out}.ds-plate:hover .ds-ph::before,.ds-plate:focus-visible .ds-ph::before{transform:none}.ds-pn{font-size:15px;font-weight:700;font-stretch:82%;line-height:1.15}.ds-cell{display:inline-flex;border:1px solid #C9C9C4;padding:3px 4px;font-size:10.5px;font-weight:600;line-height:1;color:#4A4A48;white-space:nowrap}.ds-cell.ink{border-color:#1A1A1A;color:#1A1A1A}.ds-pf{display:grid;grid-template-columns:auto auto 1fr;font-size:12px;border-bottom:1px solid #E6E6E2}.ds-pf>span{padding:5px 6px;white-space:nowrap;border-right:1px solid #E6E6E2}.ds-pf>span:last-child{border-right:none}.ds-pf i{font-style:normal;color:#6B6B68}.ds-pm{font-size:11.5px;color:#4A4A48;padding:4px 10px 0;line-height:1.4}.ds-pt{display:block}.ds-ps{display:flex;align-items:center;gap:6px;font-size:12px;padding:4px 10px 7px}.ds-ps svg{color:#1A1A1A}"
+  },
+  {
+   "name": "Queue row",
+   "kind": "card",
+   "refersTo": "ledger-row-hi",
+   "description": "A ruled queue row; the top row of a Make-next column is the highlighter band.",
+   "html": "<div style=\"width:420px;border-top:1px solid #1A1A1A\"><a class=\"ds-qr next\" href=\"#\"><span class=\"ds-qn\">Glazed Apple Fritter <span class=\"ds-cell\">apple</span></span><span class=\"ds-qm\">283 cal \u00b7 10.7 cal/g</span></a><a class=\"ds-qr\" href=\"#\"><span class=\"ds-qn\"><svg width=\"10\" height=\"10\" viewBox=\"0 0 10 10\"><rect x=\".6\" y=\".6\" width=\"8.8\" height=\"8.8\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.2\"/><rect x=\"3\" y=\"3\" width=\"4\" height=\"4\" fill=\"currentColor\"/></svg> Lemon Protein Cookies</span><span class=\"ds-qm\">151 cal \u00b7 13.5 cal/g</span></a></div>",
+   "css": ".ds-qr{display:grid;grid-template-columns:1fr auto;align-items:center;gap:12px;min-height:28px;padding:3px 8px;border-bottom:1px solid #C9C9C4;text-decoration:none;color:#1A1A1A;font:13.5px/1.5 Archivo,'Helvetica Neue',Arial,sans-serif;font-variant-numeric:tabular-nums}.ds-qr:hover{background:#E6E6E2}.ds-qr.next{background:#FFE84D}.ds-qn{display:flex;align-items:center;gap:6px}.ds-qm{color:#4A4A48;font-size:12.5px;white-space:nowrap}.ds-cell{display:inline-flex;border:1px solid #C9C9C4;padding:1px 6px;font-size:11px;font-weight:600;color:#4A4A48;background:#FFFFFF}.ds-qr.next .ds-cell{background:#FFFFFF}"
+  }
+ ],
+ "narrative": {
+  "northStar": "The Formula Sheet",
+  "overview": "Batch is a production formula sheet, not a recipe app. Every recipe reads the way a foreman reads a schedule: what is in production, what it derives from, what it costs per gram of protein, what to run next. The sheet is white bond paper ruled in one grey, written in one grotesk, and marked with one highlighter. Numbers look computed because they are set in tabular numerals and aligned right; nothing is styled to look appetizing. Density is high and uniform \u2014 a 28px ledger row is the rhythm of the whole product, from the canvas grid behind the recipe tree to the rows of the index and queue.\n\nThe system rejects the recipe-app default (cream ground, serif titles, rounded cards, soft shadows) and the chart-poster default (heavy black rules, kicker labels). Depth does not exist: there is no light source, so there are no shadows, no glows, no glass. Containers are rules above and below, never boxes with radius. State is drawn, never coloured: an open square is to-make, a filled square is tried, a double-ruled square is excellent, a struck square needs work; a triangle warns, a diamond is a technique. The one moment of authored motion is a highlighter stroke that runs across the header of the recipe you just opened.",
+  "keyCharacteristics": [
+   "White paper, near-black ink, one grey rule, one highlighter yellow \u2014 nothing else.",
+   "Rows, not cards. Rules above and below; zero radius everywhere.",
+   "Tabular, right-aligned numerals; units in muted ink beside them.",
+   "One grotesk (Archivo) with a condensed cut (`wdth` 82) for every heading and header row.",
+   "Marks and icons are authored SVG in one stroke weight; no glyphs, no emoji, no colour semantics.",
+   "Highlighter yellow means exactly three things: selected, next, over the lean line."
+  ],
+  "rules": [
+   {
+    "name": "The One Highlighter Rule",
+    "body": "Yellow appears only as a full-cell or full-row fill on \u22641 element per region \u2014 the thing that is picked, next, or over the lean line. If a screen needs a second accent, the design is wrong, not the palette.",
+    "section": "colors"
+   },
+   {
+    "name": "The No-Colour-State Rule",
+    "body": "Recipe state (to-make, made, excellent, needs work) and note kind (pitfall, technique, note) are drawn marks in ink. No green, no red, no gold.",
+    "section": "colors"
+   },
+   {
+    "name": "The Tabular Rule",
+    "body": "`font-variant-numeric: tabular-nums lining-nums` is set on `body` and never overridden. Every numeric column is right-aligned; units sit in Ink 3 after the number.",
+    "section": "typography"
+   },
+   {
+    "name": "The Condensed Header Rule",
+    "body": "Headings and header rows condense (`font-stretch: 82%`); running text and numerals never do.",
+    "section": "typography"
+   },
+   {
+    "name": "The Flat Sheet Rule",
+    "body": "Depth is a rule, never a shadow. A floating panel earns a 1px ink border and nothing else.",
+    "section": "elevation"
+   }
+  ],
+  "dos": [
+   "Do set every number in tabular numerals, right-aligned, with the unit in Ink 3 after it.",
+   "Do build lists as ruled rows: 1px Ink at the head, 1px Rule between rows, 28px rhythm.",
+   "Do condense (`font-stretch: 82%`) headings and header rows only.",
+   "Do use Highlighter as a full-row or full-cell fill for exactly one meaning per region: selected, next, or over the lean line.",
+   "Do draw state and note marks as ink SVG squares/triangles/diamonds from `Mark`, and icons from `Icon` at 1.5px square-capped stroke.",
+   "Do float panels with a 1px Ink border on paper and a 50% Ink scrim when modal."
+  ],
+  "donts": [
+   "Don't add a second accent colour, or use colour to encode state.",
+   "Don't round a corner, cast a shadow, blur, or gradient anything.",
+   "Don't box content into cards; a rule above and below is the container.",
+   "Don't put a kicker or eyebrow above a heading, or set labels in uppercase/tracked type.",
+   "Don't use monospace, unicode glyphs, or emoji for icons or \"technical\" flavour.",
+   "Don't let a canvas overlay half-cover the corner controls; on phones the drawer is a full-width sheet."
+  ]
+ }
+}

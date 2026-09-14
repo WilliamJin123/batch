@@ -6,17 +6,18 @@ import { isRatioWarn, r0, r1 } from "../../lib/viewmodel/format";
 import { matchesSearch } from "../../lib/search";
 import { SearchBox } from "../shared/SearchBox";
 import { RatioDot } from "../shared/RatioDot";
+import { Mark } from "../shared/Mark";
 
 const laneCount = (l: QueueLaneVM) => l.bake.length + l.noBake.length;
 
-function Row({ item }: { item: QueueItemVM }) {
+function Row({ item, next }: { item: QueueItemVM; next?: boolean }) {
   const ratioHot = isRatioWarn(item.calPerGramProtein, false);
   return (
-    <a className="q-row" href={`/r/${item.recipeId}`}>
+    <a className={`q-row${next ? " next" : ""}`} href={`/r/${item.recipeId}`}>
       <span className="q-nm">
+        {item.rating === "excellent" && <Mark kind="double" label="excellent" />}
         {item.name}
         {item.produce && <span className="q-prod">{item.produce}</span>}
-        {item.rating === "excellent" && <span className="star" aria-label="excellent">★</span>}
       </span>
       <span className="q-mac">
         {r0(item.cal)} cal · {item.calPerGramProtein != null ? <>{r1(item.calPerGramProtein)}<RatioDot warn={ratioHot} /> cal/g</> : "—"}
@@ -25,25 +26,26 @@ function Row({ item }: { item: QueueItemVM }) {
   );
 }
 
-function Col({ title, items, nb, searching }: { title: string; items: QueueItemVM[]; nb?: boolean; searching: boolean }) {
+function Col({ title, items, nb, searching, mark }: { title: string; items: QueueItemVM[]; nb?: boolean; searching: boolean; mark?: boolean }) {
   if (searching && !items.length) return null; // while filtering, drop empty columns instead of showing "nothing here"
   return (
     <div className={`qb-col${nb ? " nb" : ""}`}>
       <div className="q-gt">{title}<span className="q-ct">{items.length}</span></div>
-      {items.length ? items.map((item) => <Row key={item.recipeId} item={item} />) : <div className="q-empty">— nothing here —</div>}
+      {items.length ? items.map((item, i) => <Row key={item.recipeId} item={item} next={mark && i === 0} />) : <div className="q-empty">nothing here</div>}
     </div>
   );
 }
 
-function Lane({ label, sub, lane, searching }: { label: string; sub: string; lane: QueueLaneVM; searching: boolean }) {
+/** `mark` highlights the top row of each column — the Make-next lane's what's-up-next. */
+function Lane({ label, sub, lane, searching, mark }: { label: string; sub: string; lane: QueueLaneVM; searching: boolean; mark?: boolean }) {
   const total = laneCount(lane);
   if (searching && total === 0) return null; // a lane with no matches disappears entirely while filtering
   return (
     <section className="qb-lane">
       <div className="qb-lh"><h2 className="q-lt">{label}</h2><span className="q-lct">{total}</span><span className="q-lsub">{sub}</span></div>
       <div className={`qb-cols${searching ? " qf" : ""}`}>
-        <Col title="Bake" items={lane.bake} searching={searching} />
-        <Col title="No-bake" items={lane.noBake} nb searching={searching} />
+        <Col title="Bake" items={lane.bake} searching={searching} mark={mark} />
+        <Col title="No-bake" items={lane.noBake} nb searching={searching} mark={mark} />
       </div>
     </section>
   );
@@ -103,7 +105,7 @@ export function QueueBoard({ queue }: { queue: QueueVM }) {
         <div className="qb-nomatch">No queued recipes match “{q.trim()}”.</div>
       ) : (
         <>
-          <Lane label="Make next" sub="your to-make backlog" lane={makeNext} searching={searching} />
+          <Lane label="Make next" sub="your to-make backlog — the highlighted row is up next" lane={makeNext} searching={searching} mark />
           <Lane label="Make again" sub="proven favourites worth repeating" lane={makeAgain} searching={searching} />
         </>
       )}

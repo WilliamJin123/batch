@@ -1,26 +1,20 @@
-.topbar{display:flex;align-items:center;gap:24px;height:60px;border-bottom:1px solid var(--line);position:sticky;top:0;background:rgba(251,247,240,.86);backdrop-filter:blur(8px);z-index:30}
-.brand{display:flex;align-items:center;gap:10px}
-.mark{width:23px;height:23px;flex:none;filter:drop-shadow(0 1px 1.5px rgba(60,44,18,.18))}
-.brand b{font-family:var(--serif);font-weight:600;font-size:17px;letter-spacing:-.01em}
-.branch{font-family:var(--mono);font-size:11px;color:var(--muted);border:1px solid var(--line);border-radius:6px;padding:2px 8px;display:flex;align-items:center;gap:6px;background:var(--surface)}
-.branch::before{content:"";width:5px;height:5px;border-radius:50%;background:var(--green)}
-.nav{display:flex;gap:4px;margin-left:4px}
-.nav a{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);padding:6px 11px;border-radius:8px;position:relative;transition:color .12s,background .12s}
-.nav a svg{width:13px;height:13px;flex:none;opacity:.85}
-.nav a:hover{background:var(--accent-soft);color:var(--ink)}
-.nav a.on svg{opacity:1}
-/* keyboard focus on a tab: thin accent ring (global) + a soft toffee fill so the selected tab reads clearly */
-.nav a:focus-visible{background:var(--accent-soft);color:var(--ink)}
-.nav a:focus-visible svg{opacity:1}
-.nav a.on{color:var(--ink)}
-.nav a.on::after{content:"";position:absolute;left:11px;right:11px;bottom:-13px;height:2px;background:var(--accent);border-radius:2px}
+/* the rail: one row of the sheet, ruled beneath */
+.topbar{display:flex;align-items:center;gap:28px;height:var(--rail-h);border-bottom:1px solid var(--ink);position:sticky;top:0;background:var(--paper);z-index:30;padding-inline:32px}
+.brand{display:flex;align-items:center;gap:9px}
+.mark{width:18px;height:18px;flex:none}
+.brand b{font-stretch:78%;font-weight:800;font-size:19px;letter-spacing:-.01em;line-height:1}
+.nav{display:flex;gap:22px}
+.nav a{display:inline-flex;align-items:center;height:var(--rail-h);font-size:13.5px;font-weight:500;color:var(--ink-2);position:relative;transition:color .12s}
+.nav a:hover{color:var(--ink)}
+.nav a:focus-visible{outline-offset:-3px}
+.nav a.on{color:var(--ink);font-weight:600}
+.nav a.on::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;background:var(--ink)}
 .spacer{flex:1}
-/* mobile: four tabs + brand must fit a phone — go icon-only (aria-label keeps the accessible name)
-   and drop the branch chip */
-@media(max-width:560px){
-  .topbar{gap:10px}
-  .nav{margin-left:0;gap:2px}
-  .nav a{padding:7px 9px;gap:0}
-  .nav a span{display:none}
+.branch{font-size:11px;color:var(--ink-2);border:1px solid var(--rule);padding:1px 7px;line-height:1.5;display:inline-flex;align-items:center;gap:6px}
+.branch::before{content:"";width:6px;height:6px;background:var(--ink)}
+@media(max-width:640px){
+  .topbar{gap:16px;padding-inline:16px}
+  .nav{gap:14px}
+  .nav a{font-size:13px}
   .branch{display:none}
 }

@@ -8,15 +8,15 @@ const ratio = (v: number | null) => (v != null ? r1(v) : "—");
 export function BakeoffPill({ note, pos }: { note: BakeoffNote; pos: { x: number; y: number } }) {
   const n = note.arms.length;
   return (
-    <div className="bopill" style={{ left: pos.x, top: pos.y, transform: "translate(-50%,-50%)" }}>
-      bake-off{n > 2 ? ` · ${n}` : ""} <span className="info">i</span>
+    <div className="bopill" tabIndex={0} style={{ left: pos.x, top: pos.y, transform: "translate(-50%,-50%)" }}>
+      bake-off · {n}
       <div className="bonote">
         <b>{n} arms, one target — bake {n === 2 ? "both" : `all ${n}`}, keep the winner.</b>
         {note.arms.map((a) => (
-          <div className="bln" key={a.recipeId}><span className="ba">{a.label}</span>{a.name} <i>{r0(a.cal)} cal · {ratio(a.calPerGramProtein)} cal/g · {a.servings}</i></div>
+          <div className="bln" key={a.recipeId}><span className="ba">{a.label}</span><span>{a.name}</span><i>{r0(a.cal)} cal · {ratio(a.calPerGramProtein)} cal/g · makes {a.servings}</i></div>
         ))}
         {note.differingIngredients.length > 0 && (
-          <div className="bvs"><em>differs in</em><br />{note.differingIngredients.map((d) => d.name).join(", ")}</div>
+          <div className="bvs"><em>differs in</em> {note.differingIngredients.map((d) => d.name).join(", ")}</div>
         )}
       </div>
     </div>

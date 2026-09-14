@@ -1,10 +1,11 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Icon } from "./Icon";
 
 /** Site-wide keyboard navigation (lives in the layout, so it works on every page):
  *  T → tree, R → recipes, Q → queue, M → mix-ins, ? → toggle a shortcuts overlay. Tree-canvas keys
- *  (move/zoom/L/find) live in TreeView. The overlay closes on ANY key (and ? / click-away / ✕) — never
+ *  (move/zoom/L/find) live in TreeView. The overlay closes on ANY key (and ? / click-away / close) — never
  *  on Esc alone, which is unreliable on some Macs. Any Ctrl/Cmd/Alt combo is ignored so real
  *  browser/OS shortcuts pass through. */
 function Row({ k, d }: { k: string; d: string }) {
@@ -42,7 +43,7 @@ export function KeyboardNav() {
   return (
     <div className="kmodal" role="dialog" aria-modal="true" aria-label="Keyboard shortcuts" onMouseDown={() => set(false)}>
       <div className="kpanel" onMouseDown={(e) => e.stopPropagation()}>
-        <div className="khead"><b>Keyboard shortcuts</b><button className="kx" onClick={() => set(false)} aria-label="Close shortcuts">✕</button></div>
+        <div className="khead"><b>Keyboard shortcuts</b><button className="kx" onClick={() => set(false)} aria-label="Close shortcuts"><Icon name="close" size={13} /></button></div>
         <div className="kcols">
           <div className="kgrp">
             <div className="kgt">Navigate</div>
@@ -56,13 +57,13 @@ export function KeyboardNav() {
           </div>
           <div className="kgrp">
             <div className="kgt">Tree canvas</div>
-            <Row k="WASD / ↑↓←→" d="Move around" />
+            <Row k="W A S D / arrows" d="Move around" />
             <Row k="+  −" d="Zoom in / out" />
             <Row k="F" d="Fit to screen" />
             <Row k="Shift" d="Sprint (hold)" />
             <Row k="Space" d="Slow (hold)" />
             <Row k="Click" d="Open a recipe" />
-            <Row k="⌫" d="Close the card" />
+            <Row k="Esc" d="Close the card" />
           </div>
         </div>
         <div className="kfoot">Press <kbd>?</kbd>, <kbd>any key</kbd>, or click to close · nothing uses Ctrl/Cmd, so your browser shortcuts still work</div>

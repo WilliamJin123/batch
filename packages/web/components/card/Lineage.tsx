@@ -1,7 +1,8 @@
 import Link from "next/link";
 import type { BakeCardVM } from "../../lib/viewmodel/types";
+import { Icon, type IconName } from "../shared/Icon";
 
-const ICON = { "forked-from": "↟", "composes": "┄", "sibling": "⎇" } as const;
+const ICON: Record<BakeCardVM["lineage"][number]["rel"], IconName> = { "forked-from": "up", "composes": "bracket", "sibling": "fork" };
 const META = { "forked-from": "forked from", "composes": "composes", "sibling": "sibling branch" } as const;
 
 /** `onNavigate`, when supplied (modal context), swaps the open card to the clicked
@@ -11,10 +12,10 @@ export function Lineage({ items, onNavigate }: {
 }) {
   if (items.length === 0) return null;
   return (
-    <div className="block">
-      <div className="sh">Lineage</div>
+    <section className="block" aria-label="Lineage">
+      <h2 className="sh">Lineage</h2>
       {items.map((it, i) => {
-        const inner = (<><span className={`ic${it.rel === "forked-from" ? "" : " c"}`}>{ICON[it.rel]}</span><span className="nm">{it.name}</span><span className="meta">{META[it.rel]}</span></>);
+        const inner = (<><span className={`li${it.rel === "forked-from" ? "" : " c"}`}><Icon name={ICON[it.rel]} size={13} /></span><span className="nm">{it.name}</span><span className="meta">{META[it.rel]}</span></>);
         if (!it.recipeId) return <div className="lrow" key={i}>{inner}</div>;
         if (onNavigate) {
           const id = it.recipeId;
@@ -22,6 +23,6 @@ export function Lineage({ items, onNavigate }: {
         }
         return <Link className="lrow" key={i} href={`/r/${it.recipeId}`}>{inner}</Link>;
       })}
-    </div>
+    </section>
   );
 }

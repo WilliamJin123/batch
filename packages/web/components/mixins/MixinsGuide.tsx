@@ -64,7 +64,7 @@ export function MixinsGuide() {
         <h1 className="mx-title">Mix-ins</h1>
         <p className="mx-sub">
           A pantry of fold-ins for bars, brownies, and cookies — what each is good in, and what it does to
-          your macros. <span className="mx-lean">lean</span> marks the picks that add flavor for almost no calories.
+          your macros. <span className="cell hi mx-lean">lean</span> marks the picks that add flavor for almost no calories.
         </p>
       </header>
       <div className="mx-grid">
@@ -76,7 +76,7 @@ export function MixinsGuide() {
                 <li className="mx-item" key={m.name}>
                   <span className="mx-nm">
                     {m.name}
-                    {m.lean && <span className="mx-lean" title="lean — almost no added calories">lean</span>}
+                    {m.lean && <span className="cell hi mx-lean" title="lean — almost no added calories">lean</span>}
                   </span>
                   <span className="mx-note">{m.note}</span>
                 </li>

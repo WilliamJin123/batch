@@ -3,6 +3,8 @@ import { useState, useRef, useEffect, useMemo } from "react";
 import type { TreeGraphVM, TreeNodeVM } from "../../lib/viewmodel/types";
 import { StateDot } from "../shared/StateDot";
 import { SearchBox } from "../shared/SearchBox";
+import { Icon } from "../shared/Icon";
+import { Mark } from "../shared/Mark";
 import { matchesSearch } from "../../lib/search";
 import { r0, r1 } from "../../lib/viewmodel/format";
 import { recipeState } from "../../lib/viewmodel/state";
@@ -39,7 +41,7 @@ export function TreeOutline({ graph, focus, open, onPick, onClose }: {
     <div className="drawer-inner">
       <div className="dhead">
         <span className="dt">All recipes</span>
-        {/* no ✕ here — the floating "✕ Recipes" toggle that sits over this row already closes it */}
+        {/* no close control here — the floating "Recipes" toggle that sits over this row already closes it */}
       </div>
       <SearchBox ref={inputRef} value={q} onChange={setQ}
         placeholder="Search name, family, or tag…" ariaLabel="Search recipes"
@@ -51,8 +53,8 @@ export function TreeOutline({ graph, focus, open, onPick, onClose }: {
             <div className="tol-row grp" role="button" tabIndex={0} aria-expanded={isOpen(fam)}
               onClick={() => setClosed((c) => ({ ...c, [fam]: isOpen(fam) }))}
               onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setClosed((c) => ({ ...c, [fam]: isOpen(fam) })); } }}>
-              <span className="tol-tw">{isOpen(fam) ? "▾" : "▸"}</span>
-              <span className="tol-nm">{fam}</span>
+              <span className="tol-tw"><span className={`tw${isOpen(fam) ? " open" : ""}`}><Icon name="chevron" size={11} /></span></span>
+              <span className="tol-nm"><span className="t">{fam}</span></span>
               <span className="tol-ct">{nodes.length}</span>
             </div>
             {isOpen(fam) && nodes.map((n) => (
@@ -62,7 +64,7 @@ export function TreeOutline({ graph, focus, open, onPick, onClose }: {
                 onMouseEnter={(e) => { const r = e.currentTarget.getBoundingClientRect(); setHover({ n, top: r.top, left: r.right + 10 }); }}
                 onMouseLeave={() => setHover((h) => (h?.n.recipeId === n.recipeId ? null : h))}>
                 <span className="tol-tw" />
-                <span className="tol-nm">{n.name}{n.kind === "base" && <span className="basel">base</span>}{n.needsTuning && <span className="flag">tune</span>}</span>
+                <span className="tol-nm"><span className="t">{n.name}</span>{n.kind === "base" && <span className="basel">base</span>}{n.needsTuning && <span className="flag">tune</span>}</span>
                 <StateDot state={recipeState(n)} />
               </div>
             ))}
@@ -70,7 +72,7 @@ export function TreeOutline({ graph, focus, open, onPick, onClose }: {
         ))}
         {total === 0 && <div className="dempty">No recipes match “{q}”.</div>}
       </div>
-      <div className="railsum"><span className="star">★</span> excellent &nbsp; <span className="dotg" /> good &nbsp; <span className="ringa" /> to-make</div>
+      <div className="railsum"><span><Mark kind="double" /> excellent</span><span><Mark kind="filled" /> made</span><span><Mark kind="struck" /> needs work</span><span><Mark kind="open" /> to-make</span></div>
       {hover && (
         <div className="tol-pop" data-testid="tol-pop" style={{ top: hover.top, left: hover.left }}>
           <b>{hover.n.name}</b>
